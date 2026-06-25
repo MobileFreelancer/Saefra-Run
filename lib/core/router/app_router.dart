@@ -11,8 +11,9 @@ import 'package:saefra_run/features/auth/screens/signup_screen.dart';
 import 'package:saefra_run/features/auth/screens/verification_code_screen.dart';
 import 'package:saefra_run/features/dashboard/screens/dashboard_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/activity_level_screen.dart';
-import 'package:saefra_run/features/onboarding/screens/age_screen.dart';
+import 'package:saefra_run/features/onboarding/screens/date_of_birth_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/enable_location_screen.dart';
+import 'package:saefra_run/features/onboarding/screens/gender_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/goal_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/notifications_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/onboarding_intro_screen.dart';
@@ -73,6 +74,11 @@ class AppRouter {
         builder: (context, state) => const OnboardingIntroScreen(),
       ),
       GoRoute(
+        path: '/onboarding/gender',
+        name: 'gender',
+        builder: (context, state) => const GenderScreen(),
+      ),
+      GoRoute(
         path: '/onboarding/activity-level',
         name: 'activityLevel',
         builder: (context, state) => const ActivityLevelScreen(),
@@ -83,9 +89,9 @@ class AppRouter {
         builder: (context, state) => const GoalScreen(),
       ),
       GoRoute(
-        path: '/onboarding/age',
-        name: 'age',
-        builder: (context, state) => const AgeScreen(),
+        path: '/onboarding/dob',
+        name: 'dateOfBirth',
+        builder: (context, state) => const DateOfBirthScreen(),
       ),
       GoRoute(
         path: '/onboarding/location',
