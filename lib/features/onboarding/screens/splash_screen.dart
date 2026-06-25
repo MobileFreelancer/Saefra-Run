@@ -17,18 +17,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _bootstrap();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bootstrap();
+    });
   }
 
   Future<void> _bootstrap() async {
+    if (!mounted) return;
+
     final auth = context.read<AuthService>();
     final onboarding = context.read<OnboardingService>();
 
-  /*  await Future.wait([
+    await Future.wait([
       auth.initialize(),
       onboarding.initialize(),
     ]);
-*/
+
     if (!mounted) return;
 
     if (!onboarding.isComplete) {
