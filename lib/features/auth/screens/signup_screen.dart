@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -75,10 +76,10 @@ class _SignupScreenState extends State<SignupScreen> {
       body: ListView(
         shrinkWrap: true,
         padding: EdgeInsets.zero,
-        physics: NeverScrollableScrollPhysics(),
+        physics: BouncingScrollPhysics(),
         children: [
           SizedBox(height: 50.h,),
-          Center(child: Image.asset(AppImages.imagesLogowithtext,scale: 2.3,)),
+          Center(child: Image.asset(Assets.imagesLogowithtext,scale: 2.3,)),
           SizedBox(height: 8.h,),
           Center(
             child: Text("Register",style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -95,7 +96,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 fontSize: 14.sp
             ),),
           ),
-          SizedBox(height: 30.h,),
+          SizedBox(height: 20.h,),
           Padding(
             padding:   EdgeInsets.symmetric(horizontal: 10.w),
             child: Form(
@@ -110,7 +111,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     controller: _nameController,
                     hint: "testel@gmail.com",
                     prefixIcon: AppFieldPrefixIcon(
-                      icon: Image.asset(AppImages.imagesEmail,scale: 2.5,),
+                      icon: Image.asset(Assets.imagesEmail,scale: 2.5,),
                     ),
                     validator: AppValidators.email,
                   ),
@@ -120,7 +121,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     hint: "Password",
                     obscureText: auth.obscurePassword,
                     prefixIcon: AppFieldPrefixIcon(
-                      icon: Image.asset(AppImages.imagesPassword,scale: 2.5,),
+                      icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
                     ),
                     suffixIcon: IconButton(
                       onPressed: auth.togglePasswordVisibility,
@@ -149,7 +150,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     hint: "Re-enter Password",
                     obscureText: auth.obscureConfirmPassword,
                     prefixIcon: AppFieldPrefixIcon(
-                      icon: Image.asset(AppImages.imagesPassword,scale: 2.5,),
+                      icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
                     ),
                     suffixIcon: IconButton(
                       onPressed: auth.toggleConfirmPasswordVisibility,
@@ -209,6 +210,43 @@ class _SignupScreenState extends State<SignupScreen> {
                         }
                       }
                     },
+                  ),
+                  SizedBox(height: 18.h,),
+                  Image.asset(Assets.socTitle),
+                  SizedBox(height: 18.h,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(Assets.googleLogo,scale: 2.6,),
+                      Image.asset(Assets.aapleLogo,scale: 2.6,)
+                    ],
+                  ),
+                  SizedBox(height: 5.h,),
+                  Center(
+                    child: Text.rich(
+                      TextSpan(
+                        text: 'Already have an account? ',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.border,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 14.sp,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'Login',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14.sp,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                context.go('/login');
+                              },
+                          ),
+                        ],
+                      ),
+                    ),
                   )
 
                 ],

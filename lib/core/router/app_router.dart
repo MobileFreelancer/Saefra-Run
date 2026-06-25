@@ -19,6 +19,8 @@ import 'package:saefra_run/features/onboarding/screens/notifications_screen.dart
 import 'package:saefra_run/features/onboarding/screens/onboarding_intro_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/splash_screen.dart';
 
+import '../../features/auth/screens/password_reset_success_screen.dart';
+
 class AppRouter {
   AppRouter._();
 
@@ -127,6 +129,11 @@ class AppRouter {
         path: '/auth/reset-password',
         name: 'resetPassword',
         builder: (context, state) => const ResetPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/auth/reset-password-successfully',
+        name: 'resetPasswordSuccessfully',
+        builder: (context, state) => const PasswordResetSuccessScreen(),
       ),
       GoRoute(
         path: '/dashboard',

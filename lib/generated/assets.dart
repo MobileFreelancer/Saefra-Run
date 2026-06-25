@@ -5,6 +5,16 @@ class Assets {
 
   static const String mainImageUrl = 'assets/images/';
   static const String mainIconsUrl = 'assets/icons/';
+  static const String imagesApplelogo = 'assets/images/applelogo.png';
+  static const String imagesEmail = 'assets/images/email.png';
+  static const String imagesGooglelogo = 'assets/images/googlelogo.png';
+  static const String imagesLogowithtext = 'assets/images/logowithtext.png';
+  static const String imagesPassword = 'assets/images/password.png';
+  static const String socTitle = 'assets/images/socaltitle.png';
+  static const String aapleLogo = 'assets/images/applelogo.png';
+  static const String googleLogo = 'assets/images/googlelogo.png';
+  static const String socLogin = 'assets/images/soclogin.png';
+  static const String successMark = 'assets/images/Successmark.png';
 
 
   static const String imagesAppLogo = 'assets/images/applogo.png';

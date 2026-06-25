@@ -25,7 +25,7 @@ class AppPrimaryButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(50.r),
         child: Container(
           width: double.infinity,
-          height: height ?? 50.h,
+          height: height ?? 43.h,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: AppColors.buttonColor,
@@ -44,8 +44,8 @@ class AppPrimaryButton extends StatelessWidget {
             label,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w500,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
