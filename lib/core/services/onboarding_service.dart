@@ -29,6 +29,11 @@ class OnboardingService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setGender(String gender) {
+    _data = _data.copyWith(gender: gender);
+    notifyListeners();
+  }
+
   void setActivityLevel(String level) {
     _data = _data.copyWith(activityLevel: level);
     notifyListeners();
@@ -36,6 +41,17 @@ class OnboardingService extends ChangeNotifier {
 
   void setGoal(String goal) {
     _data = _data.copyWith(goal: goal);
+    notifyListeners();
+  }
+
+  void setDateOfBirth(DateTime dateOfBirth) {
+    final now = DateTime.now();
+    var age = now.year - dateOfBirth.year;
+    final hasHadBirthdayThisYear = (now.month > dateOfBirth.month) ||
+        (now.month == dateOfBirth.month && now.day >= dateOfBirth.day);
+    if (!hasHadBirthdayThisYear) age -= 1;
+
+    _data = _data.copyWith(dateOfBirth: dateOfBirth, age: age);
     notifyListeners();
   }
 

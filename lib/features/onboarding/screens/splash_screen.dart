@@ -6,6 +6,8 @@ import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/widgets/app_logo.dart';
 
+import '../../../generated/assets.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -32,6 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.wait([
       auth.initialize(),
       onboarding.initialize(),
+      Future.delayed(const Duration(seconds: 3)),
     ]);
 
     if (!mounted) return;
@@ -47,9 +50,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return  Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(child: AppLogo(size: 100)),
+      body: Center(child: Image.asset(Assets.imagesAppLogo)),
     );
   }
 }
