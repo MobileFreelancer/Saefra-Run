@@ -54,6 +54,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return AuthScaffold(
       title: 'Login',
+      bottomWidget: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Don't have an account? ",
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          GestureDetector(
+            onTap: () => context.pushNamed('signup'),
+            child: Text(
+              'Sign Up',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ),
+        ],
+      ),
       child: Form(
         key: _formKey,
         child: Column(
@@ -61,9 +80,8 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             AppTextField(
               controller: _identifierController,
-              label: 'Email/Phone',
               hint: 'Enter email or phone',
-              prefixIcon: Icons.person_outline,
+              prefixIcon: Icon(Icons.person_outline),
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               validator: (value) {
@@ -76,9 +94,8 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 16),
             AppTextField(
               controller: _passwordController,
-              label: 'Password',
               hint: 'Enter password',
-              prefixIcon: Icons.lock_outline,
+              prefixIcon: Icon(Icons.lock_outline),
               obscureText: _obscurePassword,
               textInputAction: TextInputAction.done,
               suffixIcon: IconButton(
@@ -118,25 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
             const SocialLoginRow(),
           ],
         ),
-      ),
-      bottomWidget: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            "Don't have an account? ",
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          GestureDetector(
-            onTap: () => context.pushNamed('signup'),
-            child: Text(
-              'Sign Up',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ),
-        ],
       ),
     );
   }

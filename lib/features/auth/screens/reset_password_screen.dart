@@ -64,9 +64,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           children: [
             AppTextField(
               controller: _newPasswordController,
-              label: 'New Password',
               hint: 'Enter new password',
-              prefixIcon: Icons.lock_outline,
+              prefixIcon: Icon(Icons.lock_outline),
               obscureText: _obscureNew,
               textInputAction: TextInputAction.next,
               suffixIcon: IconButton(
@@ -90,9 +89,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             const SizedBox(height: 16),
             AppTextField(
               controller: _confirmPasswordController,
-              label: 'Confirm Password',
               hint: 'Confirm new password',
-              prefixIcon: Icons.lock_outline,
+              prefixIcon: Icon(Icons.lock_outline),
               obscureText: _obscureConfirm,
               textInputAction: TextInputAction.done,
               suffixIcon: IconButton(

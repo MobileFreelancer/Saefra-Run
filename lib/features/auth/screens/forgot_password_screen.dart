@@ -57,9 +57,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           children: [
             AppTextField(
               controller: _identifierController,
-              label: 'Email/Phone',
               hint: 'Enter email or phone',
-              prefixIcon: Icons.person_outline,
+              prefixIcon: Icon(Icons.person_outline),
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.done,
               validator: (value) {
