@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:saefra_run/core/constants/app_colors.dart';
 
-/// A reusable selectable list tile used across onboarding screens
-/// (Gender, Activity Level, Goal, etc).
-///
-/// Supports three layouts depending on what's passed in:
-/// - icon only            -> compact row (e.g. gender options)
-/// - icon + subtitle       -> taller row (e.g. activity level options)
-/// - no icon, icon only on selected state -> simple list (e.g. goal options)
+import '../constants/app_colors.dart';
+
 class OptionTile extends StatelessWidget {
   const OptionTile({
     super.key,
@@ -15,27 +9,24 @@ class OptionTile extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.subtitle,
-    this.icon,
+    this.width,
+    this.height,
+    this.imagePath, // Custom asset image path configuration replacing standard icons
     this.showTextField = false,
     this.textFieldController,
+    this.dividerHeight = 25,
     this.textFieldHint,
   });
 
-  /// Main label of the option.
   final String title;
-
-  /// Optional secondary line shown under the title.
   final String? subtitle;
-
-  /// Optional leading icon. When null, no leading icon is rendered.
-  final IconData? icon;
-
+  final String? imagePath;
   final bool isSelected;
+  final double? width;
+  final double? height;
   final VoidCallback onTap;
-
-  /// When true, renders an inline text field instead of plain text for the
-  /// title row (used by "Prefer to self-identify as ..." style options).
   final bool showTextField;
+  final double dividerHeight;
   final TextEditingController? textFieldController;
   final String? textFieldHint;
 
@@ -46,86 +37,93 @@ class OptionTile extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.12)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          color: AppColors.backgroundBlackTra,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? AppColors.primary: const Color(0xFF222222),
             width: isSelected ? 1.5 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+            BoxShadow(
+              color:AppColors.primary.withValues(alpha: 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            )
+          ]
+              : null,
         ),
         child: Row(
           children: [
-            if (icon != null) ...[
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary.withValues(alpha: 0.18)
-                      : AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            if (imagePath != null) ...[
+              SizedBox(
+                width: width ??32,
+                height: height ??32,
+                child: Image.asset(
+                  imagePath!,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.person,
+                    color: Colors.white54,
+                  ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
             ],
+            SizedBox(
+                height: dividerHeight,
+                width: 10,
+                child: VerticalDivider(color: AppColors.white.withAlpha(30),)),
+            const SizedBox(width: 16),
+
             Expanded(
               child: showTextField
                   ? TextField(
-                      controller: textFieldController,
-                      onTap: onTap,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        filled: false,
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        hintText: textFieldHint ?? title,
-                        hintStyle:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.textMuted,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                      ),
-                    )
+                controller: textFieldController,
+                onTap: onTap,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w400,
+                  fontSize: 15,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  filled: false,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  hintText: textFieldHint ?? title,
+                  hintStyle: TextStyle(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w400,
+                    fontSize: 15,
+                  ),
+                ),
+              )
                   : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          title,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: isSelected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.textPrimary,
-                                  ),
-                        ),
-                        if (subtitle != null) ...[
-                          const SizedBox(height: 3),
-                          Text(
-                            subtitle!,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ],
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      color: Colors.white,
                     ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle!,
+                      style: TextStyle(color:Colors.white, fontSize: 12),
+                    ),
+                  ],
+                ],
+              ),
             ),
             const SizedBox(width: 12),
             _RadioDot(isSelected: isSelected),
@@ -150,11 +148,22 @@ class _RadioDot extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: isSelected ? AppColors.primary : AppColors.transparent,
+        boxShadow: isSelected
+            ? [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.28),
+            blurRadius: 13.2,
+            spreadRadius: 0,
+            offset: Offset(1,1)
+          ),
+        ]
+            : [],
         border: Border.all(
           color: isSelected ? AppColors.primary : AppColors.border,
           width: 1.5,
         ),
       ),
+      alignment: Alignment.center,
       child: isSelected
           ? const Icon(Icons.circle, size: 16, color: AppColors.white)
           : null,

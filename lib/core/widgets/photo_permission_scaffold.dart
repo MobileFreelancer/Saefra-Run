@@ -1,20 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/secondary_button.dart';
 
-/// Permission screen layout matching the "Enable Location Services" /
-/// "Notification" designs:
-///
-/// - A back arrow top-left.
-/// - A full-bleed photo/illustration area behind everything (pass
-///   [backgroundAssetPath] once you have the real image; until then a dark
-///   gradient is shown so the layout still looks intentional).
-/// - A glowing circular badge centered over that area, holding either the
-///   real icon asset ([iconAssetPath]) or a Material [icon] fallback.
-/// - A frosted "glass" card anchored to the bottom, overlapping the photo,
-///   containing the title, description, and the two action buttons.
 class PhotoPermissionScaffold extends StatelessWidget {
   const PhotoPermissionScaffold({
     super.key,
@@ -38,95 +28,66 @@ class PhotoPermissionScaffold extends StatelessWidget {
   final String secondaryLabel;
   final VoidCallback onPrimary;
   final VoidCallback onSecondary;
-
-  /// Material icon fallback shown inside the glowing badge until
-  /// [iconAssetPath] resolves to a real image.
   final IconData icon;
-
-  /// e.g. Assets.onboardingLocationIcon — optional, falls back to [icon].
   final String? iconAssetPath;
-
-  /// e.g. Assets.onboardingLocationBg — optional, falls back to a dark
-  /// gradient so the screen still reads as a deliberate photo area.
   final String? backgroundAssetPath;
-
   final Color glowColor;
   final bool isLoading;
   final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
+    // The top overlap offset of the badge icon relative to the sheet card
+    const double badgeSize = 300;
+    const double badgeOverlap = badgeSize / 2.2;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFF070707),
       body: Stack(
         children: [
-          // Full-bleed background photo area (top ~58% of the screen),
-          // fading to black so the glass card below reads cleanly.
-          Positioned.fill(
-            child: Column(
-              children: [
-                Expanded(
-                  flex: 58,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      AssetOrFallback(
-                        assetPath: backgroundAssetPath,
-                        fallback: const _BackgroundGradient(),
-                      ),
-                      // Subtle fade so the glass card sits on a clean edge.
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.transparent,
-                              AppColors.background,
-                            ],
-                            stops: [0.0, 0.65, 1.0],
-                          ),
-                        ),
-                      ),
-                      Center(
-                        child: _GlowBadge(
-                          icon: icon,
-                          iconAssetPath: iconAssetPath,
-                          glowColor: glowColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Expanded(flex: 42, child: SizedBox()),
-              ],
-            ),
-          ),
 
-          // Back button.
+          // 2. Back button layer
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.only(left: 4, top: 4),
               child: IconButton(
                 onPressed: onBack ?? () => Navigator.of(context).maybePop(),
                 icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-                color: AppColors.textPrimary,
+                color: Colors.white,
               ),
             ),
           ),
 
-          // Glass card pinned to the bottom, overlapping the photo.
+          // 3. Glass Card & Overlapping Icon Badge Section
           Align(
             alignment: Alignment.bottomCenter,
-            child: _GlassCard(
-              title: title,
-              description: description,
-              primaryLabel: primaryLabel,
-              secondaryLabel: secondaryLabel,
-              onPrimary: onPrimary,
-              onSecondary: onSecondary,
-              isLoading: isLoading,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.topCenter,
+              children: [
+                // Bottom UI Glass Card Container
+                _GlassCard(
+                  topPadding: badgeOverlap + 24, // Gives text space from the overlapping badge
+                  title: title,
+                  description: description,
+                  primaryLabel: primaryLabel,
+                  secondaryLabel: secondaryLabel,
+                  onPrimary: onPrimary,
+                  onSecondary: onSecondary,
+                  isLoading: isLoading,
+                ),
+
+                // Positioned right on the top edge splitter to match image_310169.png
+                Positioned(
+                  top: - badgeOverlap,
+                  child: _GlowBadge(
+                    size: badgeSize,
+                    icon: icon,
+                    iconAssetPath: iconAssetPath,
+                    glowColor: glowColor,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -146,8 +107,8 @@ class _BackgroundGradient extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF161616),
-            AppColors.background,
+            Color(0xFF1A1A1A),
+            Color(0xFF070707),
           ],
         ),
       ),
@@ -157,11 +118,13 @@ class _BackgroundGradient extends StatelessWidget {
 
 class _GlowBadge extends StatelessWidget {
   const _GlowBadge({
+    required this.size,
     required this.icon,
     required this.iconAssetPath,
     required this.glowColor,
   });
 
+  final double size;
   final IconData icon;
   final String? iconAssetPath;
   final Color glowColor;
@@ -169,40 +132,19 @@ class _GlowBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 120,
-      height: 120,
+      width: size,
+      height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            glowColor.withValues(alpha: 0.35),
-            glowColor.withValues(alpha: 0.0),
-          ],
-        ),
-      ),
+
       child: Container(
-        width: 72,
-        height: 72,
+        width: size * 0.65,
+        height: size * 0.65,
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.surfaceLight.withValues(alpha: 0.6),
-          boxShadow: [
-            BoxShadow(
-              color: glowColor.withValues(alpha: 0.45),
-              blurRadius: 24,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: ClipOval(
-          child: AssetOrFallback(
-            assetPath: iconAssetPath,
-            width: 72,
-            height: 72,
-            fallback: Icon(icon, size: 32, color: glowColor),
-          ),
+        child: AssetOrFallback(
+          assetPath: iconAssetPath,
+          width: size * 0.65,
+          height: size * 0.65,
+          fallback: Icon(icon, size: size * 0.35, color: glowColor),
         ),
       ),
     );
@@ -211,6 +153,7 @@ class _GlowBadge extends StatelessWidget {
 
 class _GlassCard extends StatelessWidget {
   const _GlassCard({
+    required this.topPadding,
     required this.title,
     required this.description,
     required this.primaryLabel,
@@ -220,6 +163,7 @@ class _GlassCard extends StatelessWidget {
     required this.isLoading,
   });
 
+  final double topPadding;
   final String title;
   final String description;
   final String primaryLabel;
@@ -230,44 +174,71 @@ class _GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.85),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: const Border(
-          top: BorderSide(color: AppColors.border),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.headlineMedium,
-              textAlign: TextAlign.center,
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(16, topPadding, 16, 36),
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.08),
+              width: 1.5,
             ),
-            const SizedBox(height: 10),
-            Text(
-              description,
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
+            // Replicating the dark gradient & subtle right glow seen on image_310169.png
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1E2124).withOpacity(0.85),
+                const Color(0xFF0F1012).withOpacity(0.95),
+                const Color(0xFF231418).withOpacity(0.9), // Dark red ambient glow corner
+              ],
+              stops: const [0.0, 0.7, 1.0],
             ),
-            const SizedBox(height: 24),
-            PrimaryButton(
-              label: primaryLabel,
-              onPressed: onPrimary,
-              isLoading: isLoading,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.2,
+                  ),
+
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  description,
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    color: AppColors.white,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                PrimaryButton(
+                  label: primaryLabel,
+                  onPressed: onPrimary,
+                  isLoading: isLoading,
+                ),
+                const SizedBox(height: 12),
+                SecondaryButton(
+                  label: secondaryLabel,
+                  onPressed: isLoading ? null : onSecondary,
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            SecondaryButton(
-              label: secondaryLabel,
-              onPressed: isLoading ? null : onSecondary,
-            ),
-          ],
+          ),
         ),
       ),
     );
