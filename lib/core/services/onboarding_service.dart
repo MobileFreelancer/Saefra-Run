@@ -1,0 +1,83 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:saefra_run/core/config/api_config.dart';
+import 'package:saefra_run/core/models/onboarding_model.dart';
+import 'package:saefra_run/core/services/api_service.dart';
+
+class OnboardingService extends ChangeNotifier {
+  static final OnboardingService _instance = OnboardingService._internal();
+  factory OnboardingService() => _instance;
+  OnboardingService._internal();
+
+  final ApiService _apiService = ApiService();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
+  OnboardingModel _data = const OnboardingModel();
+  bool _isComplete = false;
+  bool _isLoading = false;
+  String? _error;
+
+  OnboardingModel get data => _data;
+  bool get isComplete => _isComplete;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  Future<void> initialize() async {
+    final value =
+        await _storage.read(key: ApiConfig.storageKeyOnboardingComplete);
+    _isComplete = value == 'true';
+    notifyListeners();
+  }
+
+  void setActivityLevel(String level) {
+    _data = _data.copyWith(activityLevel: level);
+    notifyListeners();
+  }
+
+  void setGoal(String goal) {
+    _data = _data.copyWith(goal: goal);
+    notifyListeners();
+  }
+
+  void setAge(int age) {
+    _data = _data.copyWith(age: age);
+    notifyListeners();
+  }
+
+  void setLocationEnabled(bool enabled) {
+    _data = _data.copyWith(locationEnabled: enabled);
+    notifyListeners();
+  }
+
+  void setPushNotifications(bool enabled) {
+    _data = _data.copyWith(pushNotificationsEnabled: enabled);
+    notifyListeners();
+  }
+
+  void setEmailNotifications(bool enabled) {
+    _data = _data.copyWith(emailNotificationsEnabled: enabled);
+    notifyListeners();
+  }
+
+  Future<bool> completeOnboarding() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _apiService.submitOnboarding(_data);
+      await _storage.write(
+        key: ApiConfig.storageKeyOnboardingComplete,
+        value: 'true',
+      );
+      _isComplete = true;
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+}
