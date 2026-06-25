@@ -5,6 +5,8 @@ import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/widgets/onboarding_progress_widgets.dart';
 
+import '../../../generated/assets.dart'; // Point correctly to where Assets is stored
+
 class DateOfBirthScreen extends StatefulWidget {
   const DateOfBirthScreen({super.key});
 
@@ -48,10 +50,10 @@ class _DateOfBirthScreenState extends State<DateOfBirthScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
-              onPrimary: AppColors.white,
-              surface: AppColors.surface,
-              onSurface: AppColors.textPrimary,
+              primary: Color(0xFFEF4444),
+              onPrimary: Colors.white,
+              surface: Color(0xFF141414),
+              onSurface: Colors.white,
             ),
           ),
           child: child!,
@@ -75,98 +77,147 @@ class _DateOfBirthScreenState extends State<DateOfBirthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0D0D0D), // Matches dark layout theme of image_301c6c.png
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const OnboardingStepHeader(step: 3, totalSteps: 3),
+            OnboardingStepHeader(
+              step: 4,
+              totalSteps: 4,
+              onBack: () => context.go('/onboarding/goal'),
+            ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center, // Centered alignment
                   children: [
+                    const SizedBox(height: 10),
                     RichText(
+                      textAlign: TextAlign.center,
                       text: TextSpan(
-                        style: Theme.of(context).textTheme.headlineMedium,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                        ),
                         children: const [
                           TextSpan(text: 'When were you '),
                           TextSpan(
                             text: 'Born?',
-                            style: TextStyle(color: AppColors.primary),
+                            style: TextStyle(color:AppColors.primary), // Accent crimson red
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'This helps us personalize your experience and track your\nprogress routes.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.white,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 36),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Date of Birth',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: AppColors.white,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 10),
-                    Text(
-                      'This helps us personalize your experience and track '
-                      'your progress better',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 28),
-                    Text(
-                      'Date of Birth',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _controller,
-                      readOnly: true,
+                    GestureDetector(
                       onTap: _pickDate,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      decoration: InputDecoration(
-                        hintText: 'mm/dd/yyyy',
-                        prefixIcon: const Icon(
-                          Icons.calendar_today_outlined,
-                          color: AppColors.primary,
-                          size: 20,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundBlackTra,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFF222222)),
+                        ),
+                        child: Row(
+                          children: [
+                            Image.asset(
+                              Assets.onboardingConsistencyIcon,
+                              fit: BoxFit.contain,
+                              width: 20,
+                              errorBuilder: (_, __, ___) =>  Icon(
+                                Icons.person,
+                                color: AppColors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              height: 20,
+                              width: 1,
+                              color: const Color(0xFF333333),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                _controller.text.isEmpty ? 'mm/dd/yyyy' : _controller.text,
+                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: _controller.text.isEmpty ?AppColors.textThird: AppColors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                        color: AppColors.backgroundBlackTra,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.textBorder),
                       ),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.cake_outlined,
-                              color: AppColors.primary,
-                              size: 20,
+                          SizedBox(
+                            width: 60,
+                            height: 60,
+                            child: Image.asset(
+                              Assets.onboardingCakeIcon, // Customized cake icon asset hook mapping
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.cake_outlined,
+                                color: AppColors.white,
+                                size: 36,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 18),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'Why we ask',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(color: AppColors.primary),
+                                 Text(
+                                  'Why We ask',
+                                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                    color: AppColors.white,
+                                    fontSize: 15,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Your birthday helps tailor your training '
-                                  'plan and recommendations that best suit '
-                                  'your needs.',
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                  'Your birthdate helps us tailor your training plan and recommendations that best suit your needs.',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.textThird,
+                                    fontSize: 12,
+                                    height: 1.4,
+                                  ),
                                 ),
                               ],
                             ),

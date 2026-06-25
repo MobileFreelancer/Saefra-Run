@@ -25,9 +25,9 @@ class Assets {
   static const String onboardingPushMyLimitIcon = '${mainImageUrl}onboarding_push_my_limits_icon.png';
 
   // Permission screens (Enable Location / Notifications)
-  static const String onboardingLocationBg = '${mainImageUrl}onboarding_location_bg.png';
+  static const String onboardingLocationBg = '${mainImageUrl}onboarding_bg.png';
   static const String onboardingLocationIcon = '${mainImageUrl}onboarding_location_icon.png';
-  static const String onboardingNotificationBg = '${mainImageUrl}onboarding_notification_bg.png';
+  static const String onboardingNotificationBg = '${mainImageUrl}onboarding_bg.png';
   static const String onboardingNotificationIcon = '${mainImageUrl}onboarding_notification_icon.png';
 
   static const String saefraRun = '.env';

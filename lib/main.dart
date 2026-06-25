@@ -8,29 +8,47 @@ import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/theme/app_theme.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env');
-  await FirebaseConfig.initialize();
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  try {
+    debugPrint('MAIN START');
 
-  final authStateNotifier = _AuthStateNotifier();
-  AppRouter.init(authStateNotifier);
+    await dotenv.load(fileName: '.env');
+    debugPrint('DOTENV LOADED');
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
-        ChangeNotifierProvider(create: (_) => OnboardingService()),
-        ChangeNotifierProvider.value(value: authStateNotifier),
-      ],
-      child: const SaefraRunApp(),
-    ),
-  );
+    await FirebaseConfig.initialize();
+    debugPrint('FIREBASE LOADED');
+
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
+    debugPrint('ORIENTATION SET');
+
+    final authStateNotifier = _AuthStateNotifier();
+    debugPrint('NOTIFIER CREATED');
+
+    AppRouter.init(authStateNotifier);
+    debugPrint('ROUTER INITIALIZED');
+
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthService()),
+          ChangeNotifierProvider(create: (_) => OnboardingService()),
+          ChangeNotifierProvider.value(value: authStateNotifier),
+        ],
+        child: const SaefraRunApp(),
+      ),
+    );
+
+    debugPrint('RUNAPP CALLED');
+  } catch (e, s) {
+    debugPrint('MAIN ERROR: $e');
+    debugPrintStack(stackTrace: s);
+  }
 }
 
 class SaefraRunApp extends StatelessWidget {

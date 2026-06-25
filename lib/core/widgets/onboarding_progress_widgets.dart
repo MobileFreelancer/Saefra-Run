@@ -18,7 +18,7 @@ class OnboardingStepHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -30,15 +30,15 @@ class OnboardingStepHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: AppColors.redDark.withAlpha(40),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               '$step of $totalSteps',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.white,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -70,32 +70,58 @@ class OnboardingContinueBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ElevatedButton(
-            onPressed: (isEnabled && !isLoading) ? onContinue : null,
-            child: isLoading
-                ? const SizedBox(
-                    height: 22,
-                    width: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.white,
-                    ),
-                  )
-                : Text(continueLabel),
+          SizedBox(
+            width: double.infinity,
+            height: 54, // Perfectly sized rounded capsule button match
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
+                foregroundColor: AppColors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+              ),
+              onPressed: (isEnabled && !isLoading) ? onContinue : null,
+              child: isLoading
+                  ? const SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.white,
+                ),
+              )
+                  : Text(
+                continueLabel,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
           if (showSkip) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             TextButton(
               onPressed: isLoading ? null : onSkip,
-              child: Text(
+              style: TextButton.styleFrom(
+                minimumSize: const Size(80, 36),
+                padding: EdgeInsets.zero,
+              ),
+              child: const Text(
                 'Skip',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textMuted,
-                    ),
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
             ),
           ],
