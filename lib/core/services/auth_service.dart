@@ -39,15 +39,27 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
+    debugPrint('AUTH: initialize start');
+
+    _setLoading(true);
+
     try {
-      _setLoading(true);
-      final token = await _storage.read(key: ApiConfig.storageKeyAccessToken);
+      final token = await _storage.read(
+        key: ApiConfig.storageKeyAccessToken,
+      );
+
+      debugPrint('AUTH: token = $token');
+
       if (token != null && token.isNotEmpty) {
+        debugPrint('AUTH: calling getCurrentUser');
         _currentUser = await _apiService.getCurrentUser();
+        debugPrint('AUTH: getCurrentUser completed');
       }
-    } catch (_) {
-      await _clearTokens();
+    } catch (e, s) {
+      debugPrint('AUTH ERROR: $e');
+      debugPrint('$s');
     } finally {
+      debugPrint('AUTH: initialize end');
       _setLoading(false);
     }
   }
