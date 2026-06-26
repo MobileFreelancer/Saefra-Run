@@ -48,6 +48,10 @@ class AppRouter {
           if (!isLoggedIn) {
             if (location == '/onboarding/intro') return null;
             if (location.startsWith('/auth')) return null;
+            if (location.startsWith('/onboarding') &&
+                auth.hasPendingSignup) {
+              return null;
+            }
             if (location.startsWith('/onboarding')) {
               return '/auth/login';
             }

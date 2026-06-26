@@ -36,8 +36,11 @@ class ApiConfig {
     if (envVal != null && envVal.isNotEmpty) {
       return envVal.toLowerCase() == 'true';
     }
-    return true;
+    return false;
   }
+
+  /// ngrok free tier requires this header to avoid HTML warning pages.
+  static const String ngrokSkipBrowserWarning = 'Ngrok-Skip-Browser-Warning';
 
   static bool get isDevelopment =>
       currentEnvironment == Environment.development;

@@ -44,29 +44,17 @@ class _SignupScreenState extends State<SignupScreen> {
     final auth = context.read<AuthService>();
 
     if (!auth.agreedToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please agree to the Terms and Conditions'),
-        ),
-      );
+      AppToast.error('Please accept Terms & Conditions');
       return;
     }
 
-    final success = await auth.register(
-      fullName: _nameController.text.trim(),
-      email: _emailController.text.trim(),
+    auth.startSignup(
+      email: _nameController.text.trim(),
       password: _passwordController.text,
     );
 
     if (!mounted) return;
-
-    if (success) {
-      context.go('/onboarding/gender');
-    } else if (auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error!)),
-      );
-    }
+    context.go('/onboarding/gender');
   }
 
   @override
