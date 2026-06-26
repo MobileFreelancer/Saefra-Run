@@ -22,6 +22,8 @@ class OnboardingService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  static const String trainingForAGoal = 'Training for a goal';
+
   Future<void> initialize() async {
     final value =
         await _storage.read(key: ApiConfig.storageKeyOnboardingComplete);
@@ -39,8 +41,20 @@ class OnboardingService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Sets the main goal. If the new goal isn't "Training for a goal",
+  /// any previously chosen sub-target (5k / Half / Full marathon) is
+  /// cleared so stale state can't linger.
   void setGoal(String goal) {
-    _data = _data.copyWith(goal: goal);
+    _data = _data.copyWith(
+      goal: goal,
+      clearGoalTrainingTarget: goal != trainingForAGoal,
+    );
+    notifyListeners();
+  }
+
+  /// Sets the sub-target shown only under "Training for a goal".
+  void setGoalTrainingTarget(String target) {
+    _data = _data.copyWith(goalTrainingTarget: target);
     notifyListeners();
   }
 

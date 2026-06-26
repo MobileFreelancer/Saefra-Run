@@ -43,14 +43,19 @@ class Assets {
 
   // Home screens (Enable Location / Notifications)
   static const String bottomBarFireIcon= '${mainImageUrl}bottom_bar_fire_icon.png';
-  static const String bottomBarHomeIcon= '${mainImageUrl}bottom_bar_home_icon.zip';
-  static const String bottomBarLevelIcon= '${mainImageUrl}bottom_bar_level_icon.zip';
+  static const String bottomBarHomeIcon= '${mainImageUrl}bottom_bar_home_icon.png';
+  static const String bottomBarLevelIcon= '${mainImageUrl}bottom_bar_level_icon.png';
   static const String bottomBarProfileIcon= '${mainImageUrl}bottom_bar_profile_icon.png';
   static const String homeFilterIcon= '${mainImageUrl}home_filter_icon.png';
   static const String homeNearbyIcon= '${mainImageUrl}home_nearby_icon.png';
-  static const String homeNotificationIcon= '${mainImageUrl}home_notification_icon.zip';
+  static const String homeNotificationIcon= '${mainImageUrl}home_notification_icon.png';
   static const String homeRouteFindingIcon= '${mainImageUrl}home_route_finding_icon.png';
-  static const String homeSearchIcon= '${mainImageUrl}home_search_icon.zip';
+  static const String homeSearchIcon= '${mainImageUrl}home_search_icon.png';
+
+  // Dashboard route preview images (optional — falls back to a styled
+  // gradient/icon if not present yet)
+  static const String homeRoutePreviewImg= '${mainImageUrl}home_route_preview_img.png';
+  static const String homeRouteThumbnailImg= '${mainImageUrl}home_route_thumbnail_img.png';
 
 
 

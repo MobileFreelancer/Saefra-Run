@@ -16,6 +16,7 @@ class OptionTile extends StatelessWidget {
     this.textFieldController,
     this.dividerHeight = 25,
     this.textFieldHint,
+    this.expandedChild,
   });
 
   final String title;
@@ -29,6 +30,12 @@ class OptionTile extends StatelessWidget {
   final double dividerHeight;
   final TextEditingController? textFieldController;
   final String? textFieldHint;
+
+  /// Optional content revealed below the main row, only while [isSelected]
+  /// is true — e.g. the 5k / Half Marathon / Full Marathon chip row shown
+  /// under "Training for a goal". Rendered inside the same bordered
+  /// container as the row above it.
+  final Widget? expandedChild;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +62,10 @@ class OptionTile extends StatelessWidget {
           ]
               : null,
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
           children: [
             if (imagePath != null) ...[
               SizedBox(
@@ -127,6 +137,12 @@ class OptionTile extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             _RadioDot(isSelected: isSelected),
+          ],
+            ),
+            if (isSelected && expandedChild != null) ...[
+              const SizedBox(height: 14),
+              expandedChild!,
+            ],
           ],
         ),
       ),
