@@ -53,7 +53,7 @@ class OnboardingIntroScreen extends StatelessWidget {
                         height: 1.5,
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w400,
-                        fontSize: 34.sp,
+                        fontSize: 25.sp,
                       ),
                       children: [
                         TextSpan(
@@ -61,7 +61,7 @@ class OnboardingIntroScreen extends StatelessWidget {
                           style: Theme.of(context).textTheme.displayLarge?.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w400,
-                            fontSize: 34.sp,
+                            fontSize: 25.sp,
                           ),
 
                         ),
@@ -70,7 +70,7 @@ class OnboardingIntroScreen extends StatelessWidget {
                           style: Theme.of(context).textTheme.displayLarge?.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w700,
-                            fontSize: 34.sp,
+                            fontSize: 27.sp,
                           ),
 
                         ),
