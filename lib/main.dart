@@ -28,18 +28,30 @@ Future<void> main() async {
 
     debugPrint('ORIENTATION SET');
 
-    final authStateNotifier = _AuthStateNotifier();
-    debugPrint('NOTIFIER CREATED');
+    /// Create ONLY ONE instance of each service
+    final authService = AuthService();
+    final onboardingService = OnboardingService();
+
+    /// Router notifier listens to the SAME instances
+    final authStateNotifier = _AuthStateNotifier(
+      authService,
+      onboardingService,
+    );
 
     AppRouter.init(authStateNotifier);
-    debugPrint('ROUTER INITIALIZED');
 
     runApp(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => AuthService()),
-          ChangeNotifierProvider(create: (_) => OnboardingService()),
-          ChangeNotifierProvider.value(value: authStateNotifier),
+          ChangeNotifierProvider<AuthService>.value(
+            value: authService,
+          ),
+          ChangeNotifierProvider<OnboardingService>.value(
+            value: onboardingService,
+          ),
+          ChangeNotifierProvider<_AuthStateNotifier>.value(
+            value: authStateNotifier,
+          ),
         ],
         child: const SaefraRunApp(),
       ),
@@ -71,26 +83,42 @@ class SaefraRunApp extends StatelessWidget {
   }
 }
 
-/// Rebuilds GoRouter when auth or onboarding state changes.
+/// Rebuilds GoRouter whenever AuthService or OnboardingService changes.
 class _AuthStateNotifier extends ChangeNotifier {
-  _AuthStateNotifier() {
-    AuthService().addListener(_onStateChanged);
-    OnboardingService().addListener(_onStateChanged);
-    _wasLoggedIn = AuthService().isLoggedIn;
-    _wasOnboardingComplete = OnboardingService().isComplete;
+  final AuthService authService;
+  final OnboardingService onboardingService;
+
+  late bool _wasLoggedIn;
+  late bool _wasOnboardingComplete;
+
+  _AuthStateNotifier(
+      this.authService,
+      this.onboardingService,
+      ) {
+    authService.addListener(_onStateChanged);
+    onboardingService.addListener(_onStateChanged);
+
+    _wasLoggedIn = authService.isLoggedIn;
+    _wasOnboardingComplete = onboardingService.isComplete;
   }
 
-  bool _wasLoggedIn = false;
-  bool _wasOnboardingComplete = false;
-
   void _onStateChanged() {
-    final isLoggedIn = AuthService().isLoggedIn;
-    final isOnboardingComplete = OnboardingService().isComplete;
+    final isLoggedIn = authService.isLoggedIn;
+    final isOnboardingComplete = onboardingService.isComplete;
+
     if (isLoggedIn != _wasLoggedIn ||
         isOnboardingComplete != _wasOnboardingComplete) {
       _wasLoggedIn = isLoggedIn;
       _wasOnboardingComplete = isOnboardingComplete;
+
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    authService.removeListener(_onStateChanged);
+    onboardingService.removeListener(_onStateChanged);
+    super.dispose();
   }
 }
