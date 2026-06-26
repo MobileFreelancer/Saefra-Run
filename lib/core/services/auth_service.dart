@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
@@ -10,7 +10,7 @@ class AuthService extends ChangeNotifier {
   AuthService._internal();
 
   final ApiService _apiService = ApiService();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = SecureStorageService.instance;
 
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -71,28 +71,20 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    debugPrint('AUTH: initialize start');
-
-    _setLoading(true);
-
     try {
-      final token = await _storage.read(
-        key: ApiConfig.storageKeyAccessToken,
-      );
-
-      debugPrint('AUTH: token = $token');
+      final token = await _storage
+          .read(key: ApiConfig.storageKeyAccessToken)
+          .timeout(const Duration(seconds: 5));
 
       if (token != null && token.isNotEmpty) {
-        debugPrint('AUTH: calling getCurrentUser');
         _currentUser = await _apiService.getCurrentUser();
-        debugPrint('AUTH: getCurrentUser completed');
+        notifyListeners();
       }
     } catch (e, s) {
-      debugPrint('AUTH ERROR: $e');
+      debugPrint('AUTH initialize failed: $e');
       debugPrint('$s');
-    } finally {
-      debugPrint('AUTH: initialize end');
-      _setLoading(false);
+      await _clearTokens();
+      _currentUser = null;
     }
   }
 

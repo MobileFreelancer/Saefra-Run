@@ -5,7 +5,10 @@ import 'package:saefra_run/core/constants/app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  static ThemeData get darkTheme {
+  /// Built once at startup to avoid blocking the UI thread on every rebuild.
+  static final ThemeData darkTheme = _createDarkTheme();
+
+  static ThemeData _createDarkTheme() {
     final manrope = GoogleFonts.manropeTextTheme();
     final inter = GoogleFonts.interTextTheme();
 

@@ -54,12 +54,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final auth = context.watch<AuthService>();
 
     return Scaffold(
-      body: Column(
-        children: [
-          AuthHeader(
-            title: "Forgot Password?",
-            subtitle: "Enter your registered email id to reset the password",
-          ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            AuthHeader(
+              title: 'Forgot Password?',
+              subtitle: 'Enter your registered email id to reset the password',
+              fallbackRoute: '/auth/login',
+            ),
           Form(
             key: _formKey,
             autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -86,7 +88,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

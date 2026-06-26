@@ -125,15 +125,18 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
         : Formatters.maskPhone(identifier);
 
     return Scaffold(
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 10.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AuthHeader(
-              title: "Verification Code",
-              subtitle: "We have sent a code for verification to your email $masked",
-            ),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AuthHeader(
+                title: 'Verification Code',
+                subtitle:
+                    'We have sent a code for verification to your email $masked',
+                fallbackRoute: '/auth/forgot-password',
+              ),
               SizedBox(height: 22.h),
             OtpInput(
               controllers: _controllers,
@@ -180,7 +183,8 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
               label: 'Verify',
               onTap: _verify,
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

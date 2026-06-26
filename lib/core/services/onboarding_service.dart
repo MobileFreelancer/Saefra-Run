@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
@@ -10,7 +10,7 @@ class OnboardingService extends ChangeNotifier {
   OnboardingService._internal();
 
   final ApiService _apiService = ApiService();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = SecureStorageService.instance;
 
   OnboardingModel _data = const OnboardingModel();
   bool _isComplete = false;
@@ -25,9 +25,15 @@ class OnboardingService extends ChangeNotifier {
   static const String trainingForAGoal = 'Training for a goal';
 
   Future<void> initialize() async {
-    final value =
-        await _storage.read(key: ApiConfig.storageKeyOnboardingComplete);
-    _isComplete = value == 'true';
+    try {
+      final value = await _storage
+          .read(key: ApiConfig.storageKeyOnboardingComplete)
+          .timeout(const Duration(seconds: 5));
+      _isComplete = value == 'true';
+    } catch (e) {
+      debugPrint('Onboarding initialize failed: $e');
+      _isComplete = false;
+    }
     notifyListeners();
   }
 

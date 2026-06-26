@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -11,6 +10,7 @@ import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import '../../../core/utils/app_tost.dart';
 import '../../../core/utils/app_validators.dart';
+import '../../../core/widgets/auth_header.dart';
 import '../../../generated/assets.dart';
 import '../../onboarding/widgets/common_app_button.dart';
 
@@ -73,46 +73,20 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     return Scaffold(
-      body: ListView(
-        shrinkWrap: true,
-        padding: EdgeInsets.zero,
-        physics: BouncingScrollPhysics(),
-        children: [
-          SizedBox(height: 45.h,),
-          // Padding(
-          //   padding:   EdgeInsets.symmetric(horizontal: 10.w),
-          //   child: Row(
-          //     children: [
-          //       InkWell(
-          //         onTap: (){
-          //           Navigator.of(context).pop();
-          //         },
-          //           child: Icon(CupertinoIcons.back,size: 30,)
-          //       ),
-          //     ],
-          //   ),
-          // ),
-          Center(child: Image.asset(Assets.imagesLogowithtext,scale: 2.8,)),
-          SizedBox(height: 8.h,),
-          Center(
-            child: Text("Register",style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-              fontSize: 20.sp
-            ),),
-          ),
-          SizedBox(height: 3.h,),
-          Center(
-            child: Text("Please sign in to continue",style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w400,
-                fontSize: 14.sp
-            ),),
-          ),
-          SizedBox(height: 20.h,),
-          Padding(
-            padding:   EdgeInsets.symmetric(horizontal: 10.w),
-            child: Form(
+      body: SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          physics: const BouncingScrollPhysics(),
+          children: [
+            AuthHeader(
+              title: 'Register',
+              subtitle: 'Please sign in to continue',
+              fallbackRoute: '/onboarding/intro',
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10.w),
+              child: Form(
               key: _formKey,
               autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
@@ -266,10 +240,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 ],
               ),
             ),
-          )
-        ],
+              ), ],
+        ),
       ),
-
     );
   }
 }
