@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
+
+import '../../generated/assets.dart';
 
 /// The "Recommended Route" card on the dashboard: a route preview image
 /// (or gradient fallback) with badges, an info panel, and a CTA button.
@@ -60,21 +63,14 @@ class RecommendedRouteCard extends StatelessWidget {
                     label: isSecure ? 'Route Secure' : 'Route Caution',
                   ),
                 ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF97316),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.wifi_tethering,
-                      size: 16,
-                      color: AppColors.white,
+                Padding(
+                  padding:   EdgeInsets.only(top: 8.h),
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: SizedBox(
+                      width: 45.w,
+                        height: 45.h,
+                        child: Image.asset(Assets.sos)
                     ),
                   ),
                 ),

@@ -35,6 +35,8 @@ class Assets {
   static const String onboardingPushMyLimitIcon = '${mainImageUrl}onboarding_push_my_limits_icon.png';
   static const String Search = '${mainImageUrl}Search.png';
   static const String filter = '${mainImageUrl}filter.png';
+  static const String background = '${mainImageUrl}background.png';
+  static const String sos = '${mainImageUrl}sos.png';
 
   // Permission screens (Enable Location / Notifications)
   static const String onboardingLocationBg = '${mainImageUrl}onboarding_bg.png';
