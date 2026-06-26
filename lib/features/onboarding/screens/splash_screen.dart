@@ -19,8 +19,10 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('SPLASH INIT');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('POST FRAME');
       _bootstrap();
     });
   }

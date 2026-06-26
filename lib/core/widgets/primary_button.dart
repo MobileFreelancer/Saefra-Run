@@ -19,6 +19,14 @@ class PrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: (isLoading || !isEnabled) ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
+          foregroundColor: AppColors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),),
       child: isLoading
           ? const SizedBox(
               height: 22,
@@ -32,3 +40,5 @@ class PrimaryButton extends StatelessWidget {
     );
   }
 }
+
+

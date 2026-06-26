@@ -23,6 +23,38 @@ class AuthService extends ChangeNotifier {
   String? get error => _error;
   String? get pendingResetIdentifier => _pendingResetIdentifier;
 
+
+
+   bool _agreedToTerms = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  bool get agreedToTerms => _agreedToTerms;
+  bool get obscurePassword => _obscurePassword;
+  bool get obscureConfirmPassword => _obscureConfirmPassword;
+
+
+  void toggleTerms() {
+    _agreedToTerms = !_agreedToTerms;
+    notifyListeners();
+  }
+
+  void setTerms(bool value) {
+    _agreedToTerms = value;
+    notifyListeners();
+  }
+
+  void togglePasswordVisibility() {
+    _obscurePassword = !_obscurePassword;
+    notifyListeners();
+  }
+
+  void toggleConfirmPasswordVisibility() {
+    _obscureConfirmPassword = !_obscureConfirmPassword;
+    notifyListeners();
+  }
+
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();

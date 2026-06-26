@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
@@ -6,6 +7,11 @@ import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import 'package:saefra_run/core/widgets/auth_scaffold.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
+
+import '../../../core/utils/app_validators.dart';
+import '../../../core/widgets/auth_header.dart';
+import '../../../generated/assets.dart';
+import '../../onboarding/widgets/common_app_button.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -40,14 +46,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password reset successfully')),
-      );
-      context.go('/auth/login');
+
+      context.go('/auth/reset-password-successfully');
     } else if (auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error!)),
-      );
+
     }
   }
 
@@ -55,71 +57,74 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
 
-    return AuthScaffold(
-      title: 'Reset Password',
-      child: Form(
-        key: _formKey,
+    return Scaffold(
+      body: Padding(
+        padding:   EdgeInsets.symmetric(horizontal: 10.w),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AppTextField(
-              controller: _newPasswordController,
-              label: 'New Password',
-              hint: 'Enter new password',
-              prefixIcon: Icons.lock_outline,
-              obscureText: _obscureNew,
-              textInputAction: TextInputAction.next,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureNew ? Icons.visibility_off : Icons.visibility,
-                  color: AppColors.textMuted,
-                  size: 20,
-                ),
-                onPressed: () => setState(() => _obscureNew = !_obscureNew),
+            AuthHeader(
+              title: "Reset Password",
+              subtitle: " Enter your new password to reset the password",
+            ),
+            Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AppTextField(
+                    controller: _newPasswordController,
+                    hint: "Password",
+                    obscureText: auth.obscurePassword,
+                    prefixIcon: AppFieldPrefixIcon(
+                      icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: auth.togglePasswordVisibility,
+                      icon: Icon(
+                        auth.obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.white,
+                      ),
+                    ),
+                    validator: AppValidators.password,
+                  ),
+                  SizedBox(height: 15.h),
+                  AppTextField(
+                    controller: _confirmPasswordController,
+                    hint: "Confirm Password",
+                    obscureText: auth.obscureConfirmPassword,
+                    prefixIcon: AppFieldPrefixIcon(
+                      icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: auth.toggleConfirmPasswordVisibility,
+                      icon: Icon(
+                        auth.obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.white,
+                      ),
+                    ),
+                    validator: (value){
+                      if(value==null||value.trim().isEmpty){
+                        return "Please enter confirm password";
+                      }
+                      else if(_newPasswordController.text.trim()!=_confirmPasswordController.text.trim()){
+                        return "Password don't matched";
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 22.h,),
+                  AppPrimaryButton(
+                    label: 'Submit',
+                    onTap: _submit,
+                  ),
+                ],
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a new password';
-                }
-                if (value.length < 6) {
-                  return 'Password must be at least 6 characters';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            AppTextField(
-              controller: _confirmPasswordController,
-              label: 'Confirm Password',
-              hint: 'Confirm new password',
-              prefixIcon: Icons.lock_outline,
-              obscureText: _obscureConfirm,
-              textInputAction: TextInputAction.done,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureConfirm ? Icons.visibility_off : Icons.visibility,
-                  color: AppColors.textMuted,
-                  size: 20,
-                ),
-                onPressed: () =>
-                    setState(() => _obscureConfirm = !_obscureConfirm),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please confirm your password';
-                }
-                if (value != _newPasswordController.text) {
-                  return 'Passwords do not match';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 24),
-            PrimaryButton(
-              label: 'Submit',
-              onPressed: _submit,
-              isLoading: auth.isLoading,
-            ),
+            )
           ],
         ),
       ),

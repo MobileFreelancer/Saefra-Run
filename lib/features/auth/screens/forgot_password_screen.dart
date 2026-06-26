@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import 'package:saefra_run/core/widgets/auth_scaffold.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
+
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/app_validators.dart';
+import '../../../core/widgets/auth_header.dart';
+import '../../../generated/assets.dart';
+import '../../onboarding/widgets/common_app_button.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -46,37 +53,40 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
 
-    return AuthScaffold(
-      title: 'Forgot Password?',
-      subtitle:
-          'Enter your email or phone number and we will send you a verification code.',
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AppTextField(
-              controller: _identifierController,
-              label: 'Email/Phone',
-              hint: 'Enter email or phone',
-              prefixIcon: Icons.person_outline,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.done,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your email or phone';
-                }
-                return null;
-              },
+    return Scaffold(
+      body: Column(
+        children: [
+          AuthHeader(
+            title: "Forgot Password?",
+            subtitle: "Enter your registered email id to reset the password",
+          ),
+          Form(
+            key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Padding(
+              padding:   EdgeInsets.symmetric(horizontal: 10.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AppTextField(
+                    keyboardType: TextInputType.emailAddress,
+                    controller: _identifierController,
+                    hint: "testel@gmail.com",
+                    prefixIcon: AppFieldPrefixIcon(
+                      icon: Image.asset(Assets.imagesEmail,scale: 2.5,),
+                    ),
+                    validator: AppValidators.email,
+                  ),
+                    SizedBox(height: 24.h),
+                  AppPrimaryButton(
+                    label: 'Submit',
+                    onTap: _send,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-            PrimaryButton(
-              label: 'Send',
-              onPressed: _send,
-              isLoading: auth.isLoading,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

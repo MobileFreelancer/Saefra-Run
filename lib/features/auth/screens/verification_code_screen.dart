@@ -1,4 +1,6 @@
+import 'dart:async'; // Added for Timer
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/config/api_config.dart';
@@ -9,6 +11,9 @@ import 'package:saefra_run/core/widgets/auth_scaffold.dart';
 import 'package:saefra_run/core/widgets/otp_input.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 
+import '../../../core/widgets/auth_header.dart';
+import '../../onboarding/widgets/common_app_button.dart';
+
 class VerificationCodeScreen extends StatefulWidget {
   const VerificationCodeScreen({super.key});
 
@@ -18,12 +23,24 @@ class VerificationCodeScreen extends StatefulWidget {
 
 class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
+  List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   String _code = '';
 
+  // Timer properties
+  Timer? _timer;
+  int _secondsRemaining = 60;
+  bool _canResend = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
   @override
   void dispose() {
+    _timer?.cancel(); // Cancel timer to avoid memory leaks
     for (final c in _controllers) {
       c.dispose();
     }
@@ -33,11 +50,28 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
     super.dispose();
   }
 
+  void _startTimer() {
+    setState(() {
+      _secondsRemaining = 60;
+      _canResend = false;
+    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining == 0) {
+        setState(() {
+          _canResend = true;
+          _timer?.cancel();
+        });
+      } else {
+        setState(() {
+          _secondsRemaining--;
+        });
+      }
+    });
+  }
+
   Future<void> _verify() async {
     if (_code.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter the full 6-digit code')),
-      );
+
       return;
     }
 
@@ -56,12 +90,14 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
   }
 
   Future<void> _resend() async {
+    if (!_canResend) return;
+
     final identifier = context.read<AuthService>().pendingResetIdentifier;
     if (identifier == null) return;
 
     final success = await context.read<AuthService>().forgotPassword(
-          identifier: identifier,
-        );
+      identifier: identifier,
+    );
 
     if (!mounted) return;
 
@@ -74,6 +110,10 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
         ),
       ),
     );
+
+    if (success) {
+      _startTimer(); // Restart the countdown on successful trigger
+    }
   }
 
   @override
@@ -84,46 +124,61 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
         ? Formatters.maskEmail(identifier)
         : Formatters.maskPhone(identifier);
 
-    return AuthScaffold(
-      title: 'Verification Code',
-      subtitle: 'We sent a 6-digit code to $masked. '
-          'Enter it below to continue.',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          OtpInput(
-            controllers: _controllers,
-            focusNodes: _focusNodes,
-            onCompleted: (code) => setState(() => _code = code),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: TextButton(
-              onPressed: auth.isLoading ? null : _resend,
-              child: Text(
-                'Resend Code',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
+    return Scaffold(
+      body: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AuthHeader(
+              title: "Verification Code",
+              subtitle: "We have sent a code for verification to your email $masked",
+            ),
+              SizedBox(height: 22.h),
+            OtpInput(
+              controllers: _controllers,
+              focusNodes: _focusNodes,
+              onCompleted: (code) => setState(() => _code = code),
+            ),
+
+            Padding(
+              padding:   EdgeInsets.symmetric(horizontal: 10.w),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (!_canResend)
+                    Text(
+                      '${_secondsRemaining.toString().padLeft(2, '0')} seconds',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.primaryDark,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.sp,
+                      ),
                     ),
+                  TextButton(
+                    onPressed: (auth.isLoading || !_canResend) ? null : _resend,
+                    child: Text(
+                      'Resend OTP',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color:  AppColors.textPrimary ,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 14.sp,
+                        decoration: TextDecoration.underline,
+                        decorationColor: AppColors.white,
+                        //backgroundColor: AppColors.textPrimary
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          PrimaryButton(
-            label: 'Verify',
-            onPressed: _verify,
-            isLoading: auth.isLoading,
-          ),
-          if (ApiConfig.useMockApi) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Mock OTP: 123456',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall,
+            const SizedBox(height: 24),
+            AppPrimaryButton(
+              label: 'Verify',
+              onTap: _verify,
             ),
           ],
-        ],
+        ),
       ),
     );
   }

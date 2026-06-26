@@ -1,4 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
@@ -7,6 +9,11 @@ import 'package:saefra_run/core/widgets/app_text_field.dart';
 import 'package:saefra_run/core/widgets/auth_scaffold.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/social_login_row.dart';
+
+import '../../../core/utils/app_tost.dart';
+import '../../../core/utils/app_validators.dart';
+import '../../../generated/assets.dart';
+import '../../onboarding/widgets/common_app_button.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -20,6 +27,8 @@ class _SignupScreenState extends State<SignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _conformPasswordController = TextEditingController();
+
   bool _obscurePassword = true;
   bool _agreedToTerms = false;
 
@@ -63,121 +72,190 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
-
-    return AuthScaffold(
-      title: 'Register',
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AppTextField(
-              controller: _nameController,
-              label: 'Full Name',
-              hint: 'Enter your full name',
-              prefixIcon: Icons.person_outline,
-              textInputAction: TextInputAction.next,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your name';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            AppTextField(
-              controller: _emailController,
-              label: 'Email',
-              hint: 'Enter your email',
-              prefixIcon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your email';
-                }
-                if (!value.contains('@')) {
-                  return 'Please enter a valid email';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            AppTextField(
-              controller: _passwordController,
-              label: 'Password',
-              hint: 'Create a password',
-              prefixIcon: Icons.lock_outline,
-              obscureText: _obscurePassword,
-              textInputAction: TextInputAction.done,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  color: AppColors.textMuted,
-                  size: 20,
-                ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a password';
-                }
-                if (value.length < 6) {
-                  return 'Password must be at least 6 characters';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Checkbox(
-                  value: _agreedToTerms,
-                  onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () =>
-                        setState(() => _agreedToTerms = !_agreedToTerms),
-                    child: Text(
-                      'I agree with Terms and Conditions',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            PrimaryButton(
-              label: 'Register',
-              onPressed: _register,
-              isLoading: auth.isLoading,
-            ),
-            const SizedBox(height: 24),
-            const SocialLoginRow(),
-          ],
-        ),
-      ),
-      bottomWidget: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return Scaffold(
+      body: ListView(
+        shrinkWrap: true,
+        padding: EdgeInsets.zero,
+        physics: BouncingScrollPhysics(),
         children: [
-          Text(
-            'Already have an account? ',
-            style: Theme.of(context).textTheme.bodyMedium,
+          SizedBox(height: 50.h,),
+          Center(child: Image.asset(Assets.imagesLogowithtext,scale: 2.3,)),
+          SizedBox(height: 8.h,),
+          Center(
+            child: Text("Register",style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 20.sp
+            ),),
           ),
-          GestureDetector(
-            onTap: () => context.pop(),
-            child: Text(
-              'Log In',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
+          SizedBox(height: 3.h,),
+          Center(
+            child: Text("Please sign in to continue",style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w400,
+                fontSize: 14.sp
+            ),),
+          ),
+          SizedBox(height: 20.h,),
+          Padding(
+            padding:   EdgeInsets.symmetric(horizontal: 10.w),
+            child: Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppTextField(
+                    keyboardType: TextInputType.emailAddress,
+                    controller: _nameController,
+                    hint: "testel@gmail.com",
+                    prefixIcon: AppFieldPrefixIcon(
+                      icon: Image.asset(Assets.imagesEmail,scale: 2.5,),
+                    ),
+                    validator: AppValidators.email,
                   ),
+                    SizedBox(height: 16.h),
+                  AppTextField(
+                    controller: _passwordController,
+                    hint: "Password",
+                    obscureText: auth.obscurePassword,
+                    prefixIcon: AppFieldPrefixIcon(
+                      icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: auth.togglePasswordVisibility,
+                      icon: Icon(
+                        auth.obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.white,
+                      ),
+                    ),
+                    validator: AppValidators.password,
+                  ),
+
+                  SizedBox(height: 5  .h,),
+                  Padding(
+                    padding:   EdgeInsets.symmetric(horizontal: 7.w),
+                    child: Text("Min-8 chars, uppercase & special.",style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 12.sp
+                    ),),
+                  ),
+                  SizedBox(height: 15.h),
+                  AppTextField(
+                    controller: _conformPasswordController,
+                    hint: "Re-enter Password",
+                    obscureText: auth.obscureConfirmPassword,
+                    prefixIcon: AppFieldPrefixIcon(
+                      icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: auth.toggleConfirmPasswordVisibility,
+                      icon: Icon(
+                        auth.obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.white,
+                      ),
+                    ),
+                    validator: (value){
+                      if(value==null||value.trim().isEmpty){
+                        return "Please Re-enter password";
+                      }
+                      else if(_passwordController.text.trim()!=_conformPasswordController.text.trim()){
+                        return "Password don't matched";
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10.h),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: auth.agreedToTerms,
+                        onChanged: (value) {
+                          auth.setTerms(value ?? false);
+                        },
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: auth.toggleTerms,
+                          child: Text(
+                            'Accept with Terms & Conditions',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                              fontSize: 14.sp,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  AppPrimaryButton(
+                    label: 'Register',
+                    onTap: (){
+                      if(_formKey.currentState!.validate()){
+                        if(!auth.agreedToTerms){
+                          AppToast.error('Please selected terms & condition');
+                        }
+                      }
+                    },
+                  ),
+                  SizedBox(height: 18.h,),
+                  Image.asset(Assets.socTitle),
+                  SizedBox(height: 18.h,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(Assets.googleLogo,scale: 2.6,),
+                      Image.asset(Assets.aapleLogo,scale: 2.6,)
+                    ],
+                  ),
+                  SizedBox(height: 5.h,),
+                  Center(
+                    child: Text.rich(
+                      TextSpan(
+                        text: 'Already have an account? ',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.border,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 14.sp,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'Login',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14.sp,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                context.go('/login');
+                              },
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+
+                ],
+              ),
             ),
-          ),
+          )
         ],
       ),
+
     );
   }
 }
