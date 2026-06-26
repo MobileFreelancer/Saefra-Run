@@ -42,10 +42,10 @@ class AppPrimaryButton extends StatelessWidget {
           )
               : Text(
             label,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w400,
+            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 16.sp
             ),
           ),
         ),
