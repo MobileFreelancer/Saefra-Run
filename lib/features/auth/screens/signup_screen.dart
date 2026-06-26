@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,10 +9,6 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
-import 'package:saefra_run/core/widgets/auth_scaffold.dart';
-import 'package:saefra_run/core/widgets/primary_button.dart';
-import 'package:saefra_run/core/widgets/social_login_row.dart';
-
 import '../../../core/utils/app_tost.dart';
 import '../../../core/utils/app_validators.dart';
 import '../../../generated/assets.dart';
@@ -78,8 +77,21 @@ class _SignupScreenState extends State<SignupScreen> {
         padding: EdgeInsets.zero,
         physics: BouncingScrollPhysics(),
         children: [
-          SizedBox(height: 50.h,),
-          Center(child: Image.asset(Assets.imagesLogowithtext,scale: 2.3,)),
+          SizedBox(height: 45.h,),
+          // Padding(
+          //   padding:   EdgeInsets.symmetric(horizontal: 10.w),
+          //   child: Row(
+          //     children: [
+          //       InkWell(
+          //         onTap: (){
+          //           Navigator.of(context).pop();
+          //         },
+          //           child: Icon(CupertinoIcons.back,size: 30,)
+          //       ),
+          //     ],
+          //   ),
+          // ),
+          Center(child: Image.asset(Assets.imagesLogowithtext,scale: 2.8,)),
           SizedBox(height: 8.h,),
           Center(
             child: Text("Register",style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -212,13 +224,13 @@ class _SignupScreenState extends State<SignupScreen> {
                     },
                   ),
                   SizedBox(height: 18.h,),
-                  Image.asset(Assets.socTitle),
+                  Center(child: Image.asset(Assets.socTitle,scale: 2.3,)),
                   SizedBox(height: 18.h,),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Image.asset(Assets.googleLogo,scale: 2.6,),
-                      Image.asset(Assets.aapleLogo,scale: 2.6,)
+                     Platform.isIOS?Image.asset(Assets.aapleLogo,scale: 2.6,):SizedBox.shrink()
                     ],
                   ),
                   SizedBox(height: 5.h,),
@@ -227,7 +239,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       TextSpan(
                         text: 'Already have an account? ',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.border,
+                          color: AppColors.textMuted,
                           fontWeight: FontWeight.w400,
                           fontSize: 14.sp,
                         ),

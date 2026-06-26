@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -64,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
             title: "Log in",
             subtitle: "Please sign in to continue",
           ),
-          SizedBox(height: 20.h,),
+          SizedBox(height: 18.h,),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 10.w),
             child: Form(
@@ -88,6 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     hint: "Password",
                     obscureText: auth.obscurePassword,
                     prefixIcon: AppFieldPrefixIcon(
+
                       icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
                     ),
                     suffixIcon: IconButton(
@@ -127,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Image.asset(Assets.googleLogo,scale: 2.6,),
-                      Image.asset(Assets.aapleLogo,scale: 2.6,)
+                      Platform.isIOS?Image.asset(Assets.aapleLogo,scale: 2.6,):SizedBox.shrink()
                     ],
                   ),
                   SizedBox(height: 5.h,),

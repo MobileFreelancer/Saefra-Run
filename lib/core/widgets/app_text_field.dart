@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-class AppTextField extends StatelessWidget {
+import '../constants/app_colors.dart';
+
+class AppTextField extends StatefulWidget {
   const AppTextField({
     super.key,
     required this.controller,
@@ -25,20 +27,44 @@ class AppTextField extends StatelessWidget {
   final TextInputAction? textInputAction;
 
   @override
+  State<AppTextField> createState() => _AppTextFieldState();
+}
+
+class _AppTextFieldState extends State<AppTextField> {
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _focusNode = FocusNode();
+    _focusNode.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      validator: validator,
-      onChanged: onChanged,
-      textInputAction: textInputAction,
+      focusNode: _focusNode,
+      controller: widget.controller,
+      obscureText: widget.obscureText,
+      keyboardType: widget.keyboardType,
+      validator: widget.validator,
+      onChanged: widget.onChanged,
+      textInputAction: widget.textInputAction,
       style: const TextStyle(
         color: Colors.white,
         fontSize: 14,
       ),
       decoration: InputDecoration(
-        hintText: hint,
+        hintText: widget.hint,
         hintStyle: const TextStyle(
           color: Colors.white70,
           fontSize: 14,
@@ -46,8 +72,14 @@ class AppTextField extends StatelessWidget {
         filled: true,
         fillColor: const Color(0xFF1C1C1C),
 
-        prefixIcon: prefixIcon,
-        suffixIcon: suffixIcon,
+        prefixIcon: widget.prefixIcon is AppFieldPrefixIcon
+            ? AppFieldPrefixIcon(
+          icon: (widget.prefixIcon as AppFieldPrefixIcon).icon,
+          isFocused: _focusNode.hasFocus,
+        )
+            : widget.prefixIcon,
+
+        suffixIcon: widget.suffixIcon,
 
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
@@ -56,31 +88,22 @@ class AppTextField extends StatelessWidget {
 
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(
-            color: Colors.white54,
-          ),
+          borderSide: const BorderSide(color: Colors.white54),
         ),
 
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(
-            color: Colors.white,
-          ),
+          borderSide: const BorderSide(color: Colors.white),
         ),
 
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(
-            color: Colors.red,
-          ),
+          borderSide:  BorderSide(color: AppColors.primaryDark),
         ),
 
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(
-            color: Colors.red,
-          ),
-        ),
+          borderSide: const BorderSide(color: AppColors.primaryDark)),
       ),
     );
   }
@@ -91,9 +114,11 @@ class AppFieldPrefixIcon extends StatelessWidget {
   const AppFieldPrefixIcon({
     super.key,
     required this.icon,
+    this.isFocused = false,
   });
 
   final Widget icon;
+  final bool isFocused;
 
   @override
   Widget build(BuildContext context) {
@@ -101,13 +126,23 @@ class AppFieldPrefixIcon extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(width: 16),
-        icon,
+
+        ColorFiltered(
+          colorFilter: ColorFilter.mode(
+            isFocused ? Colors.white : Colors.grey,
+            BlendMode.srcIn,
+          ),
+          child: icon,
+        ),
+
         const SizedBox(width: 12),
+
         Container(
           width: 1,
           height: 24,
           color: Colors.grey.shade700,
         ),
+
         const SizedBox(width: 12),
       ],
     );

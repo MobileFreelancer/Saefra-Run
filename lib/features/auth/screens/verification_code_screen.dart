@@ -29,7 +29,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
 
   // Timer properties
   Timer? _timer;
-  int _secondsRemaining = 60;
+  int _secondsRemaining = 30;
   bool _canResend = false;
 
   @override
@@ -52,7 +52,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
 
   void _startTimer() {
     setState(() {
-      _secondsRemaining = 60;
+      _secondsRemaining = 30;
       _canResend = false;
     });
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -140,7 +140,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
               focusNodes: _focusNodes,
               onCompleted: (code) => setState(() => _code = code),
             ),
-
+            SizedBox(height: 8.h,),
             Padding(
               padding:   EdgeInsets.symmetric(horizontal: 10.w),
               child: Row(
@@ -155,6 +155,9 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
                         fontSize: 14.sp,
                       ),
                     ),
+                  SizedBox(height: 8.h,),
+                  if (_canResend)
+
                   TextButton(
                     onPressed: (auth.isLoading || !_canResend) ? null : _resend,
                     child: Text(
