@@ -25,6 +25,12 @@ class AuthHeader extends StatelessWidget {
           width: 155.w,
           child: Image.asset(
             Assets.imagesLogowithtext,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Icon(
+              Icons.directions_run,
+              color: AppColors.white,
+              size: 48,
+            ),
           ),
         ),
 

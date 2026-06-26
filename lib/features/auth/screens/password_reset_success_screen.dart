@@ -12,17 +12,25 @@ class PasswordResetSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Center(
-            child: SizedBox(
-              width: 146.w,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Center(
+              child: SizedBox(
+                width: 146.w,
                 height: 137.h,
-                child: Image.asset(Assets.successMark)
+                child: Image.asset(
+                  Assets.successMark,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.check_circle,
+                    color: AppColors.primary,
+                    size: 100.sp,
+                  ),
+                ),
+              ),
             ),
-          ),
           Text(
             "Password Changed!",
             textAlign: TextAlign.center,
@@ -48,11 +56,12 @@ class PasswordResetSuccessScreen extends StatelessWidget {
             child: AppPrimaryButton(
               label: 'Back to Login',
               onTap: (){
-                context.pushReplacement('login');
+                context.goNamed('login');
               },
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

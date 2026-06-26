@@ -22,7 +22,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (!mounted) return;
 
     if (success) {
-      context.go('/auth/login');
+      context.go('/dashboard');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(service.error ?? 'Something went wrong')),
@@ -38,6 +38,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       icon: Icons.notifications_active,
       iconAssetPath: Assets.onboardingNotificationIcon,
       backgroundAssetPath: Assets.onboardingNotificationBg,
+      onBack: () => context.go('/onboarding/location'),
       title: 'Stay Updated & Secure',
       description: 'Get instant alerts about hazards, community reports, '
           'and route updates in your area.',

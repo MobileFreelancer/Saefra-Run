@@ -17,8 +17,7 @@ class Assets {
   static const String successMark = 'assets/images/Successmark.png';
 
 
-  static const String imagesAppLogo = 'assets/images/applogo.png';
-  //static const String imagesAppLogo = '${mainImageUrl}applogo.png';
+  static const String imagesAppLogo = 'assets/images/logowithtext.png';
 
   static const String onboardingManIcon = '${mainImageUrl}onboarding_man_icon.png';
   static const String onboardingNotToSayIcon = '${mainImageUrl}onboarding_not_to_say_icon.png';
