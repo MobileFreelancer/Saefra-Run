@@ -130,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Image.asset(Assets.googleLogo,scale: 2.6,),
-                      Platform.isIOS?Image.asset(Assets.aapleLogo,scale: 2.6,):SizedBox.shrink()
+                      if (Platform.isIOS) Image.asset(Assets.aapleLogo, scale: 2.6) else const SizedBox.shrink()
                     ],
                   ),
                   SizedBox(height: 5.h,),

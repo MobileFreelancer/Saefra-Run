@@ -53,7 +53,7 @@ class OnboardingIntroScreen extends StatelessWidget {
                         height: 1.5,
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w400,
-                        fontSize: 34.sp,
+                        fontSize: 25.sp,
                       ),
                       children: [
                         TextSpan(
@@ -61,7 +61,7 @@ class OnboardingIntroScreen extends StatelessWidget {
                           style: Theme.of(context).textTheme.displayLarge?.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w400,
-                            fontSize: 34.sp,
+                            fontSize: 25.sp,
                           ),
 
                         ),
@@ -70,7 +70,7 @@ class OnboardingIntroScreen extends StatelessWidget {
                           style: Theme.of(context).textTheme.displayLarge?.copyWith(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w700,
-                            fontSize: 34.sp,
+                            fontSize: 27.sp,
                           ),
 
                         ),
@@ -81,9 +81,9 @@ class OnboardingIntroScreen extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: InkWell(
-                          onTap: (){
-                            context.pushNamed('login');
+                        child: GestureDetector(
+                          onTap: () {
+                            context.goNamed('signup');
                           },
                           child: Container(
                             alignment: Alignment.center,
@@ -108,7 +108,9 @@ class OnboardingIntroScreen extends StatelessWidget {
                         child: AppPrimaryButton(
                           label: 'Login',
                           height: 55.h,
-                          onTap: () => context.go('/onboarding/gender'),
+                          onTap: (){
+                            context.goNamed('login');
+                          },
                         ),
                       ),
                     ],

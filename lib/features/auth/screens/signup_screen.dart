@@ -41,7 +41,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_agreedToTerms) {
+    final auth = context.read<AuthService>();
+
+    if (!auth.agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please agree to the Terms and Conditions'),
@@ -50,7 +52,6 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    final auth = context.read<AuthService>();
     final success = await auth.register(
       fullName: _nameController.text.trim(),
       email: _emailController.text.trim(),
@@ -60,7 +61,7 @@ class _SignupScreenState extends State<SignupScreen> {
     if (!mounted) return;
 
     if (success) {
-      context.go('/dashboard');
+      context.go('/onboarding/gender');
     } else if (auth.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(auth.error!)),
@@ -215,12 +216,13 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(height: 16),
                   AppPrimaryButton(
                     label: 'Register',
-                    onTap: (){
-                      if(_formKey.currentState!.validate()){
-                        if(!auth.agreedToTerms){
-                          AppToast.error('Please selected terms & condition');
-                        }
+                    onTap: () {
+                      if (!_formKey.currentState!.validate()) return;
+                      if (!auth.agreedToTerms) {
+                        AppToast.error('Please accept Terms & Conditions');
+                        return;
                       }
+                      _register();
                     },
                   ),
                   SizedBox(height: 18.h,),
@@ -253,7 +255,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                                context.go('/login');
+                                context.goNamed('login');
                               },
                           ),
                         ],

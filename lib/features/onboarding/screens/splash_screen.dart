@@ -5,8 +5,7 @@ import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/widgets/app_logo.dart';
-
-import '../../../generated/assets.dart';
+import 'package:saefra_run/generated/assets.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,12 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('SPLASH INIT');
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('POST FRAME');
-      _bootstrap();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
 
   Future<void> _bootstrap() async {
@@ -36,25 +30,33 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.wait([
       auth.initialize(),
       onboarding.initialize(),
-      Future.delayed(const Duration(seconds: 3)),
+      Future<void>.delayed(const Duration(seconds: 2)),
     ]);
 
     if (!mounted) return;
 
-    if (!onboarding.isComplete) {
-      context.go('/onboarding/intro');
-    } else if (auth.isLoggedIn) {
-      context.go('/dashboard');
-    } else {
-      context.go('/auth/login');
+    if (auth.isLoggedIn) {
+      context.go(
+        onboarding.isComplete ? '/dashboard' : '/onboarding/gender',
+      );
+      return;
     }
+
+    context.go('/onboarding/intro');
   }
 
   @override
   Widget build(BuildContext context) {
-    return  Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(child: Image.asset(Assets.imagesAppLogo)),
+      body: Center(
+        child: Image.asset(
+          Assets.imagesAppLogo,
+          width: 180,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const AppLogo(size: 100),
+        ),
+      ),
     );
   }
 }

@@ -11,57 +11,37 @@ import 'package:saefra_run/core/theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
+  await FirebaseConfig.initialize();
 
-  try {
-    debugPrint('MAIN START');
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
-    await dotenv.load(fileName: '.env');
-    debugPrint('DOTENV LOADED');
+  final authService = AuthService();
+  final onboardingService = OnboardingService();
+  final authStateNotifier = _AuthStateNotifier(
+    authService,
+    onboardingService,
+  );
 
-    await FirebaseConfig.initialize();
-    debugPrint('FIREBASE LOADED');
+  AppRouter.init(authStateNotifier);
 
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-
-    debugPrint('ORIENTATION SET');
-
-    /// Create ONLY ONE instance of each service
-    final authService = AuthService();
-    final onboardingService = OnboardingService();
-
-    /// Router notifier listens to the SAME instances
-    final authStateNotifier = _AuthStateNotifier(
-      authService,
-      onboardingService,
-    );
-
-    AppRouter.init(authStateNotifier);
-
-    runApp(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider<AuthService>.value(
-            value: authService,
-          ),
-          ChangeNotifierProvider<OnboardingService>.value(
-            value: onboardingService,
-          ),
-          ChangeNotifierProvider<_AuthStateNotifier>.value(
-            value: authStateNotifier,
-          ),
-        ],
-        child: const SaefraRunApp(),
-      ),
-    );
-
-    debugPrint('RUNAPP CALLED');
-  } catch (e, s) {
-    debugPrint('MAIN ERROR: $e');
-    debugPrintStack(stackTrace: s);
-  }
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthService>.value(value: authService),
+        ChangeNotifierProvider<OnboardingService>.value(
+          value: onboardingService,
+        ),
+        ChangeNotifierProvider<_AuthStateNotifier>.value(
+          value: authStateNotifier,
+        ),
+      ],
+      child: const SaefraRunApp(),
+    ),
+  );
 }
 
 class SaefraRunApp extends StatelessWidget {
@@ -73,7 +53,7 @@ class SaefraRunApp extends StatelessWidget {
       designSize: const Size(360, 690),
       minTextAdapt: true,
       splitScreenMode: true,
-      child: MaterialApp.router(
+      builder: (context, child) => MaterialApp.router(
         title: 'Saefra Run',
         theme: AppTheme.darkTheme,
         routerConfig: AppRouter.router,
@@ -83,24 +63,20 @@ class SaefraRunApp extends StatelessWidget {
   }
 }
 
-/// Rebuilds GoRouter whenever AuthService or OnboardingService changes.
+/// Rebuilds GoRouter whenever auth or onboarding state changes.
 class _AuthStateNotifier extends ChangeNotifier {
+  _AuthStateNotifier(this.authService, this.onboardingService) {
+    authService.addListener(_onStateChanged);
+    onboardingService.addListener(_onStateChanged);
+    _wasLoggedIn = authService.isLoggedIn;
+    _wasOnboardingComplete = onboardingService.isComplete;
+  }
+
   final AuthService authService;
   final OnboardingService onboardingService;
 
   late bool _wasLoggedIn;
   late bool _wasOnboardingComplete;
-
-  _AuthStateNotifier(
-      this.authService,
-      this.onboardingService,
-      ) {
-    authService.addListener(_onStateChanged);
-    onboardingService.addListener(_onStateChanged);
-
-    _wasLoggedIn = authService.isLoggedIn;
-    _wasOnboardingComplete = onboardingService.isComplete;
-  }
 
   void _onStateChanged() {
     final isLoggedIn = authService.isLoggedIn;
@@ -110,7 +86,6 @@ class _AuthStateNotifier extends ChangeNotifier {
         isOnboardingComplete != _wasOnboardingComplete) {
       _wasLoggedIn = isLoggedIn;
       _wasOnboardingComplete = isOnboardingComplete;
-
       notifyListeners();
     }
   }

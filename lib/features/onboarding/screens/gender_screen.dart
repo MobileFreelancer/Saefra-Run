@@ -61,7 +61,7 @@ class _GenderScreenState extends State<GenderScreen> {
             OnboardingStepHeader(
               step: 1,
               totalSteps: 4,
-              onBack: () => context.pop(),
+              onBack: () => context.go('/auth/login'),
             ),
             Expanded(
               child: SingleChildScrollView(
