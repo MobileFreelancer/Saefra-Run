@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
@@ -18,12 +19,18 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentBottomIndex = 0;
   final TextEditingController _searchController = TextEditingController();
+  late GoogleMapController mapController;
 
+  static const CameraPosition _initialPosition = CameraPosition(
+    target: LatLng(21.205194905801783, 72.77568113625402),
+    zoom: 14,
+  );
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         bottom: false,
         child: Stack(
           children: [
-            // ---- Map area (top ~42% of screen) ----
+
             Positioned(
               top: 0,
               left: 0,
@@ -49,7 +56,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // Drop-in seam: swap MapView's internals for a real map
                   // SDK later, no call-site changes needed elsewhere.
                   Positioned.fill(
-                    child: MapView(onMapTap: () => _todo(context, 'Open full map')),
+                    child: GoogleMap(
+                      initialCameraPosition: _initialPosition,
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: true,
+                      zoomControlsEnabled: false,
+                      onMapCreated: (controller) {
+                        mapController = controller;
+                      },
+                    ),
                   ),
 
                   // Floating controls, stacked bottom-left over the map.
@@ -178,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
 
-            // ---- Floating header: greeting + bell, then search + filter ----
+
             Positioned(
               top: 0,
               left: 0,
@@ -239,71 +254,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(height: 14),
                     SearchRouteField(),
-                    // Row(
-                    //   children: [
-                    //     Expanded(
-                    //       child: Container(
-                    //         height: 46,
-                    //         padding: const EdgeInsets.symmetric(horizontal: 14),
-                    //         decoration: BoxDecoration(
-                    //           color: AppColors.surface,
-                    //           borderRadius: BorderRadius.circular(12),
-                    //           border: Border.all(color: AppColors.white.withValues(alpha: 0.03)),
-                    //         ),
-                    //         child: Row(
-                    //           children: [
-                    //             SizedBox(
-                    //               width: 18,
-                    //               height: 18,
-                    //               child: Image.asset(
-                    //                 Assets.homeSearchIcon,
-                    //                 color: AppColors.textSecondary,
-                    //                 errorBuilder: (_, __, ___) => const Icon(
-                    //                   Icons.search,
-                    //                   size: 18,
-                    //                   color: AppColors.textSecondary,
-                    //                 ),
-                    //               ),
-                    //             ),
-                    //             const SizedBox(width: 12),
-                    //             Expanded(
-                    //               child: TextField(
-                    //                 controller: _searchController,
-                    //                 style: const TextStyle(color: AppColors.white, fontSize: 13),
-                    //                 onSubmitted: (query) {
-                    //                   if (query.trim().isEmpty) return;
-                    //                   _todo(context, 'Search routes: $query');
-                    //                 },
-                    //               ),
-                    //             ),
-                    //           ],
-                    //         ),
-                    //       ),
-                    //     ),
-                    //     const SizedBox(width: 12),
-                    //     GestureDetector(
-                    //       onTap: () => _todo(context, 'Filter routes'),
-                    //       child: Container(
-                    //         height: 46,
-                    //         width: 46,
-                    //         decoration: BoxDecoration(
-                    //           color: AppColors.primary,
-                    //           borderRadius: BorderRadius.circular(12),
-                    //         ),
-                    //         padding: const EdgeInsets.all(12),
-                    //         child: Image.asset(
-                    //           Assets.homeFilterIcon,
-                    //           color: AppColors.white,
-                    //           errorBuilder: (_, __, ___) => const Icon(
-                    //             Icons.tune,
-                    //             color: AppColors.white,
-                    //             size: 18,
-                    //           ),
-                    //         ),
-                    //       ),
-                    //     ),
-                    //   ],
-                    // ),
+
                   ],
                 ),
               ),

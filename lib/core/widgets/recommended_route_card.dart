@@ -3,11 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
-
 import '../../generated/assets.dart';
 
-/// The "Recommended Route" card on the dashboard: a route preview image
-/// (or gradient fallback) with badges, an info panel, and a CTA button.
+
 class RecommendedRouteCard extends StatelessWidget {
   const RecommendedRouteCard({
     super.key,
