@@ -44,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      context.go('/dashboard');
+      context.goNamed('gender');
     } else if (auth.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(auth.error!)),
@@ -110,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: InkWell(
                       onTap: (){
                         context.pushNamed('forgotPassword');
-                      },
+                        },
                       child: Text('Forgot Password?',style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w400,
@@ -153,8 +153,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                                context.go('/auth/signup');
-                              },
+                                context.pushNamed('signup');
+                                },
                           ),
                         ],
                       ),

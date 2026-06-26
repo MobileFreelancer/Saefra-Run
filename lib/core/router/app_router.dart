@@ -32,34 +32,25 @@ class AppRouter {
     refreshListenable: refreshListenable,
     redirect: (context, state) {
       final auth = context.read<AuthService>();
-      final onboarding = context.read<OnboardingService>();
+
       final isLoggedIn = auth.isLoggedIn;
-      final isOnboardingComplete = onboarding.isComplete;
       final location = state.matchedLocation;
 
       final isSplash = location == '/splash';
-      final isOnboardingRoute = location.startsWith('/onboarding');
       final isAuthRoute = location.startsWith('/auth');
 
-      if (isSplash) return null;
-
-      if (!isOnboardingComplete && !isOnboardingRoute) {
-        return '/onboarding/intro';
+      if (isSplash) {
+        return null;
       }
 
-      if (isOnboardingComplete && isOnboardingRoute) {
-        return isLoggedIn ? '/dashboard' : '/auth/login';
+      // Allow all auth screens while logged out
+      if (!isLoggedIn) {
+        return null;
       }
 
+      // Prevent logged-in users from going back to auth screens
       if (isLoggedIn && isAuthRoute) {
-        return '/dashboard';
-      }
-
-      if (!isLoggedIn &&
-          !isAuthRoute &&
-          !isOnboardingRoute &&
-          location != '/splash') {
-        return '/auth/login';
+        return '/onboarding/gender';
       }
 
       return null;
