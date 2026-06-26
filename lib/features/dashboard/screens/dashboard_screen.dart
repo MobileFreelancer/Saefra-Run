@@ -5,7 +5,7 @@ import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/widgets/map_view.dart';
 import 'package:saefra_run/core/widgets/recent_route_tile.dart';
 import 'package:saefra_run/core/widgets/recommended_route_card.dart';
-
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../generated/assets.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -238,78 +238,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 46,
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.white.withValues(alpha: 0.03)),
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: Image.asset(
-                                    Assets.homeSearchIcon,
-                                    color: AppColors.textSecondary,
-                                    errorBuilder: (_, __, ___) => const Icon(
-                                      Icons.search,
-                                      size: 18,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: TextField(
-                                    controller: _searchController,
-                                    style: const TextStyle(color: AppColors.white, fontSize: 13),
-                                    decoration: InputDecoration(
-                                      hintText: 'Search Route...',
-                                      hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.zero,
-                                    ),
-                                    onSubmitted: (query) {
-                                      if (query.trim().isEmpty) return;
-                                      _todo(context, 'Search routes: $query');
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        GestureDetector(
-                          onTap: () => _todo(context, 'Filter routes'),
-                          child: Container(
-                            height: 46,
-                            width: 46,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.all(12),
-                            child: Image.asset(
-                              Assets.homeFilterIcon,
-                              color: AppColors.white,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                Icons.tune,
-                                color: AppColors.white,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    SearchRouteField(),
+                    // Row(
+                    //   children: [
+                    //     Expanded(
+                    //       child: Container(
+                    //         height: 46,
+                    //         padding: const EdgeInsets.symmetric(horizontal: 14),
+                    //         decoration: BoxDecoration(
+                    //           color: AppColors.surface,
+                    //           borderRadius: BorderRadius.circular(12),
+                    //           border: Border.all(color: AppColors.white.withValues(alpha: 0.03)),
+                    //         ),
+                    //         child: Row(
+                    //           children: [
+                    //             SizedBox(
+                    //               width: 18,
+                    //               height: 18,
+                    //               child: Image.asset(
+                    //                 Assets.homeSearchIcon,
+                    //                 color: AppColors.textSecondary,
+                    //                 errorBuilder: (_, __, ___) => const Icon(
+                    //                   Icons.search,
+                    //                   size: 18,
+                    //                   color: AppColors.textSecondary,
+                    //                 ),
+                    //               ),
+                    //             ),
+                    //             const SizedBox(width: 12),
+                    //             Expanded(
+                    //               child: TextField(
+                    //                 controller: _searchController,
+                    //                 style: const TextStyle(color: AppColors.white, fontSize: 13),
+                    //                 onSubmitted: (query) {
+                    //                   if (query.trim().isEmpty) return;
+                    //                   _todo(context, 'Search routes: $query');
+                    //                 },
+                    //               ),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ),
+                    //     ),
+                    //     const SizedBox(width: 12),
+                    //     GestureDetector(
+                    //       onTap: () => _todo(context, 'Filter routes'),
+                    //       child: Container(
+                    //         height: 46,
+                    //         width: 46,
+                    //         decoration: BoxDecoration(
+                    //           color: AppColors.primary,
+                    //           borderRadius: BorderRadius.circular(12),
+                    //         ),
+                    //         padding: const EdgeInsets.all(12),
+                    //         child: Image.asset(
+                    //           Assets.homeFilterIcon,
+                    //           color: AppColors.white,
+                    //           errorBuilder: (_, __, ___) => const Icon(
+                    //             Icons.tune,
+                    //             color: AppColors.white,
+                    //             size: 18,
+                    //           ),
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
                   ],
                 ),
               ),
@@ -472,4 +466,71 @@ void _todo(BuildContext context, String label) {
       backgroundColor: AppColors.surfaceLight,
     ),
   );
+}
+
+
+
+
+
+class SearchRouteField extends StatelessWidget {
+  const SearchRouteField({
+    super.key,
+
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 45.h,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1B1B),
+        borderRadius: BorderRadius.circular(18.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        decoration: InputDecoration(
+          hintText: "Search Route...",
+          hintStyle: TextStyle(
+            color: Colors.white54,
+            fontSize: 16.sp,
+          ),
+          filled: true,
+          fillColor: const Color(0xFF222222),
+          contentPadding: EdgeInsets.symmetric(vertical: 18.h),
+          prefixIcon: Image.asset(Assets.Search,scale: 2.5,),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 60,
+          ),
+
+          suffixIcon:Image.asset(Assets.filter,scale: 2.5,),
+
+          suffixIconConstraints:   BoxConstraints(
+            minWidth: 50.w,
+          ),
+
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8.r),
+            borderSide: BorderSide(
+              width: 1.2,
+              color: Color(0xFF131315)
+            ),
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8.r),
+            borderSide: BorderSide(
+                width: 1.2,
+                color: Color(0xFF131315)
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

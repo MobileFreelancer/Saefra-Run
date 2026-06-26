@@ -81,21 +81,26 @@ class OnboardingIntroScreen extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          alignment: Alignment.center,
-                          width: 155.w,
-                          height: 53.h,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.all(Radius.circular(50.r)),
-                            border: BoxBorder.all(
-                              color: AppColors.buttonColor
-                            )
+                        child: InkWell(
+                          onTap: (){
+                            context.pushNamed('login');
+                          },
+                          child: Container(
+                            alignment: Alignment.center,
+                            width: 155.w,
+                            height: 53.h,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.all(Radius.circular(50.r)),
+                              border: BoxBorder.all(
+                                color: AppColors.buttonColor
+                              )
+                            ),
+                            child: Text("Join for Free",style:   Theme.of(context).textTheme.displayLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16.sp
+                            ),),
                           ),
-                          child: Text("Join for Free",style:   Theme.of(context).textTheme.displayLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16.sp
-                          ),),
                         ),
                       ),
                       SizedBox(width: 15.w,),
@@ -103,11 +108,7 @@ class OnboardingIntroScreen extends StatelessWidget {
                         child: AppPrimaryButton(
                           label: 'Login',
                           height: 55.h,
-                          onTap: (){
-                            context.pushNamed('login');
-                            //context.push('/auth/login');
-                            //context.go("/auth/login");
-                          },
+                          onTap: () => context.go('/onboarding/gender'),
                         ),
                       ),
                     ],

@@ -34,6 +34,8 @@ class Assets {
   static const String onboardingEasyPaceIcon = '${mainImageUrl}onboarding_easy_pace_icon.png';
   static const String onboardingModerateChallengeIcon = '${mainImageUrl}onboarding_moderate_challenge_icon.png';
   static const String onboardingPushMyLimitIcon = '${mainImageUrl}onboarding_push_my_limits_icon.png';
+  static const String Search = '${mainImageUrl}Search.png';
+  static const String filter = '${mainImageUrl}filter.png';
 
   // Permission screens (Enable Location / Notifications)
   static const String onboardingLocationBg = '${mainImageUrl}onboarding_bg.png';
