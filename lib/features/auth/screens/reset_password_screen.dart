@@ -58,14 +58,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     final auth = context.watch<AuthService>();
 
     return Scaffold(
-      body: Padding(
-        padding:   EdgeInsets.symmetric(horizontal: 10.w),
-        child: Column(
-          children: [
-            AuthHeader(
-              title: "Reset Password",
-              subtitle: " Enter your new password to reset the password",
-            ),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10.w),
+          child: Column(
+            children: [
+              AuthHeader(
+                title: 'Reset Password',
+                subtitle: 'Enter your new password to reset the password',
+                fallbackRoute: '/auth/verification',
+              ),
             Form(
               key: _formKey,
               autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -125,7 +127,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 ],
               ),
             )
-          ],
+            ],
+          ),
         ),
       ),
     );

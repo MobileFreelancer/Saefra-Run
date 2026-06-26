@@ -27,11 +27,13 @@ class _SplashScreenState extends State<SplashScreen> {
     final auth = context.read<AuthService>();
     final onboarding = context.read<OnboardingService>();
 
-    await Future.wait([
-      auth.initialize(),
-      onboarding.initialize(),
-      Future<void>.delayed(const Duration(seconds: 2)),
-    ]);
+    await auth.initialize();
+    if (!mounted) return;
+
+    await onboarding.initialize();
+    if (!mounted) return;
+
+    await Future<void>.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 

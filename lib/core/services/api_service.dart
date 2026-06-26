@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/auth_response_model.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
@@ -15,7 +15,7 @@ class ApiService {
   }
 
   late final Dio _dio;
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = SecureStorageService.instance;
   bool _isRefreshing = false;
 
   void _setupDio() {

@@ -57,15 +57,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.watch<AuthService>();
 
     return Scaffold(
-      body: ListView(
-        shrinkWrap: true,
-        padding: EdgeInsets.zero,
-        physics: BouncingScrollPhysics(),
-        children: [
-          AuthHeader(
-            title: "Log in",
-            subtitle: "Please sign in to continue",
-          ),
+      body: SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          physics: const BouncingScrollPhysics(),
+          children: [
+            AuthHeader(
+              title: 'Log in',
+              subtitle: 'Please sign in to continue',
+              fallbackRoute: '/onboarding/intro',
+            ),
           SizedBox(height: 18.h,),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 10.w),
@@ -163,8 +165,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
             ),
-          )
+          ),
         ],
+        ),
       ),
     );
   }
