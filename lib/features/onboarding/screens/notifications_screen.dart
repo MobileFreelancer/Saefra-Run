@@ -5,6 +5,8 @@ import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/widgets/photo_permission_scaffold.dart';
 import 'package:saefra_run/generated/assets.dart';
 
+import '../../../core/services/permission_service.dart';
+
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -13,19 +15,31 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  Future<void> _complete({required bool enable}) async {
-    final service = context.read<OnboardingService>();
-    service.setPushNotifications(enable);
-    service.setEmailNotifications(enable);
 
-    final success = await service.completeOnboarding();
+
+  Future<void> _complete({required bool enable}) async {
+    final onboardingService = context.read<OnboardingService>();
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+
+    await PermissionService.requestNotificationPermission();
+
+    onboardingService.setPushNotifications(enable);
+    onboardingService.setEmailNotifications(enable);
+
+    final success = await onboardingService.completeOnboarding();
+
     if (!mounted) return;
 
     if (success) {
-      context.go('/dashboard');
+      router.go('/dashboard');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(service.error ?? 'Something went wrong')),
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            onboardingService.error ?? 'Something went wrong',
+          ),
+        ),
       );
     }
   }

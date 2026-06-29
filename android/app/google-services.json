@@ -12,7 +12,20 @@
           "package_name": "com.saefra.run.saefra_run"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "692466050229-tj3s06n1q2ugqdso2n0svip8ilthiqjf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.saefra.run.saefra_run",
+            "certificate_hash": "fa26cc053320a8796070f5f0a7408d9d5433e694"
+          }
+        },
+        {
+          "client_id": "692466050229-0r09padqe3s5lta5vl8avns4urbp2iil.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCOdeF2vgHQKTS7IKDD3056q-lUC91BoGQ"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "692466050229-0r09padqe3s5lta5vl8avns4urbp2iil.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "692466050229-brvd1bp0432af6m7houoli1e2erh28op.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.saefra.run.saefraRun"
+              }
+            }
+          ]
         }
       }
     }

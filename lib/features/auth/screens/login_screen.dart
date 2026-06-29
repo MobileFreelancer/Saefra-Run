@@ -131,7 +131,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset(Assets.googleLogo,scale: 2.6,),
+                      InkWell(
+                        onTap: (){
+                          auth.googleLogin();
+                        },
+                          child: Image.asset(Assets.googleLogo,scale: 2.6,)
+                      ),
                       if (Platform.isIOS) Image.asset(Assets.aapleLogo, scale: 2.6) else const SizedBox.shrink()
                     ],
                   ),
