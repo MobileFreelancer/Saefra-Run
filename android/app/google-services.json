@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "692466050229",
+    "project_id": "saefra-run",
+    "storage_bucket": "saefra-run.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:692466050229:android:d62010e2e7b1798b970afc",
+        "android_client_info": {
+          "package_name": "com.saefra.run.saefra_run"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOdeF2vgHQKTS7IKDD3056q-lUC91BoGQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
