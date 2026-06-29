@@ -12,6 +12,8 @@ import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/theme/app_theme.dart';
 import 'package:saefra_run/firebase_options.dart';
 
+
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
