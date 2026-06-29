@@ -193,7 +193,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset(Assets.googleLogo,scale: 2.6,),
+                      InkWell(
+                        onTap: (){
+                          //auth.googleLogin();
+                        },
+                          child: Image.asset(Assets.googleLogo,scale: 2.6,)),
                      Platform.isIOS?Image.asset(Assets.aapleLogo,scale: 2.6,):SizedBox.shrink()
                     ],
                   ),

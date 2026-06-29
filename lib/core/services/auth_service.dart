@@ -1,9 +1,15 @@
+import 'dart:developer';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
+import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/secure_storage_service.dart';
+import 'package:saefra_run/core/services/socil_auth%20services.dart';
 
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
@@ -57,6 +63,7 @@ class AuthService extends ChangeNotifier {
     _obscureConfirmPassword = !_obscureConfirmPassword;
     notifyListeners();
   }
+
 
   void _setLoading(bool value) {
     _isLoading = value;
@@ -253,4 +260,21 @@ class AuthService extends ChangeNotifier {
     _pendingSignupEmail = null;
     _pendingSignupPassword = null;
   }
+
+void googleLogin( )async{
+  try {
+    final userCredential = await GoogleAuthService.signIn();
+    if (userCredential != null) {
+      log("------User Data In Google Side-------");
+      log(userCredential.user?.displayName.toString()??"no data");
+      log(userCredential.user?.email.toString()??"no data");
+      log(userCredential.user?.uid.toString()??"no data");
+    }
+  } catch (e,l) {
+    log(e.toString());
+    log(l.toString());
+  }
+}
+
+
 }

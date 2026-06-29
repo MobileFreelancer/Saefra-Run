@@ -24,6 +24,13 @@ dependencies:
   google_maps_flutter: ^2.17.1
   intl:
 
+  fluttertoast: ^8.2.12
+  firebase_core: ^4.1.0
+  google_maps_flutter: ^2.13.1
+  permission_handler: ^12.0.1
+  firebase_auth: ^6.5.4
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^8.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
