@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
+import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/secure_storage_service.dart';
 
 class OnboardingService extends ChangeNotifier {
   static final OnboardingService _instance = OnboardingService._internal();
@@ -47,9 +48,6 @@ class OnboardingService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Sets the main goal. If the new goal isn't "Training for a goal",
-  /// any previously chosen sub-target (5k / Half / Full marathon) is
-  /// cleared so stale state can't linger.
   void setGoal(String goal) {
     _data = _data.copyWith(
       goal: goal,
@@ -58,7 +56,6 @@ class OnboardingService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Sets the sub-target shown only under "Training for a goal".
   void setGoalTrainingTarget(String target) {
     _data = _data.copyWith(goalTrainingTarget: target);
     notifyListeners();
@@ -95,13 +92,25 @@ class OnboardingService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> completeOnboarding() async {
+  Future<bool> completeOnboarding(AuthService auth) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _apiService.submitOnboarding(_data);
+      if (auth.hasPendingSignup) {
+        final ok = await auth.completeSignupWithOnboarding(_data);
+        if (!ok) {
+          _error = auth.error ?? 'Registration failed.';
+          return false;
+        }
+      } else if (auth.isLoggedIn) {
+        await _apiService.syncOnboardingForLoggedInUser(_data);
+      } else {
+        _error = 'Please log in or sign up to continue.';
+        return false;
+      }
+
       await _storage.write(
         key: ApiConfig.storageKeyOnboardingComplete,
         value: 'true',

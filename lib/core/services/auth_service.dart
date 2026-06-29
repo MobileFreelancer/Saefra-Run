@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/config/api_config.dart';
+import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
+import 'package:saefra_run/core/services/secure_storage_service.dart';
 
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
@@ -15,24 +16,27 @@ class AuthService extends ChangeNotifier {
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _error;
-  String? _pendingResetIdentifier;
+  String? _pendingResetEmail;
+  String? _pendingResetOtp;
+
+  String? _pendingSignupEmail;
+  String? _pendingSignupPassword;
 
   UserModel? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  String? get pendingResetIdentifier => _pendingResetIdentifier;
+  String? get pendingResetIdentifier => _pendingResetEmail;
+  bool get hasPendingSignup =>
+      _pendingSignupEmail != null && _pendingSignupPassword != null;
 
-
-
-   bool _agreedToTerms = false;
+  bool _agreedToTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
   bool get agreedToTerms => _agreedToTerms;
   bool get obscurePassword => _obscurePassword;
   bool get obscureConfirmPassword => _obscureConfirmPassword;
-
 
   void toggleTerms() {
     _agreedToTerms = !_agreedToTerms;
@@ -53,7 +57,6 @@ class AuthService extends ChangeNotifier {
     _obscureConfirmPassword = !_obscureConfirmPassword;
     notifyListeners();
   }
-
 
   void _setLoading(bool value) {
     _isLoading = value;
@@ -94,9 +97,10 @@ class AuthService extends ChangeNotifier {
   }) async {
     _setLoading(true);
     _setError(null);
+    _clearPendingSignup();
     try {
       final response = await _apiService.login(
-        identifier: identifier,
+        email: identifier.trim(),
         password: password,
       );
       await _persistSession(response);
@@ -109,20 +113,35 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<bool> register({
-    required String fullName,
+  /// Saves signup credentials locally; registration API runs after onboarding.
+  void startSignup({
     required String email,
     required String password,
-  }) async {
+  }) {
+    _pendingSignupEmail = email.trim();
+    _pendingSignupPassword = password;
+    _setError(null);
+    notifyListeners();
+  }
+
+  Future<bool> completeSignupWithOnboarding(OnboardingModel onboarding) async {
+    final email = _pendingSignupEmail;
+    final password = _pendingSignupPassword;
+    if (email == null || password == null) {
+      _setError('Signup session expired. Please register again.');
+      return false;
+    }
+
     _setLoading(true);
     _setError(null);
     try {
-      final response = await _apiService.register(
-        fullName: fullName,
+      final response = await _apiService.registerFromOnboarding(
         email: email,
         password: password,
+        onboarding: onboarding,
       );
       await _persistSession(response);
+      _clearPendingSignup();
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -135,9 +154,10 @@ class AuthService extends ChangeNotifier {
   Future<bool> forgotPassword({required String identifier}) async {
     _setLoading(true);
     _setError(null);
+    _pendingResetOtp = null;
     try {
-      await _apiService.forgotPassword(identifier: identifier);
-      _pendingResetIdentifier = identifier;
+      await _apiService.forgotPassword(email: identifier.trim());
+      _pendingResetEmail = identifier.trim();
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -147,33 +167,33 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Stores OTP locally; backend validates it on reset-password.
   Future<bool> verifyOtp({required String code}) async {
-    final identifier = _pendingResetIdentifier;
-    if (identifier == null) {
+    if (_pendingResetEmail == null) {
       _setError('No pending verification. Please restart reset flow.');
       return false;
     }
-
-    _setLoading(true);
-    _setError(null);
-    try {
-      await _apiService.verifyOtp(identifier: identifier, code: code);
-      return true;
-    } catch (e) {
-      _setError(e.toString());
+    if (code.length != 6) {
+      _setError('Please enter the 6-digit OTP.');
       return false;
-    } finally {
-      _setLoading(false);
     }
+    _pendingResetOtp = code;
+    _setError(null);
+    return true;
   }
 
   Future<bool> resetPassword({
     required String newPassword,
     required String confirmPassword,
   }) async {
-    final identifier = _pendingResetIdentifier;
-    if (identifier == null) {
+    final email = _pendingResetEmail;
+    final otp = _pendingResetOtp;
+    if (email == null) {
       _setError('No pending reset. Please restart reset flow.');
+      return false;
+    }
+    if (otp == null || otp.isEmpty) {
+      _setError('Please verify the OTP first.');
       return false;
     }
 
@@ -181,11 +201,13 @@ class AuthService extends ChangeNotifier {
     _setError(null);
     try {
       await _apiService.resetPassword(
-        identifier: identifier,
-        newPassword: newPassword,
-        confirmPassword: confirmPassword,
+        email: email,
+        password: newPassword,
+        passwordConfirmation: confirmPassword,
+        otp: otp,
       );
-      _pendingResetIdentifier = null;
+      _pendingResetEmail = null;
+      _pendingResetOtp = null;
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -202,7 +224,9 @@ class AuthService extends ChangeNotifier {
     } finally {
       await _clearTokens();
       _currentUser = null;
-      _pendingResetIdentifier = null;
+      _pendingResetEmail = null;
+      _pendingResetOtp = null;
+      _clearPendingSignup();
       _setLoading(false);
     }
   }
@@ -211,10 +235,6 @@ class AuthService extends ChangeNotifier {
     await _storage.write(
       key: ApiConfig.storageKeyAccessToken,
       value: response.accessToken,
-    );
-    await _storage.write(
-      key: ApiConfig.storageKeyRefreshToken,
-      value: response.refreshToken,
     );
     await _storage.write(
       key: ApiConfig.storageKeyUserId,
@@ -226,7 +246,11 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _clearTokens() async {
     await _storage.delete(key: ApiConfig.storageKeyAccessToken);
-    await _storage.delete(key: ApiConfig.storageKeyRefreshToken);
     await _storage.delete(key: ApiConfig.storageKeyUserId);
+  }
+
+  void _clearPendingSignup() {
+    _pendingSignupEmail = null;
+    _pendingSignupPassword = null;
   }
 }

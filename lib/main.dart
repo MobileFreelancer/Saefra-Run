@@ -86,6 +86,7 @@ class _AuthStateNotifier extends ChangeNotifier {
     onboardingService.addListener(_onStateChanged);
     _wasLoggedIn = authService.isLoggedIn;
     _wasOnboardingComplete = onboardingService.isComplete;
+    _hadPendingSignup = authService.hasPendingSignup;
   }
 
   final AuthService authService;
@@ -93,15 +94,19 @@ class _AuthStateNotifier extends ChangeNotifier {
 
   late bool _wasLoggedIn;
   late bool _wasOnboardingComplete;
+  late bool _hadPendingSignup;
 
   void _onStateChanged() {
     final isLoggedIn = authService.isLoggedIn;
     final isOnboardingComplete = onboardingService.isComplete;
+    final hasPendingSignup = authService.hasPendingSignup;
 
     if (isLoggedIn != _wasLoggedIn ||
-        isOnboardingComplete != _wasOnboardingComplete) {
+        isOnboardingComplete != _wasOnboardingComplete ||
+        hasPendingSignup != _hadPendingSignup) {
       _wasLoggedIn = isLoggedIn;
       _wasOnboardingComplete = isOnboardingComplete;
+      _hadPendingSignup = hasPendingSignup;
       notifyListeners();
     }
   }

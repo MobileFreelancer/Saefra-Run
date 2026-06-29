@@ -3,8 +3,11 @@ class UserModel {
   final String? email;
   final String? phoneNumber;
   final String? fullName;
-  final String? activityLevel;
-  final String? goal;
+  final String? gender;
+  final String? visitReason;
+  final String? runPreference;
+  final DateTime? birthdate;
+  final String? profileImage;
   final int? age;
 
   const UserModel({
@@ -12,30 +15,51 @@ class UserModel {
     this.email,
     this.phoneNumber,
     this.fullName,
-    this.activityLevel,
-    this.goal,
+    this.gender,
+    this.visitReason,
+    this.runPreference,
+    this.birthdate,
+    this.profileImage,
     this.age,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        id: json['id'] as String? ?? json['user_id'] as String? ?? '',
-        email: json['email'] as String?,
-        phoneNumber: json['phone_number'] as String? ??
-            json['phoneNumber'] as String?,
-        fullName: json['full_name'] as String? ?? json['fullName'] as String?,
-        activityLevel: json['activity_level'] as String? ??
-            json['activityLevel'] as String?,
-        goal: json['goal'] as String?,
-        age: json['age'] as int?,
-      );
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    DateTime? parsedBirthdate;
+    final birthRaw = json['birthdate'] as String? ?? json['birth_date'] as String?;
+    if (birthRaw != null && birthRaw.isNotEmpty) {
+      parsedBirthdate = DateTime.tryParse(birthRaw);
+    }
+
+    final preference = json['preference'];
+    String? runPreference;
+    if (preference is Map<String, dynamic>) {
+      runPreference = preference['run_preference'] as String?;
+    }
+
+    return UserModel(
+      id: '${json['id'] ?? json['user_id'] ?? ''}',
+      email: json['email'] as String?,
+      phoneNumber: json['phone'] as String? ?? json['phone_number'] as String?,
+      fullName: json['full_name'] as String? ?? json['fullName'] as String?,
+      gender: json['gender'] as String?,
+      visitReason: json['visit_reason'] as String?,
+      runPreference: runPreference ?? json['run_preference'] as String?,
+      birthdate: parsedBirthdate,
+      profileImage: json['profile_image'] as String?,
+      age: json['age'] as int?,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         if (email != null) 'email': email,
-        if (phoneNumber != null) 'phone_number': phoneNumber,
+        if (phoneNumber != null) 'phone': phoneNumber,
         if (fullName != null) 'full_name': fullName,
-        if (activityLevel != null) 'activity_level': activityLevel,
-        if (goal != null) 'goal': goal,
+        if (gender != null) 'gender': gender,
+        if (visitReason != null) 'visit_reason': visitReason,
+        if (runPreference != null) 'run_preference': runPreference,
+        if (birthdate != null) 'birthdate': birthdate!.toIso8601String(),
+        if (profileImage != null) 'profile_image': profileImage,
         if (age != null) 'age': age,
       };
 
@@ -44,8 +68,11 @@ class UserModel {
     String? email,
     String? phoneNumber,
     String? fullName,
-    String? activityLevel,
-    String? goal,
+    String? gender,
+    String? visitReason,
+    String? runPreference,
+    DateTime? birthdate,
+    String? profileImage,
     int? age,
   }) {
     return UserModel(
@@ -53,8 +80,11 @@ class UserModel {
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       fullName: fullName ?? this.fullName,
-      activityLevel: activityLevel ?? this.activityLevel,
-      goal: goal ?? this.goal,
+      gender: gender ?? this.gender,
+      visitReason: visitReason ?? this.visitReason,
+      runPreference: runPreference ?? this.runPreference,
+      birthdate: birthdate ?? this.birthdate,
+      profileImage: profileImage ?? this.profileImage,
       age: age ?? this.age,
     );
   }

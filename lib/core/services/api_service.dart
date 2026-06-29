@@ -1,11 +1,16 @@
 import 'package:dio/dio.dart';
-import 'package:saefra_run/core/services/secure_storage_service.dart';
+import 'package:intl/intl.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/auth_response_model.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
+import 'package:saefra_run/core/models/user_preferences_model.dart';
 import 'package:saefra_run/core/services/api_exception.dart';
+import 'package:saefra_run/core/services/secure_storage_service.dart';
+import 'package:saefra_run/core/utils/api_field_mapper.dart';
+import 'package:saefra_run/core/utils/api_response_parser.dart';
 import 'package:saefra_run/core/utils/formatters.dart';
+import 'dart:developer' as developer;
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -16,7 +21,6 @@ class ApiService {
 
   late final Dio _dio;
   final FlutterSecureStorage _storage = SecureStorageService.instance;
-  bool _isRefreshing = false;
 
   void _setupDio() {
     _dio = Dio(
@@ -24,44 +28,94 @@ class ApiService {
         baseUrl: ApiConfig.baseUrl,
         connectTimeout: ApiConfig.connectTimeout,
         receiveTimeout: ApiConfig.receiveTimeout,
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        headers: {
+          'Accept': 'application/json',
+          ApiConfig.ngrokSkipBrowserWarning: 'true',
+        },
       ),
     );
 
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await _storage.read(key: ApiConfig.storageKeyAccessToken);
+          final token =
+          await _storage.read(key: ApiConfig.storageKeyAccessToken);
+
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
-          handler.next(options);
-        },
-        onError: (error, handler) async {
-          if (error.response?.statusCode == 401 &&
-              !error.requestOptions.path.contains('/auth/refresh')) {
-            try {
-              await _refreshToken();
-              final opts = error.requestOptions;
-              final token =
-                  await _storage.read(key: ApiConfig.storageKeyAccessToken);
-              opts.headers['Authorization'] = 'Bearer $token';
-              final response = await _dio.fetch(opts);
-              return handler.resolve(response);
-            } catch (_) {
-              return handler.next(error);
+
+          // Generate cURL
+          final curl = StringBuffer()
+            ..write('curl -X ${options.method}');
+
+          options.headers.forEach((key, value) {
+            curl.write(" -H '$key: $value'");
+          });
+
+          if (options.data != null) {
+            if (options.data is FormData) {
+              final formData = options.data as FormData;
+
+              for (final field in formData.fields) {
+                curl.write(" -F '${field.key}=${field.value}'");
+              }
+
+              for (final file in formData.files) {
+                curl.write(" -F '${file.key}=@${file.value.filename}'");
+              }
+            } else {
+              curl.write(" -d '${options.data}'");
             }
           }
-          handler.next(error);
+
+          curl.write(" '${options.uri}'");
+
+          developer.log(
+            '\n========== API REQUEST ==========\n'
+                '${curl.toString()}\n'
+                '================================',
+          );
+
+          handler.next(options);
+        },
+
+        onResponse: (response, handler) {
+          developer.log(
+            '\n========== API RESPONSE ==========\n'
+                'URL: ${response.requestOptions.uri}\n'
+                'Status: ${response.statusCode}\n'
+                'Body: ${response.data}\n'
+                '=================================',
+          );
+
+          handler.next(response);
+        },
+
+        onError: (e, handler) {
+          developer.log(
+            '\n========== API ERROR ==========\n'
+                'URL: ${e.requestOptions.uri}\n'
+                'Status: ${e.response?.statusCode}\n'
+                'Response: ${e.response?.data}\n'
+                'Message: ${e.message}\n'
+                '===============================',
+          );
+
+          handler.next(e);
         },
       ),
     );
   }
 
-  String _ensureApiPath(String path) {
-    if (path.startsWith('/api/')) return path;
-    if (path.startsWith('/')) return '/api$path';
-    return '/api/$path';
+  String _path(String segment) {
+    if (segment.startsWith('/api/')) return segment;
+    if (segment.startsWith('/')) return '/api$segment';
+    return '/api/$segment';
+  }
+
+  FormData _form(Map<String, dynamic> fields) {
+    return FormData.fromMap(fields);
   }
 
   ApiException _handleDioError(DioException e) {
@@ -78,33 +132,36 @@ class ApiService {
       return const ApiException('No internet connection. Check your network.');
     }
 
-    String? serverMessage;
-    if (data is Map<String, dynamic>) {
-      serverMessage = data['message'] as String? ?? data['error'] as String?;
-    }
+    final serverMessage = ApiResponseParser.parseErrorMessage(data);
 
     switch (statusCode) {
       case 400:
         return ApiException(
-          serverMessage ?? 'Invalid request. Please check your input.',
+          serverMessage == 'Something went wrong.'
+              ? 'Invalid request. Please check your input.'
+              : serverMessage,
           statusCode,
         );
       case 401:
         return ApiException(
-          serverMessage ?? 'Invalid credentials. Please try again.',
+          serverMessage == 'Something went wrong.'
+              ? 'Invalid credentials. Please try again.'
+              : serverMessage,
           statusCode,
         );
       case 403:
-        final msg = serverMessage ?? '';
+        final msg = serverMessage;
         if (msg.toLowerCase().contains('token')) {
           return ApiException(msg, statusCode);
         }
         return ApiException(
-          serverMessage ?? 'Access denied.',
+          msg == 'Something went wrong.' ? 'Access denied.' : msg,
           statusCode,
         );
       case 404:
         return const ApiException('Service not found.', 404);
+      case 422:
+        return ApiException(serverMessage, statusCode);
       case 429:
         int? retryAfter;
         if (data is Map<String, dynamic>) {
@@ -122,42 +179,33 @@ class ApiService {
         );
       case 500:
         return ApiException(
-          serverMessage ?? 'Server error. Please try again later.',
+          serverMessage == 'Something went wrong.'
+              ? 'Server error. Please try again later.'
+              : serverMessage,
           statusCode,
         );
       default:
         return ApiException(
-          serverMessage ?? e.message ?? 'Something went wrong.',
+          serverMessage == 'Something went wrong.'
+              ? (e.message ?? 'Something went wrong.')
+              : serverMessage,
           statusCode,
         );
     }
   }
 
-  Future<void> _refreshToken() async {
-    if (_isRefreshing) return;
-    _isRefreshing = true;
-    try {
-      final refreshToken =
-          await _storage.read(key: ApiConfig.storageKeyRefreshToken);
-      if (refreshToken == null) {
-        throw const ApiException('Session expired. Please log in again.', 401);
-      }
-      final response = await _dio.post(
-        _ensureApiPath('/auth/refresh'),
-        data: {'refresh_token': refreshToken},
+  void _ensureSuccess(Response<dynamic> response, {String fallback = 'Request failed.'}) {
+    if (!ApiResponseParser.isSuccess(response.data, response.statusCode)) {
+      throw ApiException(
+        ApiResponseParser.parseErrorMessage(response.data, fallback: fallback),
+        response.statusCode,
       );
-      if (response.statusCode == 200) {
-        final data = response.data as Map<String, dynamic>;
-        await _storage.write(
-          key: ApiConfig.storageKeyAccessToken,
-          value: data['access_token'] as String,
-        );
-      } else {
-        throw ApiException('Token refresh failed.', response.statusCode);
-      }
-    } finally {
-      _isRefreshing = false;
     }
+  }
+
+  Map<String, dynamic> _map(Response<dynamic> response) {
+    _ensureSuccess(response);
+    return ApiResponseParser.asMap(response.data);
   }
 
   Future<void> _mockDelay() =>
@@ -166,158 +214,141 @@ class ApiService {
   // ─── Auth ───────────────────────────────────────────────────────────────────
 
   Future<AuthResponseModel> login({
-    required String identifier,
-    required String password,
-  }) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return AuthResponseModel(
-        accessToken: 'mock_access_token',
-        refreshToken: 'mock_refresh_token',
-        user: UserModel(
-          id: 'mock_user_1',
-          email: identifier.contains('@') ? identifier : null,
-          phoneNumber: identifier.contains('@') ? null : identifier,
-          fullName: 'Saefra Runner',
-        ),
-      );
-    }
-
-    try {
-      final response = await _dio.post(
-        _ensureApiPath('/auth/login'),
-        data: {'identifier': identifier, 'password': password},
-      );
-      if (response.statusCode == 200) {
-        return AuthResponseModel.fromJson(
-          response.data as Map<String, dynamic>,
-        );
-      }
-      throw ApiException('Login failed.', response.statusCode);
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    }
-  }
-
-  Future<AuthResponseModel> register({
-    required String fullName,
     required String email,
     required String password,
   }) async {
     if (ApiConfig.useMockApi) {
       await _mockDelay();
       return AuthResponseModel(
-        accessToken: 'mock_access_token',
-        refreshToken: 'mock_refresh_token',
-        user: UserModel(
-          id: 'mock_user_${DateTime.now().millisecondsSinceEpoch}',
-          email: email,
-          fullName: fullName,
-        ),
+        accessToken: 'mock_token',
+        user: UserModel(id: '1', email: email),
       );
     }
 
     try {
       final response = await _dio.post(
-        _ensureApiPath('/auth/register'),
-        data: {
-          'full_name': fullName,
-          'email': email,
-          'password': password,
-        },
+        _path('/auth/login'),
+        data: _form({'email': email, 'password': password}),
       );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return AuthResponseModel.fromJson(
-          response.data as Map<String, dynamic>,
-        );
-      }
-      throw ApiException('Registration failed.', response.statusCode);
+      return AuthResponseModel.fromJson(_map(response));
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
-  Future<void> forgotPassword({required String identifier}) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
-
-    try {
-      final response = await _dio.post(
-        _ensureApiPath('/auth/forgot-password'),
-        data: {'identifier': identifier},
-      );
-      if (response.statusCode != 200) {
-        throw ApiException('Request failed.', response.statusCode);
-      }
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    }
-  }
-
-  Future<void> verifyOtp({
-    required String identifier,
-    required String code,
+  Future<AuthResponseModel> register({
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    required String gender,
+    required String birthdate,
+    required String visitReason,
+    required String runPreference,
   }) async {
     if (ApiConfig.useMockApi) {
       await _mockDelay();
-      if (code != '123456') {
-        throw const ApiException('Invalid verification code.', 400);
-      }
-      return;
+      return AuthResponseModel(
+        accessToken: 'mock_token',
+        user: UserModel(id: '1', email: email),
+      );
     }
 
     try {
       final response = await _dio.post(
-        _ensureApiPath('/auth/verify-otp'),
-        data: {'identifier': identifier, 'code': code},
+        _path('/auth/register'),
+        data: _form({
+          'email': email,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+          'gender': gender,
+          'birthdate': birthdate,
+          'visit_reason': visitReason,
+          'run_preference': runPreference,
+        }),
       );
-      if (response.statusCode != 200) {
-        throw ApiException('Verification failed.', response.statusCode);
-      }
+      return AuthResponseModel.fromJson(_map(response));
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<AuthResponseModel> registerFromOnboarding({
+    required String email,
+    required String password,
+    required OnboardingModel onboarding,
+  }) {
+    final fields = ApiFieldMapper.registerFormFromOnboarding(
+      email: email,
+      password: password,
+      onboarding: onboarding,
+    );
+    return register(
+      email: fields['email'] as String,
+      password: fields['password'] as String,
+      passwordConfirmation: fields['password_confirmation'] as String,
+      gender: fields['gender'] as String,
+      birthdate: fields['birthdate'] as String,
+      visitReason: fields['visit_reason'] as String,
+      runPreference: fields['run_preference'] as String,
+    );
+  }
+
+  Future<String> forgotPassword({required String email}) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return 'OTP sent successfully.';
+    }
+
+    try {
+      final response = await _dio.post(
+        _path('/auth/forgot-password'),
+        data: _form({'email': email}),
+      );
+      final map = _map(response);
+      return map['message'] as String? ?? 'OTP sent successfully.';
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
   Future<void> resetPassword({
-    required String identifier,
-    required String newPassword,
-    required String confirmPassword,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    required String otp,
   }) async {
     if (ApiConfig.useMockApi) {
       await _mockDelay();
-      if (newPassword != confirmPassword) {
-        throw const ApiException('Passwords do not match.', 400);
+      if (password != passwordConfirmation) {
+        throw const ApiException('Passwords do not match.', 422);
       }
       return;
     }
 
     try {
       final response = await _dio.post(
-        _ensureApiPath('/auth/reset-password'),
-        data: {
-          'identifier': identifier,
-          'new_password': newPassword,
-          'confirm_password': confirmPassword,
-        },
+        _path('/auth/reset-password'),
+        data: _form({
+          'email': email,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+          'otp': otp,
+        }),
       );
-      if (response.statusCode != 200) {
-        throw ApiException('Reset failed.', response.statusCode);
-      }
+      _map(response);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
   Future<void> logout() async {
-    if (!ApiConfig.useMockApi) {
-      try {
-        await _dio.post(_ensureApiPath('/auth/logout'));
-      } catch (_) {}
-    }
+    try {
+      await _storage.delete(key: ApiConfig.storageKeyAccessToken);
+      await _storage.delete(key: ApiConfig.storageKeyUserId);
+    } catch (_) {}
   }
+
+  // ─── Profile ────────────────────────────────────────────────────────────────
 
   Future<UserModel> getCurrentUser() async {
     if (ApiConfig.useMockApi) {
@@ -326,36 +357,87 @@ class ApiService {
       if (userId == null) {
         throw const ApiException('Not authenticated.', 401);
       }
-      return UserModel(id: userId, fullName: 'Saefra Runner');
+      return UserModel(id: userId);
     }
 
     try {
-      final response = await _dio.get(_ensureApiPath('/users/me'));
-      if (response.statusCode == 200) {
-        return UserModel.fromJson(response.data as Map<String, dynamic>);
-      }
-      throw ApiException('Failed to load user.', response.statusCode);
+      final response = await _dio.get(_path('/profile'));
+      final map = _map(response);
+      return UserModel.fromJson(ApiResponseParser.asMap(map['user']));
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
-  Future<void> submitOnboarding(OnboardingModel onboarding) async {
+  Future<UserModel> updateProfile({
+    required String gender,
+    required String birthdate,
+  }) async {
+    try {
+      final parsed = DateTime.parse(birthdate); // if it's yyyy-MM-dd
+      final formatted = DateFormat('M-d-yyyy').format(parsed);
+      final response = await _dio.post(
+        _path('/profile'),
+        data: _form({'gender': gender, 'birthdate': formatted}),
+      );
+      final map = _map(response);
+      return UserModel.fromJson(ApiResponseParser.asMap(map['user']));
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<UserModel> updateProfileFromOnboarding(OnboardingModel onboarding) {
+    final fields = ApiFieldMapper.profileFormFromOnboarding(onboarding);
+    return updateProfile(
+      gender: fields['gender'] as String,
+      birthdate: fields['birthdate'] as String,
+    );
+  }
+
+  // ─── Preferences ────────────────────────────────────────────────────────────
+
+  Future<UserPreferencesModel> getPreferences() async {
+    try {
+      final response = await _dio.get(_path('/preferences'));
+      final map = _map(response);
+      return UserPreferencesModel.fromJson(
+        ApiResponseParser.asMap(map['preferences']),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> updatePreferences({
+    String? visitReason,
+    String? runPreference,
+  }) async {
+    try {
+      final response = await _dio.post(
+        _path('/preferences'),
+        queryParameters: {
+          if (visitReason != null) 'visit_reason': visitReason,
+          if (runPreference != null) 'run_preference': runPreference,
+        },
+      );
+      _map(response);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// Syncs onboarding answers for a logged-in user via profile + preferences APIs.
+  Future<void> syncOnboardingForLoggedInUser(OnboardingModel onboarding) async {
     if (ApiConfig.useMockApi) {
       await _mockDelay();
       return;
     }
 
-    try {
-      final response = await _dio.post(
-        _ensureApiPath('/users/onboarding'),
-        data: onboarding.toJson(),
-      );
-      if (response.statusCode != 200) {
-        throw ApiException('Onboarding save failed.', response.statusCode);
-      }
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    }
+    await updateProfileFromOnboarding(onboarding);
+    await updatePreferences(
+      visitReason: ApiFieldMapper.visitReasonToApi(onboarding.goal),
+      runPreference: ApiFieldMapper.runPreferenceToApi(onboarding.activityLevel),
+    );
   }
 }
