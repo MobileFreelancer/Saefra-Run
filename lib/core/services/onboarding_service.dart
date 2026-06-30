@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
@@ -64,10 +66,9 @@ class OnboardingService extends ChangeNotifier {
   void setDateOfBirth(DateTime dateOfBirth) {
     final now = DateTime.now();
     var age = now.year - dateOfBirth.year;
-    final hasHadBirthdayThisYear = (now.month > dateOfBirth.month) ||
-        (now.month == dateOfBirth.month && now.day >= dateOfBirth.day);
+    final hasHadBirthdayThisYear = (now.month > dateOfBirth.month) || (now.month == dateOfBirth.month && now.day >= dateOfBirth.day);
     if (!hasHadBirthdayThisYear) age -= 1;
-
+    log("date of Birth--->$dateOfBirth");
     _data = _data.copyWith(dateOfBirth: dateOfBirth, age: age);
     notifyListeners();
   }

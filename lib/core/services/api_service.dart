@@ -4,13 +4,14 @@ import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/auth_response_model.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
-import 'package:saefra_run/core/models/user_preferences_model.dart';
 import 'package:saefra_run/core/services/api_exception.dart';
 import 'package:saefra_run/core/services/secure_storage_service.dart';
-import 'package:saefra_run/core/utils/api_field_mapper.dart';
 import 'package:saefra_run/core/utils/api_response_parser.dart';
 import 'package:saefra_run/core/utils/formatters.dart';
 import 'dart:developer' as developer;
+import '../models/user_preferences_model.dart';
+import '../utils/api_field_mapper.dart';
+import '../utils/app_loader.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -217,6 +218,7 @@ class ApiService {
     required String email,
     required String password,
   }) async {
+    AppLoader.show();
     if (ApiConfig.useMockApi) {
       await _mockDelay();
       return AuthResponseModel(
@@ -230,8 +232,10 @@ class ApiService {
         _path('/auth/login'),
         data: _form({'email': email, 'password': password}),
       );
+      AppLoader.hide();
       return AuthResponseModel.fromJson(_map(response));
     } on DioException catch (e) {
+      AppLoader.hide();
       throw _handleDioError(e);
     }
   }
@@ -245,6 +249,7 @@ class ApiService {
     required String visitReason,
     required String runPreference,
   }) async {
+    AppLoader.show();
     if (ApiConfig.useMockApi) {
       await _mockDelay();
       return AuthResponseModel(
@@ -266,8 +271,10 @@ class ApiService {
           'run_preference': runPreference,
         }),
       );
+      AppLoader.hide();
       return AuthResponseModel.fromJson(_map(response));
     } on DioException catch (e) {
+      AppLoader.hide();
       throw _handleDioError(e);
     }
   }
@@ -294,6 +301,7 @@ class ApiService {
   }
 
   Future<String> forgotPassword({required String email}) async {
+    AppLoader.show();
     if (ApiConfig.useMockApi) {
       await _mockDelay();
       return 'OTP sent successfully.';
@@ -305,8 +313,10 @@ class ApiService {
         data: _form({'email': email}),
       );
       final map = _map(response);
+      AppLoader.hide();
       return map['message'] as String? ?? 'OTP sent successfully.';
     } on DioException catch (e) {
+      AppLoader.hide();
       throw _handleDioError(e);
     }
   }
@@ -317,6 +327,7 @@ class ApiService {
     required String passwordConfirmation,
     required String otp,
   }) async {
+    AppLoader.show();
     if (ApiConfig.useMockApi) {
       await _mockDelay();
       if (password != passwordConfirmation) {
@@ -335,8 +346,10 @@ class ApiService {
           'otp': otp,
         }),
       );
+      AppLoader.hide();
       _map(response);
     } on DioException catch (e) {
+      AppLoader.hide();
       throw _handleDioError(e);
     }
   }

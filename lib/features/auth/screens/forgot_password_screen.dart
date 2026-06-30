@@ -4,10 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
-import 'package:saefra_run/core/widgets/auth_scaffold.dart';
-import 'package:saefra_run/core/widgets/primary_button.dart';
-
-import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/app_validators.dart';
 import '../../../core/widgets/auth_header.dart';
 import '../../../generated/assets.dart';

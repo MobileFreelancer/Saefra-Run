@@ -12,6 +12,8 @@ import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/theme/app_theme.dart';
 import 'package:saefra_run/firebase_options.dart';
 
+import 'core/services/dashboard_services.dart';
+
 
 
 Future<void> main() async {
@@ -53,6 +55,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<_AuthStateNotifier>.value(
           value: authStateNotifier,
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DashboardServices(),
         ),
       ],
       child: const SaefraRunApp(),

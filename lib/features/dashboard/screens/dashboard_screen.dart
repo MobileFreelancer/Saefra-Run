@@ -3,41 +3,31 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
-import 'package:saefra_run/core/widgets/map_view.dart';
 import 'package:saefra_run/core/widgets/recent_route_tile.dart';
 import 'package:saefra_run/core/widgets/recommended_route_card.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../core/services/dashboard_services.dart';
 import '../../../generated/assets.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
-
-  @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
-
-class _DashboardScreenState extends State<DashboardScreen> {
-  int _currentBottomIndex = 0;
-  final TextEditingController _searchController = TextEditingController();
-  late GoogleMapController mapController;
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(21.205194905801783, 72.77568113625402),
     zoom: 14,
   );
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
 
   @override
   Widget build(BuildContext context) {
+    // Schedule location fetch on layout render pass safely
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DashboardServices>().getCurrentLocation();
+    });
+
     final auth = context.watch<AuthService>();
     final user = auth.currentUser;
     final screenSize = MediaQuery.of(context).size;
-    final greetingName = user?.fullName ?? 'Jenny Wilson';
+    final greetingName = user?.email ?? 'Jenny Wilson';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -45,7 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         bottom: false,
         child: Stack(
           children: [
-
+            // Map Layer Section
             Positioned(
               top: 0,
               left: 0,
@@ -53,51 +43,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
               height: screenSize.height * 0.42,
               child: Stack(
                 children: [
-                  // Drop-in seam: swap MapView's internals for a real map
-                  // SDK later, no call-site changes needed elsewhere.
                   Positioned.fill(
-                    child: GoogleMap(
-                      initialCameraPosition: _initialPosition,
-                      myLocationEnabled: true,
-                      myLocationButtonEnabled: true,
-                      zoomControlsEnabled: false,
-                      onMapCreated: (controller) {
-                        mapController = controller;
+                    child: Consumer<DashboardServices>(
+                      builder: (context, services, child) {
+                        // Dynamically resolve target map start coordinate
+                        final mapTarget =
+                            (services.latitude != null &&
+                                services.longitude != null)
+                            ? LatLng(services.latitude!, services.longitude!)
+                            : _initialPosition.target;
+
+                        return GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: mapTarget,
+                            zoom: _initialPosition.zoom,
+                          ),
+                          myLocationEnabled: true,
+                          myLocationButtonEnabled: true,
+                          zoomControlsEnabled: false,
+                          onMapCreated: (controller) {
+                            context.read<DashboardServices>().setMapController(
+                              controller,
+                            );
+                          },
+                        );
                       },
                     ),
                   ),
 
-                  // Floating controls, stacked bottom-left over the map.
-                  Positioned(
-                    left: 16,
-                    bottom: 24,
-                    child: Column(
-                      children: [
-                        _MapAssetButton(
-                          assetPath: Assets.homeNearbyIcon,
-                          fallback: Icons.near_me_outlined,
-                          onTap: () => _todo(context, 'Nearby runners'),
-                        ),
-                        const SizedBox(height: 10),
-                        _MapAssetButton(
-                          assetPath: Assets.homeRouteFindingIcon,
-                          fallback: Icons.alt_route,
-                          onTap: () => _todo(context, 'Route finding'),
-                        ),
-                        const SizedBox(height: 10),
-                        _MapAssetButton(
-                          assetPath: Assets.onboardingNotificationIcon,
-                          fallback: Icons.volume_up_outlined,
-                          onTap: () => _todo(context, 'Audio alerts'),
-                        ),
-                      ],
+                  // Floating controls over map layer
+                  Positioned.fill(
+                    child: Consumer<DashboardServices>(
+                      builder: (context, services, child) {
+                        final mapTarget =
+                            (services.latitude != null &&
+                                services.longitude != null)
+                            ? LatLng(services.latitude!, services.longitude!)
+                            : _initialPosition.target;
+
+                        return GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: mapTarget,
+                            zoom: _initialPosition.zoom,
+                          ),
+                          // Switch standard system layers off to enable custom customized marker elements
+                          myLocationEnabled: true,
+                          myLocationButtonEnabled: true,
+                          zoomControlsEnabled: true,
+                          circles: services.getMapCircles(),
+                          markers: services.getMapMarkers(
+                            context,
+                          ), // Loads your blinking location, runners & waypoint markers
+                          onMapCreated: (controller) {
+                            context.read<DashboardServices>().setMapController(
+                              controller,
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
 
-                  // "+" quick-add FAB, bottom-right over the map.
+                  // "+" quick-add FAB over map layer
                   Positioned(
                     right: 16,
-                    bottom: 24,
+                    bottom: 43.h,
                     child: GestureDetector(
                       onTap: () => _todo(context, 'Create a route'),
                       child: Container(
@@ -108,7 +118,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.add, size: 26, color: AppColors.white),
+                        child: const Icon(
+                          Icons.add,
+                          size: 26,
+                          color: AppColors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -116,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
 
-            // ---- Scrollable content sheet ----
+            // ---- Scrollable content sheet bottom overlay ----
             Positioned.fill(
               top: screenSize.height * 0.40,
               child: Container(
@@ -125,7 +139,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(18, 20, 18, 110),
                     children: [
@@ -193,7 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
 
-
+            // Top Header Profile and Search Bar Layer
             Positioned(
               top: 0,
               left: 0,
@@ -223,7 +239,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               const SizedBox(height: 2),
                               const Text(
                                 'Welcome to app 💪',
-                                style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                                style: TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 11,
+                                ),
                               ),
                             ],
                           ),
@@ -236,7 +255,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             decoration: BoxDecoration(
                               color: AppColors.surface,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.white.withValues(alpha: 0.05)),
+                              border: Border.all(
+                                color: AppColors.white.withValues(alpha: 0.05),
+                              ),
                             ),
                             padding: const EdgeInsets.all(9),
                             child: Image.asset(
@@ -253,8 +274,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    SearchRouteField(),
-
+                    const SearchRouteField(),
                   ],
                 ),
               ),
@@ -267,38 +287,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         child: SafeArea(
           top: false,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _BottomBarItem(
-                index: 0,
-                assetPath: Assets.bottomBarHomeIcon,
-                fallback: Icons.grid_view,
-                isSelected: _currentBottomIndex == 0,
-                onTap: () => setState(() => _currentBottomIndex = 0),
-              ),
-              _BottomBarItem(
-                index: 1,
-                assetPath: Assets.bottomBarFireIcon,
-                fallback: Icons.local_fire_department_outlined,
-                isSelected: _currentBottomIndex == 1,
-                onTap: () => setState(() => _currentBottomIndex = 1),
-              ),
-              _BottomBarItem(
-                index: 2,
-                assetPath: Assets.bottomBarLevelIcon,
-                fallback: Icons.bar_chart,
-                isSelected: _currentBottomIndex == 2,
-                onTap: () => setState(() => _currentBottomIndex = 2),
-              ),
-              _BottomBarItem(
-                index: 3,
-                assetPath: Assets.bottomBarProfileIcon,
-                fallback: Icons.person_outline,
-                isSelected: _currentBottomIndex == 3,
-                onTap: () => setState(() => _currentBottomIndex = 3),
-              ),
-            ],
+          child: Consumer<DashboardServices>(
+            builder: (context, services, child) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _BottomBarItem(
+                    index: 0,
+                    assetPath: Assets.bottomBarHomeIcon,
+                    fallback: Icons.grid_view,
+                    isSelected: services.currentBottomIndex == 0,
+                    onTap: () => services.setBottomIndex(0),
+                  ),
+                  _BottomBarItem(
+                    index: 1,
+                    assetPath: Assets.bottomBarFireIcon,
+                    fallback: Icons.local_fire_department_outlined,
+                    isSelected: services.currentBottomIndex == 1,
+                    onTap: () => services.setBottomIndex(1),
+                  ),
+                  _BottomBarItem(
+                    index: 2,
+                    assetPath: Assets.bottomBarLevelIcon,
+                    fallback: Icons.bar_chart,
+                    isSelected: services.currentBottomIndex == 2,
+                    onTap: () => services.setBottomIndex(2),
+                  ),
+                  _BottomBarItem(
+                    index: 3,
+                    assetPath: Assets.bottomBarProfileIcon,
+                    fallback: Icons.person_outline,
+                    isSelected: services.currentBottomIndex == 3,
+                    onTap: () => services.setBottomIndex(3),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -306,16 +330,170 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
+class SearchRouteField extends StatefulWidget {
+  const SearchRouteField({super.key});
+
+  @override
+  State<SearchRouteField> createState() => _SearchRouteFieldState();
+}
+
+class _SearchRouteFieldState extends State<SearchRouteField> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final services = context.read<DashboardServices>();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          height: 41.h,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B1B1B),
+            borderRadius: BorderRadius.circular(18.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(.25),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: _searchController,
+            style: const TextStyle(color: Colors.white),
+            onChanged: (value) {
+              //services.searchLocation(value);
+            },
+            decoration: InputDecoration(
+              hintText: "Search Route...",
+              hintStyle: TextStyle(color: Colors.white54, fontSize: 16.sp),
+              filled: true,
+              fillColor: const Color(0xFF222222),
+              contentPadding: EdgeInsets.symmetric(vertical: 8.h),
+              prefixIcon: Image.asset(Assets.Search, scale: 2.5),
+              prefixIconConstraints: const BoxConstraints(minWidth: 60),
+              suffixIcon: Consumer<DashboardServices>(
+                builder: (context, svc, _) {
+                  if (svc.isSearching) {
+                    return const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    );
+                  }
+                  return Image.asset(Assets.filter, scale: 2.5);
+                },
+              ),
+              suffixIconConstraints: BoxConstraints(minWidth: 50.w),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.r),
+                borderSide: const BorderSide(
+                  width: 1.2,
+                  color: Color(0xFF131315),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.r),
+                borderSide: const BorderSide(
+                  width: 1.2,
+                  color: Color(0xFF131315),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Dynamic Dropdown Overlay list for Location Autocomplete
+        Consumer<DashboardServices>(
+          builder: (context, svc, child) {
+            if (svc.placePredictions.isEmpty) return const SizedBox.shrink();
+
+            return Container(
+              height: 220.h,
+              margin: EdgeInsets.only(top: 8.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B1B1B),
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                itemCount: svc.placePredictions.length,
+                itemBuilder: (context, index) {
+                  final prediction = svc.placePredictions[index];
+                  return ListTile(
+                    leading: const Icon(
+                      Icons.location_on,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    title: Text(
+                      prediction['description'] ?? '',
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () {
+                      _searchController.text = prediction['description'] ?? '';
+                      svc.selectPrediction(prediction['place_id']);
+                      FocusScope.of(
+                        context,
+                      ).unfocus(); // Close standard keyboard layout
+                    },
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
 class _UserAvatar extends StatelessWidget {
   const _UserAvatar({required this.name});
-
   final String name;
 
   @override
   Widget build(BuildContext context) {
     final initials = name.trim().isEmpty
         ? '?'
-        : name.trim().split(RegExp(r'\s+')).take(2).map((w) => w[0]).join().toUpperCase();
+        : name
+              .trim()
+              .split(RegExp(r'\s+'))
+              .take(2)
+              .map((w) => w[0])
+              .join()
+              .toUpperCase();
 
     return CircleAvatar(
       radius: 20,
@@ -333,8 +511,11 @@ class _UserAvatar extends StatelessWidget {
 }
 
 class _MapAssetButton extends StatelessWidget {
-  const _MapAssetButton({required this.assetPath, required this.fallback, this.onTap});
-
+  const _MapAssetButton({
+    required this.assetPath,
+    required this.fallback,
+    this.onTap,
+  });
   final String assetPath;
   final IconData fallback;
   final VoidCallback? onTap;
@@ -354,7 +535,11 @@ class _MapAssetButton extends StatelessWidget {
         child: Image.asset(
           assetPath,
           color: AppColors.white,
-          errorBuilder: (_, __, ___) => Icon(fallback, size: 16, color: AppColors.white.withValues(alpha: 0.7)),
+          errorBuilder: (_, __, ___) => Icon(
+            fallback,
+            size: 16,
+            color: AppColors.white.withValues(alpha: 0.7),
+          ),
         ),
       ),
     );
@@ -384,7 +569,9 @@ class _BottomBarItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.12) : Colors.transparent,
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: SizedBox(
@@ -405,10 +592,6 @@ class _BottomBarItem extends StatelessWidget {
   }
 }
 
-/// Placeholder action used by buttons whose destination screen/route
-/// doesn't exist yet. Shows a quick snackbar instead of crashing on an
-/// undefined go_router path. Replace each call site with a real
-/// `context.push('/your-route')` once that route is wired up.
 void _todo(BuildContext context, String label) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
@@ -417,71 +600,4 @@ void _todo(BuildContext context, String label) {
       backgroundColor: AppColors.surfaceLight,
     ),
   );
-}
-
-
-
-
-
-class SearchRouteField extends StatelessWidget {
-  const SearchRouteField({
-    super.key,
-
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 45.h,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B1B1B),
-        borderRadius: BorderRadius.circular(18.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        decoration: InputDecoration(
-          hintText: "Search Route...",
-          hintStyle: TextStyle(
-            color: Colors.white54,
-            fontSize: 16.sp,
-          ),
-          filled: true,
-          fillColor: const Color(0xFF222222),
-          contentPadding: EdgeInsets.symmetric(vertical: 18.h),
-          prefixIcon: Image.asset(Assets.Search,scale: 2.5,),
-          prefixIconConstraints: const BoxConstraints(
-            minWidth: 60,
-          ),
-
-          suffixIcon:Image.asset(Assets.filter,scale: 2.5,),
-
-          suffixIconConstraints:   BoxConstraints(
-            minWidth: 50.w,
-          ),
-
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.r),
-            borderSide: BorderSide(
-              width: 1.2,
-              color: Color(0xFF131315)
-            ),
-          ),
-
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.r),
-            borderSide: BorderSide(
-                width: 1.2,
-                color: Color(0xFF131315)
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

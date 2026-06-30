@@ -17,24 +17,18 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
 
-
   Future<void> _complete({required bool enable}) async {
     final onboardingService = context.read<OnboardingService>();
+    final authService = context.read<AuthService>();
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
-
     await PermissionService.requestNotificationPermission();
-    final auth = context.read<AuthService>();
-    final service = context.read<OnboardingService>();
-    service.setPushNotifications(enable);
-    service.setEmailNotifications(enable);
-
     onboardingService.setPushNotifications(enable);
     onboardingService.setEmailNotifications(enable);
 
-    final success = await onboardingService.completeOnboarding();
+    // Fire onboarding completion
+    final success = await onboardingService.completeOnboarding(authService);
 
-    final success = await service.completeOnboarding(auth);
     if (!mounted) return;
 
     if (success) {
@@ -49,6 +43,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       );
     }
   }
+
+
+
+
+
+
+  // Future<void> _complete({required bool enable}) async {
+  //   final onboardingService = context.read<OnboardingService>();
+  //   final messenger = ScaffoldMessenger.of(context);
+  //   final router = GoRouter.of(context);
+  //
+  //   await PermissionService.requestNotificationPermission();
+  //   final auth = context.read<AuthService>();
+  //   final service = context.read<OnboardingService>();
+  //   service.setPushNotifications(enable);
+  //   service.setEmailNotifications(enable);
+  //
+  //   onboardingService.setPushNotifications(enable);
+  //   onboardingService.setEmailNotifications(enable);
+  //
+  //   //final success = await onboardingService.completeOnboarding();
+  //
+  //   final success = await service.completeOnboarding(auth);
+  //   if (!mounted) return;
+  //
+  //   if (success) {
+  //     router.go('/dashboard');
+  //   } else {
+  //     messenger.showSnackBar(
+  //       SnackBar(
+  //         content: Text(
+  //           onboardingService.error ?? 'Something went wrong',
+  //         ),
+  //       ),
+  //     );
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
