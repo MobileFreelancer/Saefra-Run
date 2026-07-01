@@ -9,7 +9,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/services/dashboard_services.dart';
 import '../../../generated/assets.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   static const CameraPosition _initialPosition = CameraPosition(
@@ -18,10 +18,30 @@ class DashboardScreen extends StatelessWidget {
   );
 
   @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+
+
+  @override
+  void initState() {
+    context.read<DashboardServices>().fetchSafeRoute(
+      originLat: 21.205194905801783,
+      originLng: 72.77568113625402,
+      destLat: 21.205194905801783,
+      destLng: 72.77568113625402,
+    );
+    super.initState();
+  }
+
+
+  @override
   Widget build(BuildContext context) {
     // Schedule location fetch on layout render pass safely
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardServices>().getCurrentLocation();
+
     });
 
     final auth = context.watch<AuthService>();
@@ -50,12 +70,12 @@ class DashboardScreen extends StatelessWidget {
                             (services.latitude != null &&
                                 services.longitude != null)
                             ? LatLng(services.latitude!, services.longitude!)
-                            : _initialPosition.target;
+                            : DashboardScreen._initialPosition.target;
 
                         return GoogleMap(
                           initialCameraPosition: CameraPosition(
                             target: mapTarget,
-                            zoom: _initialPosition.zoom,
+                            zoom: DashboardScreen._initialPosition.zoom,
                           ),
                           myLocationEnabled: true,
                           myLocationButtonEnabled: true,
@@ -205,7 +225,7 @@ class DashboardScreen extends StatelessWidget {
                                 final tag = route['tag'] ?? 'NA';
                                 final title = route['route_name'] ?? 'Route';
                                 final dateStr = route['date'];
-                                
+
                                 String dateLabel = 'Recent';
                                 if (dateStr != null) {
                                   try {

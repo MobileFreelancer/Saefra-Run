@@ -161,6 +161,15 @@ class DashboardServices extends ChangeNotifier {
     }
     _isSearching = true;
     notifyListeners();
+    final double originLat = _latitude ?? 21.2158;
+    final double originLng = _longitude ?? 72.8372;
+
+    await fetchSafeRoute(
+      originLat: originLat,
+      originLng: originLng,
+      destLat: originLat,
+      destLng: originLng,
+    );
 
     if (_googleApiKey == "YOUR_GOOGLE_MAPS_API_KEY_HERE" || _googleApiKey.isEmpty) {
       await Future.delayed(const Duration(milliseconds: 300));
@@ -290,15 +299,7 @@ class DashboardServices extends ChangeNotifier {
         _mapController!.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 15.0));
       }
 
-      final double originLat = _latitude ?? 21.2158;
-      final double originLng = _longitude ?? 72.8372;
 
-      await fetchSafeRoute(
-        originLat: originLat,
-        originLng: originLng,
-        destLat: lat,
-        destLng: lng,
-      );
     }
   }
 

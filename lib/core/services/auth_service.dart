@@ -1,14 +1,11 @@
 import 'dart:developer';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:go_router/go_router.dart';
 import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
-import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/services/socil_auth%20services.dart';
 
 class AuthService extends ChangeNotifier {
@@ -200,9 +197,6 @@ class AuthService extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
-
-
-    return true;
   }
 
   Future<bool> resetPassword({

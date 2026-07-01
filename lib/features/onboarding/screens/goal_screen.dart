@@ -26,7 +26,8 @@ class _GoalScreenState extends State<GoalScreen> {
   static const _other = 'Other';
   static const _trainingForAGoal = OnboardingService.trainingForAGoal;
 
-  // Array mapping matching the exact text options and corresponding image paths from image_2ed992.png
+
+
   static const _options = [
     _GoalOption('Just getting started', Assets.onboardingEasyPaceIcon),
     _GoalOption('Building consistency', Assets.onboardingConsistencyIcon),
@@ -36,6 +37,9 @@ class _GoalScreenState extends State<GoalScreen> {
     _GoalOption(_other, Assets.onboardingPreferenceIcon),
   ];
 
+
+
+
   @override
   Widget build(BuildContext context) {
     final onboarding = context.watch<OnboardingService>();
@@ -43,7 +47,7 @@ class _GoalScreenState extends State<GoalScreen> {
     final selectedTarget = onboarding.data.goalTrainingTarget;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D), // Matches dark layout theme of image_2ed992.png
+      backgroundColor: const Color(0xFF0D0D0D),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -96,7 +100,7 @@ class _GoalScreenState extends State<GoalScreen> {
                           title: option.title,
                           height: 25,
                           width: 25,
-                          imagePath: option.imagePath, // Uses image assets configured on previous screen
+                          imagePath: option.imagePath,
                           isSelected: selected == option.title,
                           expandedChild: isTrainingTile
                               ? GoalTrainingTargetRow(
