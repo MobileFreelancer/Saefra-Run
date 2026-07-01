@@ -481,4 +481,93 @@ class ApiService {
     );
   }
 
+  Future<Map<String, dynamic>> generateSafeRoute({
+    required double originLat,
+    required double originLng,
+    required double destLat,
+    required double destLng,
+  }) async {
+    AppLoader.show();
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return {
+        "success": true,
+        "message": "Safest route generated successfully.",
+        "route": {
+          "recommended_routes": {
+            "route_id": 101,
+            "route_name": "Safest Route",
+            "route_image": "",
+            "distance": 4.96,
+            "estimated_duration": 68,
+            "starting_point": "Origin",
+            "ending_point": "Destination",
+            "runner_count": 0,
+            "is_secure": true,
+            "start_latitude": 21.2158,
+            "start_longitude": 72.8372,
+            "end_latitude": 21.2035,
+            "end_longitude": 72.7997,
+            "route_coordinates": "otn`Cq_q{LFdCtACfAIhDKlBCJDHR`@zAh@~A@NFDh@tGHf@FJ@JF@BDT@VLj@|CXtDJxDH^EP`@nCNp@j@tCf@~CAf@U`B?p@J`@RVPPbAh@LNLb@@V]rB@\\DPVb@fCzAjFnEl@t@R`@b@hBDZNr@jCfO\\rBrPxk@hFhQd@bAb@d@f@Xj@LvCTjEl@hATCBWAsDi@o@zEi@hCShAAhGEhAJF@PIHG@QzAc@zAUdBq@~DAt@ADBPDFD@_BbAFLcBxAJRIlC",
+            "safety_score": "74.88%",
+            "safety_score_value": 74.88,
+            "safepoints": 7
+          },
+          "recent_routes": [
+            {
+              "route_id": 1,
+              "route_name": "madhi",
+              "route_image": "",
+              "date": "2026-06-30T17:16:42+00:00",
+              "distance": 5.6,
+              "duration": 23,
+              "tag": "Na"
+            }
+          ]
+        }
+      };
+    }
+
+    try {
+      final response = await _dio.post(
+        _path('/routes/generate-safe-route'),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': '',
+            'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs,routes.travelAdvisory,routes.routeLabels',
+            'Accept': 'application/json',
+          },
+        ),
+        data: {
+          "origin": {
+            "location": {
+              "latLng": {
+                "latitude": originLat,
+                "longitude": originLng,
+              }
+            }
+          },
+          "destination": {
+            "location": {
+              "latLng": {
+                "latitude": destLat,
+                "longitude": destLng,
+              }
+            }
+          },
+          "travelMode": "WALK",
+          "computeAlternativeRoutes": true,
+          "languageCode": "en-US",
+          "units": "METRIC"
+        },
+      );
+      AppLoader.hide();
+      return _map(response);
+    } on DioException catch (e) {
+      AppLoader.hide();
+      throw _handleDioError(e);
+    }
+  }
+
 }

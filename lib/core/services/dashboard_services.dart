@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:saefra_run/core/services/api_service.dart';
 
 class DashboardServices extends ChangeNotifier {
   double? _latitude;
@@ -23,6 +24,15 @@ class DashboardServices extends ChangeNotifier {
   bool _isSearching = false;
   final String _googleApiKey = "YOUR_GOOGLE_MAPS_API_KEY_HERE";
 
+  // Dynamic Route Integration State
+  Map<String, dynamic>? _recommendedRoute;
+  List<dynamic> _recentRoutes = [];
+  List<LatLng> _routePolylinePoints = [];
+  bool _isRouteLoading = false;
+  String? _errorMessage;
+
+  final ApiService _apiService = ApiService();
+
   double? get latitude => _latitude;
   double? get longitude => _longitude;
   bool get isLoading => _isLoading;
@@ -32,6 +42,12 @@ class DashboardServices extends ChangeNotifier {
   bool get isSearching => _isSearching;
   bool get isBlinkVisible => _isBlinkVisible;
   BitmapDescriptor? get liveLocationIcon => _liveLocationIcon;
+
+  Map<String, dynamic>? get recommendedRoute => _recommendedRoute;
+  List<dynamic> get recentRoutes => _recentRoutes;
+  List<LatLng> get routePolylinePoints => _routePolylinePoints;
+  bool get isRouteLoading => _isRouteLoading;
+  String? get errorMessage => _errorMessage;
 
   DashboardServices() {
     _startBlinkAnimation();
@@ -81,6 +97,34 @@ class DashboardServices extends ChangeNotifier {
         ),
       );
     }
+
+    if (_recommendedRoute != null) {
+      final double? startLat = _recommendedRoute!['start_latitude']?.toDouble();
+      final double? startLng = _recommendedRoute!['start_longitude']?.toDouble();
+      final double? endLat = _recommendedRoute!['end_latitude']?.toDouble();
+      final double? endLng = _recommendedRoute!['end_longitude']?.toDouble();
+
+      if (startLat != null && startLng != null) {
+        markers.add(
+          Marker(
+            markerId: const MarkerId('route_start'),
+            position: LatLng(startLat, startLng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+            infoWindow: InfoWindow(title: _recommendedRoute!['starting_point'] ?? 'Start'),
+          ),
+        );
+      }
+      if (endLat != null && endLng != null) {
+        markers.add(
+          Marker(
+            markerId: const MarkerId('route_end'),
+            position: LatLng(endLat, endLng),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+            infoWindow: InfoWindow(title: _recommendedRoute!['ending_point'] ?? 'Destination'),
+          ),
+        );
+      }
+    }
     return markers;
   }
 
@@ -118,6 +162,14 @@ class DashboardServices extends ChangeNotifier {
     _isSearching = true;
     notifyListeners();
 
+    if (_googleApiKey == "YOUR_GOOGLE_MAPS_API_KEY_HERE" || _googleApiKey.isEmpty) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      _useMockSearch(query);
+      _isSearching = false;
+      notifyListeners();
+      return;
+    }
+
     final String url =
         "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&key=$_googleApiKey";
 
@@ -128,42 +180,228 @@ class DashboardServices extends ChangeNotifier {
         if (data['status'] == 'OK') {
           _placePredictions = data['predictions'];
         } else {
-          _placePredictions = [];
+          _useMockSearch(query);
         }
+      } else {
+        _useMockSearch(query);
       }
     } catch (e) {
-      _placePredictions = [];
+      _useMockSearch(query);
     }
     _isSearching = false;
     notifyListeners();
+  }
+
+  void _useMockSearch(String query) {
+    final allMock = [
+      {
+        'description': 'Dumas Beach, Surat',
+        'place_id': 'mock_dumas',
+        'lat': 21.0772,
+        'lng': 72.7130
+      },
+      {
+        'description': 'VR Mall Surat',
+        'place_id': 'mock_vrmall',
+        'lat': 21.1738,
+        'lng': 72.7845
+      },
+      {
+        'description': 'Adajan, Surat',
+        'place_id': 'mock_adajan',
+        'lat': 21.1895,
+        'lng': 72.7951
+      },
+      {
+        'description': 'madhi',
+        'place_id': 'mock_madhi',
+        'lat': 21.2035,
+        'lng': 72.7997
+      },
+    ];
+    _placePredictions = allMock
+        .where((element) =>
+            (element['description'] as String).toLowerCase().contains(query.toLowerCase()))
+        .toList();
   }
 
   Future<void> selectPrediction(String placeId) async {
     _placePredictions = [];
     notifyListeners();
 
-    final String url =
-        "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=geometry&key=$_googleApiKey";
+    double? lat;
+    double? lng;
 
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['status'] == 'OK') {
-          final location = data['result']['geometry']['location'];
-          double lat = location['lat'];
-          double lng = location['lng'];
-          _latitude = lat;
-          _longitude = lng;
+    if (placeId.startsWith('mock_')) {
+      final allMock = [
+        {
+          'description': 'Dumas Beach, Surat',
+          'place_id': 'mock_dumas',
+          'lat': 21.0772,
+          'lng': 72.7130
+        },
+        {
+          'description': 'VR Mall Surat',
+          'place_id': 'mock_vrmall',
+          'lat': 21.1738,
+          'lng': 72.7845
+        },
+        {
+          'description': 'Adajan, Surat',
+          'place_id': 'mock_adajan',
+          'lat': 21.1895,
+          'lng': 72.7951
+        },
+        {
+          'description': 'madhi',
+          'place_id': 'mock_madhi',
+          'lat': 21.2035,
+          'lng': 72.7997
+        },
+      ];
+      final matched = allMock.firstWhere((e) => e['place_id'] == placeId);
+      lat = matched['lat'] as double;
+      lng = matched['lng'] as double;
+    } else {
+      final String url =
+          "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=geometry&key=$_googleApiKey";
 
-          if (_mapController != null) {
-            _mapController!.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16.0));
+      try {
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['status'] == 'OK') {
+            final location = data['result']['geometry']['location'];
+            lat = location['lat'];
+            lng = location['lng'];
           }
         }
+      } catch (e) {
+        debugPrint(e.toString());
+      }
+    }
+
+    if (lat != null && lng != null) {
+      _routePolylinePoints = [];
+      _recommendedRoute = null;
+      notifyListeners();
+
+      if (_mapController != null) {
+        _mapController!.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 15.0));
+      }
+
+      final double originLat = _latitude ?? 21.2158;
+      final double originLng = _longitude ?? 72.8372;
+
+      await fetchSafeRoute(
+        originLat: originLat,
+        originLng: originLng,
+        destLat: lat,
+        destLng: lng,
+      );
+    }
+  }
+
+  Future<void> fetchSafeRoute({
+    required double originLat,
+    required double originLng,
+    required double destLat,
+    required double destLng,
+  }) async {
+    _isRouteLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _apiService.generateSafeRoute(
+        originLat: originLat,
+        originLng: originLng,
+        destLat: destLat,
+        destLng: destLng,
+      );
+
+      if (result['success'] == true && result['route'] != null) {
+        final routeData = result['route'];
+        _recommendedRoute = routeData['recommended_routes'];
+        
+        final list = routeData['recent_routes'];
+        if (list is List) {
+          _recentRoutes = list;
+        }
+
+        if (_recommendedRoute != null && _recommendedRoute!['route_coordinates'] != null) {
+          final polylineStr = _recommendedRoute!['route_coordinates'] as String;
+          _routePolylinePoints = decodePolyline(polylineStr);
+          _fitMapToPoints(_routePolylinePoints);
+        } else {
+          _routePolylinePoints = [];
+        }
+      } else {
+        _errorMessage = result['message'] ?? 'Failed to generate safe route.';
       }
     } catch (e) {
-      debugPrint(e.toString());
+      _errorMessage = e.toString();
+      debugPrint('Error fetching safe route: $e');
+    } finally {
+      _isRouteLoading = false;
+      notifyListeners();
     }
+  }
+
+  void _fitMapToPoints(List<LatLng> points) {
+    if (_mapController == null || points.isEmpty) return;
+    
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+    
+    for (var point in points) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLng) minLng = point.longitude;
+      if (point.longitude > maxLng) maxLng = point.longitude;
+    }
+    
+    _mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        60.0, // padding
+      ),
+    );
+  }
+
+  List<LatLng> decodePolyline(String encoded) {
+    List<LatLng> points = [];
+    int index = 0, len = encoded.length;
+    int lat = 0, lng = 0;
+
+    while (index < len) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+
+      points.add(LatLng(lat / 1E5, lng / 1E5));
+    }
+    return points;
   }
 
   Future<void> getCurrentLocation() async {

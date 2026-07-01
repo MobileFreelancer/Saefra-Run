@@ -46,7 +46,6 @@ class DashboardScreen extends StatelessWidget {
                   Positioned.fill(
                     child: Consumer<DashboardServices>(
                       builder: (context, services, child) {
-                        // Dynamically resolve target map start coordinate
                         final mapTarget =
                             (services.latitude != null &&
                                 services.longitude != null)
@@ -58,42 +57,20 @@ class DashboardScreen extends StatelessWidget {
                             target: mapTarget,
                             zoom: _initialPosition.zoom,
                           ),
-                          myLocationEnabled: true,
-                          myLocationButtonEnabled: true,
-                          zoomControlsEnabled: true,
-                          onMapCreated: (controller) {
-                            context.read<DashboardServices>().setMapController(
-                              controller,
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-
-                  // Floating controls over map layer
-                  Positioned.fill(
-                    child: Consumer<DashboardServices>(
-                      builder: (context, services, child) {
-                        final mapTarget =
-                            (services.latitude != null &&
-                                services.longitude != null)
-                            ? LatLng(services.latitude!, services.longitude!)
-                            : _initialPosition.target;
-
-                        return GoogleMap(
-                          initialCameraPosition: CameraPosition(
-                            target: mapTarget,
-                            zoom: _initialPosition.zoom,
-                          ),
-                          // Switch standard system layers off to enable custom customized marker elements
                           myLocationEnabled: true,
                           myLocationButtonEnabled: true,
                           zoomControlsEnabled: true,
                           circles: services.getMapCircles(),
-                          markers: services.getMapMarkers(
-                            context,
-                          ), // Loads your blinking location, runners & waypoint markers
+                          markers: services.getMapMarkers(context),
+                          polylines: {
+                            if (services.routePolylinePoints.isNotEmpty)
+                              Polyline(
+                                polylineId: const PolylineId('safe_route_polyline'),
+                                points: services.routePolylinePoints,
+                                color: AppColors.primary,
+                                width: 5,
+                              ),
+                          },
                           onMapCreated: (controller) {
                             context.read<DashboardServices>().setMapController(
                               controller,
@@ -142,68 +119,132 @@ class DashboardScreen extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(24),
                   ),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(18, 20, 18, 110),
-                    children: [
-                      const Text(
-                        'Recommended Route',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      RecommendedRouteCard(
-                        routeName: 'North Loop Patrol',
-                        distanceLabel: '3.2 miles • 14 SafePoints',
-                        runnersNearbyLabel: '12 Runners active nearby',
-                        imageAssetPath: Assets.background,
-                        onQuickStart: () => _todo(context, 'Quick start run'),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Consumer<DashboardServices>(
+                    builder: (context, services, child) {
+                      return ListView(
+                        padding: const EdgeInsets.fromLTRB(18, 20, 18, 110),
                         children: [
                           const Text(
-                            'Recent Routes',
+                            'Recommended Route',
                             style: TextStyle(
                               color: AppColors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              letterSpacing: -0.1,
                             ),
                           ),
-                          TextButton(
-                            onPressed: () => _todo(context, 'View all routes'),
-                            child: const Text(
-                              'View All',
-                              style: TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 12,
-                                decoration: TextDecoration.underline,
+                          const SizedBox(height: 12),
+                          if (services.recommendedRoute != null) ...[
+                            RecommendedRouteCard(
+                              routeName: services.recommendedRoute!['route_name'] ?? 'Safest Route',
+                              distanceLabel: '${services.recommendedRoute!['distance']} km • ${services.recommendedRoute!['safepoints']} SafePoints • Safety: ${services.recommendedRoute!['safety_score']}',
+                              runnersNearbyLabel: '${services.recommendedRoute!['runner_count']} Runners active nearby',
+                              imageAssetPath: services.recommendedRoute!['route_image']?.isNotEmpty == true
+                                  ? services.recommendedRoute!['route_image']
+                                  : Assets.background,
+                              isSecure: services.recommendedRoute!['is_secure'] ?? true,
+                              onQuickStart: () => _todo(context, 'Quick start run'),
+                            ),
+                          ] else ...[
+                            RecommendedRouteCard(
+                              routeName: 'North Loop Patrol',
+                              distanceLabel: '3.2 miles • 14 SafePoints',
+                              runnersNearbyLabel: '12 Runners active nearby',
+                              imageAssetPath: Assets.background,
+                              onQuickStart: () => _todo(context, 'Quick start run'),
+                            ),
+                            const SizedBox(height: 8),
+                            const Center(
+                              child: Text(
+                                'Search for a route above to generate a safe route dynamically.',
+                                style: TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
+                                ),
                               ),
                             ),
+                          ],
+                          const SizedBox(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Recent Routes',
+                                style: TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => _todo(context, 'View all routes'),
+                                child: const Text(
+                                  'View All',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 12,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 6),
+                          if (services.recentRoutes.isNotEmpty) ...[
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: EdgeInsets.zero,
+                              itemCount: services.recentRoutes.length,
+                              separatorBuilder: (context, index) => const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final route = services.recentRoutes[index];
+                                final distance = route['distance'] ?? 0.0;
+                                final duration = route['duration'] ?? 0;
+                                final tag = route['tag'] ?? 'NA';
+                                final title = route['route_name'] ?? 'Route';
+                                final dateStr = route['date'];
+                                
+                                String dateLabel = 'Recent';
+                                if (dateStr != null) {
+                                  try {
+                                    final parsed = DateTime.parse(dateStr);
+                                    dateLabel = '${parsed.day}/${parsed.month}/${parsed.year}';
+                                  } catch (_) {}
+                                }
+
+                                return RecentRouteTile(
+                                  title: title,
+                                  subtitle: '$dateLabel • $distance km • $duration mins',
+                                  tag: tag == 'Na' || tag == 'NA' ? 'Route' : tag,
+                                  thumbnailAssetPath: route['route_image']?.isNotEmpty == true
+                                      ? route['route_image']
+                                      : Assets.background,
+                                  onTap: () => _todo(context, 'Open route detail'),
+                                );
+                              },
+                            ),
+                          ] else ...[
+                            RecentRouteTile(
+                              title: 'Lakeside Perimeter',
+                              subtitle: 'Yesterday • 5.2 km • 28mins',
+                              tag: 'Safe path',
+                              thumbnailAssetPath: Assets.background,
+                              onTap: () => _todo(context, 'Open route detail'),
+                            ),
+                            const SizedBox(height: 12),
+                            RecentRouteTile(
+                              title: 'Lakeside Perimeter',
+                              subtitle: 'Yesterday • 5.2 km • 28mins',
+                              tag: 'Popular',
+                              thumbnailAssetPath: Assets.background,
+                              onTap: () => _todo(context, 'Open route detail'),
+                            ),
+                          ],
                         ],
-                      ),
-                      const SizedBox(height: 6),
-                      RecentRouteTile(
-                        title: 'Lakeside Perimeter',
-                        subtitle: 'Yesterday • 5.2 km • 28mins',
-                        tag: 'Safe path',
-                        thumbnailAssetPath: Assets.background,
-                        onTap: () => _todo(context, 'Open route detail'),
-                      ),
-                      const SizedBox(height: 12),
-                      RecentRouteTile(
-                        title: 'Lakeside Perimeter',
-                        subtitle: 'Yesterday • 5.2 km • 28mins',
-                        tag: 'Popular',
-                        thumbnailAssetPath: Assets.background,
-                        onTap: () => _todo(context, 'Open route detail'),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -376,7 +417,7 @@ class _SearchRouteFieldState extends State<SearchRouteField> {
             controller: _searchController,
             style: const TextStyle(color: Colors.white),
             onChanged: (value) {
-              //services.searchLocation(value);
+              services.searchLocation(value);
             },
             decoration: InputDecoration(
               hintText: "Search Route...",
