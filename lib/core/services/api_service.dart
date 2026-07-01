@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/auth_response_model.dart';
@@ -487,7 +488,6 @@ class ApiService {
     required double destLat,
     required double destLng,
   }) async {
-    AppLoader.show();
     if (ApiConfig.useMockApi) {
       await _mockDelay();
       return {
@@ -529,43 +529,44 @@ class ApiService {
     }
 
     try {
+      final payload = {
+        "origin": {
+          "location": {
+            "latLng": {
+              "latitude": originLat,
+              "longitude": originLng,
+            }
+          }
+        },
+        "destination": {
+          "location": {
+            "latLng": {
+              "latitude": destLat,
+              "longitude": destLng,
+            }
+          }
+        },
+        "travelMode": "WALK",
+        "computeAlternativeRoutes": true,
+        "languageCode": "en-US",
+        "units": "METRIC"
+      };
+
       final response = await _dio.post(
         _path('/routes/generate-safe-route'),
         options: Options(
           headers: {
-            'Content-Type': 'application/json',
-            'X-Goog-Api-Key': '',
-            'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs,routes.travelAdvisory,routes.routeLabels',
-            'Accept': 'application/json',
+            'Content-Type': ' application/json',
+            'X-Goog-Api-Key': ' ',
+            'X-Goog-FieldMask': ' routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs,routes.travelAdvisory,routes.routeLabels',
+            'Accept': ' application/json',
+            ApiConfig.ngrokSkipBrowserWarning: 'true',
           },
         ),
-        data: {
-          "origin": {
-            "location": {
-              "latLng": {
-                "latitude": originLat,
-                "longitude": originLng,
-              }
-            }
-          },
-          "destination": {
-            "location": {
-              "latLng": {
-                "latitude": destLat,
-                "longitude": destLng,
-              }
-            }
-          },
-          "travelMode": "WALK",
-          "computeAlternativeRoutes": true,
-          "languageCode": "en-US",
-          "units": "METRIC"
-        },
+        data: json.encode(payload),
       );
-      AppLoader.hide();
       return _map(response);
     } on DioException catch (e) {
-      AppLoader.hide();
       throw _handleDioError(e);
     }
   }

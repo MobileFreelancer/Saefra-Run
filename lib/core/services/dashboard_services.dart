@@ -87,15 +87,6 @@ class DashboardServices extends ChangeNotifier {
           infoWindow: const InfoWindow(title: "My Location"),
         ),
       );
-
-      // Your nearby runner and waypoint mock data can safely sit here:
-      markers.add(
-        Marker(
-          markerId: const MarkerId('nearby_runner_1'),
-          position: LatLng(_latitude! + 0.002, _longitude! + 0.002),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        ),
-      );
     }
 
     if (_recommendedRoute != null) {
@@ -447,6 +438,16 @@ class DashboardServices extends ChangeNotifier {
     }
     _isLoading = false;
     notifyListeners();
+
+    // Automatically trigger live safe route calculation on entering the dashboard
+    final double originLat = _latitude ?? 21.2158;
+    final double originLng = _longitude ?? 72.8372;
+    await fetchSafeRoute(
+      originLat: originLat,
+      originLng: originLng,
+      destLat: 21.2035,
+      destLng: 72.7997,
+    );
   }
 
   @override

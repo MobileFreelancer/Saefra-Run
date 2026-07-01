@@ -154,7 +154,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          if (services.recommendedRoute != null) ...[
+                          if (services.isRouteLoading) ...[
+                            Container(
+                              height: 168,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.white.withValues(alpha: 0.04)),
+                              ),
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(
+                                    color: AppColors.primary,
+                                  ),
+                                  SizedBox(height: 12),
+                                  Text(
+                                    'Generating safest route...',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else if (services.recommendedRoute != null) ...[
                             RecommendedRouteCard(
                               routeName: services.recommendedRoute!['route_name'] ?? 'Safest Route',
                               distanceLabel: '${services.recommendedRoute!['distance']} km • ${services.recommendedRoute!['safepoints']} SafePoints • Safety: ${services.recommendedRoute!['safety_score']}',
@@ -165,22 +191,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               isSecure: services.recommendedRoute!['is_secure'] ?? true,
                               onQuickStart: () => _todo(context, 'Quick start run'),
                             ),
-                          ] else ...[
-                            RecommendedRouteCard(
-                              routeName: 'North Loop Patrol',
-                              distanceLabel: '3.2 miles • 14 SafePoints',
-                              runnersNearbyLabel: '12 Runners active nearby',
-                              imageAssetPath: Assets.background,
-                              onQuickStart: () => _todo(context, 'Quick start run'),
+                          ] else if (services.errorMessage != null) ...[
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.white.withValues(alpha: 0.04)),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 36),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    services.errorMessage!,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: AppColors.white, fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextButton(
+                                    onPressed: () {
+                                      final double originLat = services.latitude ?? 21.2158;
+                                      final double originLng = services.longitude ?? 72.8372;
+                                      services.fetchSafeRoute(
+                                        originLat: originLat,
+                                        originLng: originLng,
+                                        destLat: 21.2035,
+                                        destLng: 72.7997,
+                                      );
+                                    },
+                                    child: const Text('Retry', style: TextStyle(color: AppColors.primary)),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 8),
+                          ] else ...[
                             const Center(
-                              child: Text(
-                                'Search for a route above to generate a safe route dynamically.',
-                                style: TextStyle(
-                                  color: AppColors.textMuted,
-                                  fontSize: 11,
-                                  fontStyle: FontStyle.italic,
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Text(
+                                  'No route loaded.',
+                                  style: TextStyle(color: AppColors.textMuted),
                                 ),
                               ),
                             ),
@@ -211,7 +262,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          if (services.recentRoutes.isNotEmpty) ...[
+                          if (services.isRouteLoading) ...[
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: CircularProgressIndicator(color: AppColors.primary),
+                              ),
+                            ),
+                          ] else if (services.recentRoutes.isNotEmpty) ...[
                             ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -246,20 +304,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               },
                             ),
                           ] else ...[
-                            RecentRouteTile(
-                              title: 'Lakeside Perimeter',
-                              subtitle: 'Yesterday • 5.2 km • 28mins',
-                              tag: 'Safe path',
-                              thumbnailAssetPath: Assets.background,
-                              onTap: () => _todo(context, 'Open route detail'),
-                            ),
-                            const SizedBox(height: 12),
-                            RecentRouteTile(
-                              title: 'Lakeside Perimeter',
-                              subtitle: 'Yesterday • 5.2 km • 28mins',
-                              tag: 'Popular',
-                              thumbnailAssetPath: Assets.background,
-                              onTap: () => _todo(context, 'Open route detail'),
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                child: Text(
+                                  'No recent routes found.',
+                                  style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                                ),
+                              ),
                             ),
                           ],
                         ],
