@@ -70,15 +70,18 @@ class SaefraRunApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenUtilInit(
-      designSize: const Size(360, 690),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (context, child) => MaterialApp.router(
-        title: 'Saefra Run',
-        theme: AppTheme.darkTheme,
-        routerConfig: AppRouter.router,
-        debugShowCheckedModeBanner: false,
+    return GestureDetector(
+     onTap: () => FocusScope.of(context).unfocus(),
+      child: ScreenUtilInit(
+        designSize: const Size(360, 690),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) => MaterialApp.router(
+          title: 'Saefra Run',
+          theme: AppTheme.darkTheme,
+          routerConfig: AppRouter.router,
+          debugShowCheckedModeBanner: false,
+        ),
       ),
     );
   }

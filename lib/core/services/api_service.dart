@@ -209,8 +209,7 @@ class ApiService {
     return ApiResponseParser.asMap(response.data);
   }
 
-  Future<void> _mockDelay() =>
-      Future<void>.delayed(const Duration(milliseconds: 800));
+  Future<void> _mockDelay() => Future<void>.delayed(const Duration(milliseconds: 800));
 
   // ─── Auth ───────────────────────────────────────────────────────────────────
 
@@ -321,11 +320,40 @@ class ApiService {
     }
   }
 
+
+
+  Future<void> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    AppLoader.show();
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return;
+    }
+
+    try {
+      final response = await _dio.post(
+        _path('/auth/varify-otp'),
+        data: _form({
+          'email': email,
+          'otp': otp,
+        }),
+      );
+      AppLoader.hide();
+      _map(response);
+    } on DioException catch (e) {
+      AppLoader.hide();
+      throw _handleDioError(e);
+    }
+  }
+
+
+
   Future<void> resetPassword({
     required String email,
     required String password,
     required String passwordConfirmation,
-    required String otp,
   }) async {
     AppLoader.show();
     if (ApiConfig.useMockApi) {
@@ -343,7 +371,6 @@ class ApiService {
           'email': email,
           'password': password,
           'password_confirmation': passwordConfirmation,
-          'otp': otp,
         }),
       );
       AppLoader.hide();
@@ -440,7 +467,7 @@ class ApiService {
     }
   }
 
-  /// Syncs onboarding answers for a logged-in user via profile + preferences APIs.
+
   Future<void> syncOnboardingForLoggedInUser(OnboardingModel onboarding) async {
     if (ApiConfig.useMockApi) {
       await _mockDelay();
@@ -453,4 +480,5 @@ class ApiService {
       runPreference: ApiFieldMapper.runPreferenceToApi(onboarding.activityLevel),
     );
   }
+
 }

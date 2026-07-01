@@ -14,7 +14,7 @@ class DashboardScreen extends StatelessWidget {
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(21.205194905801783, 72.77568113625402),
-    zoom: 14,
+    zoom: 10,
   );
 
   @override
@@ -60,7 +60,7 @@ class DashboardScreen extends StatelessWidget {
                           ),
                           myLocationEnabled: true,
                           myLocationButtonEnabled: true,
-                          zoomControlsEnabled: false,
+                          zoomControlsEnabled: true,
                           onMapCreated: (controller) {
                             context.read<DashboardServices>().setMapController(
                               controller,

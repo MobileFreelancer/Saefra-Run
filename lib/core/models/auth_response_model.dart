@@ -1,6 +1,8 @@
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/utils/api_response_parser.dart';
 
+
+
 class AuthResponseModel {
   final String accessToken;
   final UserModel user;

@@ -23,7 +23,7 @@ class AppLoader {
       barrierDismissible: false,
       barrierLabel: "Loading",
       barrierColor: Colors.black54,
-      pageBuilder: (_, __, ___) {
+      pageBuilder: (_, _, _) {
         return PopScope(
           canPop: false,
           child: Center(

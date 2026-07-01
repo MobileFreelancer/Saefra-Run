@@ -186,6 +186,22 @@ class AuthService extends ChangeNotifier {
     }
     _pendingResetOtp = code;
     _setError(null);
+
+    try {
+      await _apiService.verifyOtp(
+         email: _pendingResetEmail.toString(),
+        otp: _pendingResetOtp.toString(),
+      );
+      _pendingResetOtp = null;
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+
+
     return true;
   }
 
@@ -194,24 +210,11 @@ class AuthService extends ChangeNotifier {
     required String confirmPassword,
   }) async {
     final email = _pendingResetEmail;
-    final otp = _pendingResetOtp;
-    if (email == null) {
-      _setError('No pending reset. Please restart reset flow.');
-      return false;
-    }
-    if (otp == null || otp.isEmpty) {
-      _setError('Please verify the OTP first.');
-      return false;
-    }
-
-    _setLoading(true);
-    _setError(null);
     try {
       await _apiService.resetPassword(
-        email: email,
+        email: email.toString(),
         password: newPassword,
         passwordConfirmation: confirmPassword,
-        otp: otp,
       );
       _pendingResetEmail = null;
       _pendingResetOtp = null;

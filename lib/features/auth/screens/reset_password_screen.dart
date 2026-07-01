@@ -2,12 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
-import 'package:saefra_run/core/widgets/auth_scaffold.dart';
-import 'package:saefra_run/core/widgets/primary_button.dart';
-
 import '../../../core/utils/app_validators.dart';
 import '../../../core/widgets/auth_header.dart';
 import '../../../generated/assets.dart';
@@ -24,8 +20,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _obscureNew = true;
-  bool _obscureConfirm = true;
 
   @override
   void dispose() {
@@ -35,22 +29,27 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    print("++++++++++++++++++");
+    try {
+      if (!_formKey.currentState!.validate()) return;
 
-    final auth = context.read<AuthService>();
-    final success = await auth.resetPassword(
-      newPassword: _newPasswordController.text,
-      confirmPassword: _confirmPasswordController.text,
-    );
+      final auth = context.read<AuthService>();
+      final success = await auth.resetPassword(
+        newPassword: _newPasswordController.text,
+        confirmPassword: _confirmPasswordController.text,
+      );
+print("++/////////////////$success");
+      if (!mounted) return;
 
-    if (!mounted) return;
+      if (success) {
 
-    if (success) {
+        context.go('/auth/reset-password-successfully');
+      } else if (auth.error != null) {
 
-      context.go('/auth/reset-password-successfully');
-    } else if (auth.error != null) {
-
-    }
+      }
+    }  catch (e) {
+      print("Error--->$e");
+          }
   }
 
   @override

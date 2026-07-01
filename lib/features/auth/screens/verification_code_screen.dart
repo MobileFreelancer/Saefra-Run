@@ -36,7 +36,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel(); // Cancel timer to avoid memory leaks
+    _timer?.cancel();
     for (final c in _controllers) {
       c.dispose();
     }
@@ -67,12 +67,10 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
 
   Future<void> _verify() async {
     if (_code.length != 6) {
-
       return;
     }
-
     final auth = context.read<AuthService>();
-    final success = await auth.verifyOtp(code: _code);
+    final success = await auth.verifyOtp(code: _code,);
 
     if (!mounted) return;
 
@@ -175,7 +173,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            AppPrimaryButton(
+              _code.length != 6?SizedBox.shrink():AppPrimaryButton(
               label: 'Verify',
               onTap: _verify,
             ),
