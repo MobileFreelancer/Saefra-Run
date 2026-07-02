@@ -122,21 +122,16 @@ class DashboardServices extends ChangeNotifier {
   /// 2. Generates the semi-transparent glowing outer blue pulse ring
   Set<Circle> getMapCircles() {
     final Set<Circle> circles = {};
-
     if (_latitude != null && _longitude != null) {
       circles.add(
         Circle(
           circleId: const CircleId('live_location_pulse_ring'),
           center: LatLng(_latitude!, _longitude!),
-          radius: 65, // Radius size in meters. Adjust this to make the glow wider or narrower
-
-          // Outer stroke ring color (very faint blue)
+          radius: 65,
           strokeColor: const Color(0x332196F3),
           strokeWidth: 2,
-
-          // Internal fill translucent blue color matching the screenshot's opacity
           fillColor: const Color(0x222196F3),
-          zIndex: 1, // Keeps the glow beneath the solid core dot text layers
+          zIndex: 1,
         ),
       );
     }
@@ -169,10 +164,7 @@ class DashboardServices extends ChangeNotifier {
       notifyListeners();
       return;
     }
-
-    final String url =
-        "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&key=$_googleApiKey";
-
+    final String url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&key=$_googleApiKey";
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -219,19 +211,14 @@ class DashboardServices extends ChangeNotifier {
         'lng': 72.7997
       },
     ];
-    _placePredictions = allMock
-        .where((element) =>
-            (element['description'] as String).toLowerCase().contains(query.toLowerCase()))
-        .toList();
+    _placePredictions = allMock.where((element) => (element['description'] as String).toLowerCase().contains(query.toLowerCase())).toList();
   }
 
   Future<void> selectPrediction(String placeId) async {
     _placePredictions = [];
     notifyListeners();
-
     double? lat;
     double? lng;
-
     if (placeId.startsWith('mock_')) {
       final allMock = [
         {
@@ -263,9 +250,7 @@ class DashboardServices extends ChangeNotifier {
       lat = matched['lat'] as double;
       lng = matched['lng'] as double;
     } else {
-      final String url =
-          "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=geometry&key=$_googleApiKey";
-
+      final String url = "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=geometry&key=$_googleApiKey";
       try {
         final response = await http.get(Uri.parse(url));
         if (response.statusCode == 200) {
@@ -280,17 +265,13 @@ class DashboardServices extends ChangeNotifier {
         debugPrint(e.toString());
       }
     }
-
     if (lat != null && lng != null) {
       _routePolylinePoints = [];
       _recommendedRoute = null;
       notifyListeners();
-
       if (_mapController != null) {
         _mapController!.animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), 15.0));
       }
-
-
     }
   }
 
@@ -442,12 +423,13 @@ class DashboardServices extends ChangeNotifier {
     // Automatically trigger live safe route calculation on entering the dashboard
     final double originLat = _latitude ?? 21.2158;
     final double originLng = _longitude ?? 72.8372;
-    await fetchSafeRoute(
-      originLat: originLat,
-      originLng: originLng,
-      destLat: 21.2035,
-      destLng: 72.7997,
-    );
+
+    // await fetchSafeRoute(
+    //   originLat: originLat,
+    //   originLng: originLng,
+    //   destLat: 21.2035,
+    //   destLng: 72.7997,
+    // );
   }
 
   @override

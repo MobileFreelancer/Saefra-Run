@@ -59,6 +59,7 @@ class Assets {
   // gradient/icon if not present yet)
   static const String homeRoutePreviewImg= '${mainImageUrl}home_route_preview_img.png';
   static const String homeRouteThumbnailImg= '${mainImageUrl}home_route_thumbnail_img.png';
+  static const String pluseIcon= '${mainImageUrl}pluseIcon.png';
 
 
 

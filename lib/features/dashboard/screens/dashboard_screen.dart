@@ -7,6 +7,7 @@ import 'package:saefra_run/core/widgets/recent_route_tile.dart';
 import 'package:saefra_run/core/widgets/recommended_route_card.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/services/dashboard_services.dart';
+import '../../../core/services/route_service.dart';
 import '../../../generated/assets.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -26,12 +27,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void initState() {
-    context.read<DashboardServices>().fetchSafeRoute(
-      originLat: 21.205194905801783,
-      originLng: 72.77568113625402,
-      destLat: 21.205194905801783,
-      destLng: 72.77568113625402,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DashboardServices>().fetchSafeRoute(
+        originLat: 21.205194905801783,
+        originLng: 72.77568113625402,
+        destLat: 21.205194905801783,
+        destLng: 72.77568113625402,
+      );
+    });
     super.initState();
   }
 
@@ -127,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
 
-            // ---- Scrollable content sheet bottom overlay ----
+
             Positioned.fill(
               top: screenSize.height * 0.40,
               child: Container(
@@ -361,7 +364,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => _todo(context, 'Notifications'),
+                          onTap: (){
+                            fetchAndShowRouteData();
+
+                          },
+                          //onTap: () => _todo(context, 'Notifications'),
                           child: Container(
                             height: 38,
                             width: 38,
@@ -396,7 +403,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       bottomNavigationBar: Container(
-        color: const Color(0xFF070707),
+        color: const Color(0xFF000000),
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         child: SafeArea(
           top: false,
@@ -418,6 +425,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     fallback: Icons.local_fire_department_outlined,
                     isSelected: services.currentBottomIndex == 1,
                     onTap: () => services.setBottomIndex(1),
+                  ),
+                  GestureDetector(
+                    onTap: () => _todo(context, 'Start Run'),
+                    behavior: HitTestBehavior.opaque,
+                    child: SizedBox(
+                      child: Image.asset(
+                        Assets.pluseIcon,
+                        fit: BoxFit.contain,
+                        width: 60.w,
+                        height: 60.w,
+                      ),
+                    ),
                   ),
                   _BottomBarItem(
                     index: 2,
@@ -676,27 +695,32 @@ class _BottomBarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isHomeIcon = assetPath == Assets.bottomBarHomeIcon;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.12)
+              ? const Color(0xFF2D070A) // Match dark red background container
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: SizedBox(
-          width: 22,
-          height: 22,
+          width: 24,
+          height: 24,
           child: Image.asset(
             assetPath,
-            color: isSelected ? AppColors.primary : AppColors.textMuted,
+            color: isHomeIcon
+                ? (isSelected ? null : const Color(0xFF707070))
+                : (isSelected ? const Color(0xFFEF4444) : const Color(0xFF707070)),
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => Icon(
               fallback,
-              color: isSelected ? AppColors.primary : AppColors.textMuted,
+              color: isSelected ? const Color(0xFFEF4444) : const Color(0xFF707070),
+              size: 24,
             ),
           ),
         ),
