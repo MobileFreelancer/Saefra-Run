@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/run_review_form_model.dart';
 import 'package:saefra_run/core/services/run_review_service.dart';
+import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
-import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/secondary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
@@ -88,13 +88,7 @@ class _RunRateScreenState extends State<RunRateScreen> {
                   SizedBox(height: 8.h),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12.r),
-                    child: SizedBox(
-                      height: 100.h,
-                      child: AssetOrFallback(
-                        assetPath: Assets.background,
-                        fallback: Container(color: AppColors.surface),
-                      ),
-                    ),
+                    child: AppRouteMap(height: 100.h, borderRadius: 12),
                   ),
                   SizedBox(height: 16.h),
                   Text('Who did you run with?', style: Theme.of(context).textTheme.titleMedium),

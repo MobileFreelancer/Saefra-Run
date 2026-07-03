@@ -17,12 +17,15 @@ class EnableLocationScreen extends StatefulWidget {
 class _EnableLocationScreenState extends State<EnableLocationScreen> {
 
 
-  void _continue({required bool enabled}) async {
+  Future<void> _allowLocation() async {
     final granted = await PermissionService.requestLocationPermission();
-
     if (!mounted) return;
-
     context.read<OnboardingService>().setLocationEnabled(granted);
+    context.go('/onboarding/notifications');
+  }
+
+  void _skipLocation() {
+    context.read<OnboardingService>().setLocationEnabled(false);
     context.go('/onboarding/notifications');
   }
   // void _continue({required bool enabled})async{
@@ -49,8 +52,8 @@ class _EnableLocationScreenState extends State<EnableLocationScreen> {
           'and provide real-time safety alerts while you run.',
       primaryLabel: 'Allow Location',
       secondaryLabel: 'Maybe Later',
-      onPrimary: () => _continue(enabled: true),
-      onSecondary: () => _continue(enabled: false),
+      onPrimary: _allowLocation,
+      onSecondary: _skipLocation,
     );
   }
 }

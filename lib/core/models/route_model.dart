@@ -47,7 +47,7 @@ class RouteModel {
       distanceKm: _toDouble(json['distance'] ?? json['distance_km']),
       durationMinutes: _toInt(json['duration'] ?? json['estimated_duration']),
       runnerCount: _toInt(json['runner_count']),
-      isSecure: json['is_secure'] as bool? ?? true,
+      isSecure: readBool(json['is_secure']),
       safetyScore: json['safety_score'] as String?,
       safePoints: _toInt(json['safepoints'] ?? json['safe_points']),
       tag: json['tag'] as String?,
@@ -73,6 +73,19 @@ class RouteModel {
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
+  }
+
+  /// Laravel often returns 0/1 for booleans.
+  static bool readBool(dynamic value, {bool defaultValue = true}) {
+    if (value == null) return defaultValue;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final lower = value.toLowerCase();
+      if (lower == 'true' || lower == '1') return true;
+      if (lower == 'false' || lower == '0') return false;
+    }
+    return defaultValue;
   }
 
   String get distanceLabel {

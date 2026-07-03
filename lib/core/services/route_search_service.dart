@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:saefra_run/core/data/app_mock_data.dart';
 import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 
@@ -46,9 +47,14 @@ class RouteSearchService extends ChangeNotifier {
       _status =
           list.isEmpty ? RouteSearchStatus.notFound : RouteSearchStatus.results;
     } catch (e) {
-      _error = e.toString();
-      _status = RouteSearchStatus.notFound;
-      _results = [];
+      _results = AppMockData.searchRoutes
+          .where((r) => r.name.toLowerCase().contains(q.toLowerCase()))
+          .toList();
+      if (_results.isEmpty) {
+        _results = AppMockData.searchRoutes;
+      }
+      _status = RouteSearchStatus.results;
+      _error = null;
     }
     notifyListeners();
   }

@@ -4,7 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/generated/assets.dart';
 
-/// Dashboard + Search search bar matching Figma: field + red filter button.
+enum SearchFilterStyle {
+  /// Filter icon inside the search field (dashboard original).
+  inside,
+  /// Red square filter button beside the field (search screen).
+  outside,
+}
+
+/// Dashboard + Search search bar.
 class SearchRouteBar extends StatelessWidget {
   const SearchRouteBar({
     super.key,
@@ -12,22 +19,22 @@ class SearchRouteBar extends StatelessWidget {
     this.readOnly = false,
     this.autofocus = false,
     this.hintText = 'Search Route...',
-    this.initialText,
     this.onChanged,
     this.onSearchTap,
     this.onFilterTap,
     this.showFilter = true,
+    this.filterStyle = SearchFilterStyle.inside,
   });
 
   final TextEditingController? controller;
   final bool readOnly;
   final bool autofocus;
   final String hintText;
-  final String? initialText;
   final ValueChanged<String>? onChanged;
   final VoidCallback? onSearchTap;
   final VoidCallback? onFilterTap;
   final bool showFilter;
+  final SearchFilterStyle filterStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +43,7 @@ class SearchRouteBar extends StatelessWidget {
         onSearchTap!();
         return;
       }
-      final q = controller?.text.trim() ?? initialText?.trim() ?? '';
+      final q = controller?.text.trim() ?? '';
       context.pushNamed(
         'search',
         queryParameters: q.isNotEmpty ? {'q': q} : {},
@@ -51,20 +58,12 @@ class SearchRouteBar extends StatelessWidget {
       context.pushNamed('generateRoute');
     }
 
-    final field = readOnly
-        ? GestureDetector(
-            onTap: openSearch,
-            behavior: HitTestBehavior.opaque,
-            child: AbsorbPointer(
-              child: _buildField(context),
-            ),
-          )
-        : _buildField(context);
+    final field = _buildField(context, openSearch, openFilter);
 
-    return Row(
-      children: [
-        Expanded(child: field),
-        if (showFilter) ...[
+    if (filterStyle == SearchFilterStyle.outside && showFilter) {
+      return Row(
+        children: [
+          Expanded(child: field),
           SizedBox(width: 10.w),
           GestureDetector(
             onTap: openFilter,
@@ -81,26 +80,28 @@ class SearchRouteBar extends StatelessWidget {
                 width: 20,
                 height: 20,
                 color: AppColors.white,
-                errorBuilder: (_, __, ___) => Image.asset(
-                  Assets.homeFilterIcon,
-                  width: 20,
-                  height: 20,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.tune,
                   color: AppColors.white,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.tune,
-                    color: AppColors.white,
-                    size: 20,
-                  ),
+                  size: 20,
                 ),
               ),
             ),
           ),
         ],
-      ],
-    );
+      );
+    }
+
+    return field;
   }
 
-  Widget _buildField(BuildContext context) {
+  Widget _buildField(
+    BuildContext context,
+    VoidCallback openSearch,
+    VoidCallback openFilter,
+  ) {
+    final showInsideFilter = showFilter && filterStyle == SearchFilterStyle.inside;
+
     return Container(
       height: 41.h,
       decoration: BoxDecoration(
@@ -121,7 +122,7 @@ class SearchRouteBar extends StatelessWidget {
         showCursor: !readOnly,
         enableInteractiveSelection: !readOnly,
         style: const TextStyle(color: AppColors.white),
-        onTap: readOnly ? null : null,
+        onTap: readOnly ? openSearch : null,
         onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hintText,
@@ -139,6 +140,30 @@ class SearchRouteBar extends StatelessWidget {
             ),
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 52),
+          suffixIcon: showInsideFilter
+              ? GestureDetector(
+                  onTap: openFilter,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Image.asset(
+                      Assets.filter,
+                      scale: 2.5,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        Assets.homeFilterIcon,
+                        width: 20,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.tune,
+                          color: AppColors.textMuted,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : null,
+          suffixIconConstraints:
+              showInsideFilter ? BoxConstraints(minWidth: 50.w) : null,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8.r),
             borderSide: const BorderSide(width: 1.2, color: Color(0xFF131315)),

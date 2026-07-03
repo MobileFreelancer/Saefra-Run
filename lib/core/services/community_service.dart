@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:saefra_run/core/models/activity_model.dart';
+import 'package:saefra_run/core/data/app_mock_data.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
@@ -31,7 +31,9 @@ class CommunityService extends ChangeNotifier {
       _popularRoutes = await _api.getPopularRoutes();
       _topRatedRoutes = await _api.getTopRatedRoutes();
     } catch (e) {
-      _error = e.toString();
+      _popularRoutes = AppMockData.communityRoutes;
+      _topRatedRoutes = AppMockData.communityRoutes.reversed.toList();
+      _error = null;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -45,7 +47,12 @@ class CommunityService extends ChangeNotifier {
       _selectedRoute = await _api.getCommunityRouteDetail(routeId);
       _reviews = await _api.getRouteReviews(routeId);
     } catch (e) {
-      _error = e.toString();
+      _selectedRoute = AppMockData.communityRoutes.firstWhere(
+        (r) => r.id == routeId,
+        orElse: () => AppMockData.communityRoutes.first,
+      );
+      _reviews = AppMockData.routeReviews;
+      _error = null;
     } finally {
       _isLoading = false;
       notifyListeners();

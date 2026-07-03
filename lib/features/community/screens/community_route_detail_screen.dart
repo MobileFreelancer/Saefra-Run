@@ -4,10 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/community_service.dart';
+import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
-import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
-import 'package:saefra_run/generated/assets.dart';
 
 class CommunityRouteDetailScreen extends StatefulWidget {
   const CommunityRouteDetailScreen({super.key, required this.routeId});
@@ -98,13 +97,7 @@ class _CommunityRouteDetailScreenState extends State<CommunityRouteDetailScreen>
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          AssetOrFallback(
-                            assetPath: route.imageAsset ?? Assets.background,
-                            fallback: Container(
-                              color: AppColors.surfaceLight,
-                              child: const Icon(Icons.map, size: 48, color: AppColors.primary),
-                            ),
-                          ),
+                          const AppRouteMap(height: 200, borderRadius: 16),
                           Positioned(
                             top: 12.h,
                             right: 12.w,

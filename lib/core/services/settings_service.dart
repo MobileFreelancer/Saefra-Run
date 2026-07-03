@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:saefra_run/core/data/app_mock_data.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/models/user_preferences_model.dart';
@@ -61,6 +62,7 @@ class SettingsService extends ChangeNotifier {
       _contacts = await _api.getEmergencyContacts();
     } catch (e) {
       _error = e.toString();
+      _contacts = AppMockData.emergencyContacts;
     } finally {
       _isLoading = false;
       notifyListeners();

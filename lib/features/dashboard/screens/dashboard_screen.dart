@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
+import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
 import 'package:saefra_run/core/widgets/recent_route_tile.dart';
@@ -11,7 +12,7 @@ import 'package:saefra_run/core/widgets/search_route_bar.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/services/dashboard_services.dart';
 import '../../../generated/assets.dart';
-import '../widgets/map_style_sheet.dart';
+import '../widgets/dashboard_map.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -30,26 +31,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DashboardServices>().fetchSafeRoute(
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final services = context.read<DashboardServices>();
+      await services.getCurrentLocation();
+      if (!mounted) return;
+      await services.fetchSafeRoute(
         originLat: 21.205194905801783,
         originLng: 72.77568113625402,
         destLat: 21.205194905801783,
         destLng: 72.77568113625402,
       );
     });
-    super.initState();
   }
-
 
   @override
   Widget build(BuildContext context) {
-    // Schedule location fetch on layout render pass safely
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DashboardServices>().getCurrentLocation();
-
-    });
-
     final auth = context.watch<AuthService>();
     final user = auth.currentUser;
     final screenSize = MediaQuery.of(context).size;
@@ -70,40 +67,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: Consumer<DashboardServices>(
-                      builder: (context, services, child) {
-                        final mapTarget =
-                            (services.latitude != null &&
-                                services.longitude != null)
-                            ? LatLng(services.latitude!, services.longitude!)
-                            : DashboardScreen._initialPosition.target;
-
-                        return GoogleMap(
-                          initialCameraPosition: CameraPosition(
-                            target: mapTarget,
-                            zoom: DashboardScreen._initialPosition.zoom,
-                          ),
-                          myLocationEnabled: true,
-                          myLocationButtonEnabled: true,
-                          zoomControlsEnabled: true,
-                          circles: services.getMapCircles(),
-                          markers: services.getMapMarkers(context),
-                          polylines: {
-                            if (services.routePolylinePoints.isNotEmpty)
-                              Polyline(
-                                polylineId: const PolylineId('safe_route_polyline'),
-                                points: services.routePolylinePoints,
-                                color: AppColors.primary,
-                                width: 5,
-                              ),
-                          },
-                          onMapCreated: (controller) {
-                            context.read<DashboardServices>().setMapController(
-                              controller,
-                            );
-                          },
-                        );
-                      },
+                    child: DashboardMap(
+                      initialTarget: DashboardScreen._initialPosition.target,
+                      initialZoom: DashboardScreen._initialPosition.zoom,
                     ),
                   ),
 
@@ -194,7 +160,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               imageAssetPath: services.recommendedRoute!['route_image']?.isNotEmpty == true
                                   ? services.recommendedRoute!['route_image']
                                   : Assets.background,
-                              isSecure: services.recommendedRoute!['is_secure'] ?? true,
+                              isSecure: RouteModel.readBool(
+                                services.recommendedRoute!['is_secure'],
+                              ),
                               onQuickStart: () {
                                 final id =
                                     '${services.recommendedRoute?['route_id'] ?? services.recommendedRoute?['id'] ?? '2'}';

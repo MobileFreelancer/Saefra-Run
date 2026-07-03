@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/run_session_model.dart';
 import 'package:saefra_run/core/services/run_service.dart';
+import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
-import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/secondary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
@@ -68,13 +68,7 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
                   SizedBox(height: 16.h),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(14.r),
-                    child: SizedBox(
-                      height: 140.h,
-                      child: AssetOrFallback(
-                        assetPath: Assets.background,
-                        fallback: Container(color: AppColors.surfaceLight),
-                      ),
-                    ),
+                    child: AppRouteMap(height: 140.h, borderRadius: 14),
                   ),
                   SizedBox(height: 16.h),
                   Text('Splits Rate', style: Theme.of(context).textTheme.titleMedium),

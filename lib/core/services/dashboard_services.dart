@@ -22,11 +22,11 @@ class DashboardServices extends ChangeNotifier {
   int _currentBottomIndex = 0;
   GoogleMapController? _mapController;
 
-  // Blinking Live Marker Config
-  Timer? _blinkTimer;
-  bool _isBlinkVisible = true;
+  // Location stream
   StreamSubscription<Position>? _positionStreamSubscription;
-  BitmapDescriptor? _liveLocationIcon;
+  bool _locationInitStarted = false;
+  bool _locationPermissionResolved = false;
+  DateTime? _lastLocationNotifyAt;
 
   // State variables for Location Autocomplete Search
   List<dynamic> _placePredictions = [];
@@ -46,12 +46,14 @@ class DashboardServices extends ChangeNotifier {
   double? get latitude => _latitude;
   double? get longitude => _longitude;
   bool get isLoading => _isLoading;
+  /// True once the location permission flow has finished (granted or denied).
+  /// The dashboard map waits for this so Google Maps is not alive during the
+  /// system permission dialog — that combination causes native crashes/hangs.
+  bool get isLocationPermissionResolved => _locationPermissionResolved;
   int get currentBottomIndex => _currentBottomIndex;
   GoogleMapController? get mapController => _mapController;
   List<dynamic> get placePredictions => _placePredictions;
   bool get isSearching => _isSearching;
-  bool get isBlinkVisible => _isBlinkVisible;
-  BitmapDescriptor? get liveLocationIcon => _liveLocationIcon;
 
   Map<String, dynamic>? get recommendedRoute => _recommendedRoute;
   List<dynamic> get recentRoutes => _recentRoutes;
@@ -59,17 +61,6 @@ class DashboardServices extends ChangeNotifier {
   bool get isRouteLoading => _isRouteLoading;
   String? get errorMessage => _errorMessage;
   DashboardMapStyle get mapStyle => _mapStyle;
-
-  DashboardServices() {
-    _startBlinkAnimation();
-  }
-
-  void _startBlinkAnimation() {
-    _blinkTimer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
-      _isBlinkVisible = !_isBlinkVisible;
-      notifyListeners();
-    });
-  }
 
   void setBottomIndex(int index) {
     _currentBottomIndex = index;
@@ -83,75 +74,20 @@ class DashboardServices extends ChangeNotifier {
 
   void setMapController(GoogleMapController controller) {
     _mapController = controller;
+    if (_latitude != null && _longitude != null) {
+      _animateToCurrentLocation();
+    }
+  }
+
+  void _notifyLocationListeners() {
+    final now = DateTime.now();
+    if (_lastLocationNotifyAt != null &&
+        now.difference(_lastLocationNotifyAt!) <
+            const Duration(milliseconds: 800)) {
+      return;
+    }
+    _lastLocationNotifyAt = now;
     notifyListeners();
-  }
-
-  /// Create Set of custom markers dynamically rendered on the map scene graph
-  /// 1. Generates the sharp center blue dot marker
-  Set<Marker> getMapMarkers(BuildContext context) {
-    final Set<Marker> markers = {};
-
-    if (_latitude != null && _longitude != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('live_location_center_dot'),
-          position: LatLng(_latitude!, _longitude!),
-          // Native system blue/azure point matching your image perfectly
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          anchor: const Offset(0.5, 0.5), // Centers the dot perfectly on coordinates
-          flat: true, // Keeps it flat when rotating the map view
-          infoWindow: const InfoWindow(title: "My Location"),
-        ),
-      );
-    }
-
-    if (_recommendedRoute != null) {
-      final double? startLat = _recommendedRoute!['start_latitude']?.toDouble();
-      final double? startLng = _recommendedRoute!['start_longitude']?.toDouble();
-      final double? endLat = _recommendedRoute!['end_latitude']?.toDouble();
-      final double? endLng = _recommendedRoute!['end_longitude']?.toDouble();
-
-      if (startLat != null && startLng != null) {
-        markers.add(
-          Marker(
-            markerId: const MarkerId('route_start'),
-            position: LatLng(startLat, startLng),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-            infoWindow: InfoWindow(title: _recommendedRoute!['starting_point'] ?? 'Start'),
-          ),
-        );
-      }
-      if (endLat != null && endLng != null) {
-        markers.add(
-          Marker(
-            markerId: const MarkerId('route_end'),
-            position: LatLng(endLat, endLng),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-            infoWindow: InfoWindow(title: _recommendedRoute!['ending_point'] ?? 'Destination'),
-          ),
-        );
-      }
-    }
-    return markers;
-  }
-
-  /// 2. Generates the semi-transparent glowing outer blue pulse ring
-  Set<Circle> getMapCircles() {
-    final Set<Circle> circles = {};
-    if (_latitude != null && _longitude != null) {
-      circles.add(
-        Circle(
-          circleId: const CircleId('live_location_pulse_ring'),
-          center: LatLng(_latitude!, _longitude!),
-          radius: 65,
-          strokeColor: const Color(0x332196F3),
-          strokeWidth: 2,
-          fillColor: const Color(0x222196F3),
-          zIndex: 1,
-        ),
-      );
-    }
-    return circles;
   }
 
   Future<void> searchLocation(String query) async {
@@ -319,9 +255,14 @@ class DashboardServices extends ChangeNotifier {
         }
 
         if (_recommendedRoute != null && _recommendedRoute!['route_coordinates'] != null) {
-          final polylineStr = _recommendedRoute!['route_coordinates'] as String;
-          _routePolylinePoints = decodePolyline(polylineStr);
-          _fitMapToPoints(_routePolylinePoints);
+          try {
+            final polylineStr = _recommendedRoute!['route_coordinates'] as String;
+            _routePolylinePoints = decodePolyline(polylineStr);
+            _fitMapToPoints(_routePolylinePoints);
+          } catch (e) {
+            debugPrint('Polyline decode failed: $e');
+            _routePolylinePoints = [];
+          }
         } else {
           _routePolylinePoints = [];
         }
@@ -339,28 +280,47 @@ class DashboardServices extends ChangeNotifier {
 
   void _fitMapToPoints(List<LatLng> points) {
     if (_mapController == null || points.isEmpty) return;
-    
-    double minLat = points.first.latitude;
-    double maxLat = points.first.latitude;
-    double minLng = points.first.longitude;
-    double maxLng = points.first.longitude;
-    
-    for (var point in points) {
-      if (point.latitude < minLat) minLat = point.latitude;
-      if (point.latitude > maxLat) maxLat = point.latitude;
-      if (point.longitude < minLng) minLng = point.longitude;
-      if (point.longitude > maxLng) maxLng = point.longitude;
-    }
-    
-    _mapController!.animateCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: LatLng(minLat, minLng),
-          northeast: LatLng(maxLat, maxLng),
+
+    try {
+      if (points.length == 1) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngZoom(points.first, 15),
+        );
+        return;
+      }
+
+      double minLat = points.first.latitude;
+      double maxLat = points.first.latitude;
+      double minLng = points.first.longitude;
+      double maxLng = points.first.longitude;
+
+      for (var point in points) {
+        if (point.latitude < minLat) minLat = point.latitude;
+        if (point.latitude > maxLat) maxLat = point.latitude;
+        if (point.longitude < minLng) minLng = point.longitude;
+        if (point.longitude > maxLng) maxLng = point.longitude;
+      }
+
+      // Google Maps crashes when bounds have zero area.
+      if ((maxLat - minLat).abs() < 1e-6 && (maxLng - minLng).abs() < 1e-6) {
+        _mapController!.animateCamera(
+          CameraUpdate.newLatLngZoom(points.first, 15),
+        );
+        return;
+      }
+
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngBounds(
+          LatLngBounds(
+            southwest: LatLng(minLat, minLng),
+            northeast: LatLng(maxLat, maxLng),
+          ),
+          60.0,
         ),
-        60.0, // padding
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint('fitMapToPoints failed: $e');
+    }
   }
 
   List<LatLng> decodePolyline(String encoded) {
@@ -394,65 +354,88 @@ class DashboardServices extends ChangeNotifier {
   }
 
   Future<void> getCurrentLocation() async {
-    _isLoading = true;
-    notifyListeners();
-
-    // Load custom asset icon image layout mapping configuration reference asset
-    try {
-      _liveLocationIcon = await BitmapDescriptor.asset(
-        const ImageConfiguration(size: Size(36, 36)),
-        'assets/images/live_dot.png', // <-- Make sure to place your custom map marker design graphic here
-      );
-    } catch (_) {
-      // Fallback configuration handles automatically
-    }
+    if (_locationInitStarted) return;
+    _locationInitStarted = true;
 
     try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _locationPermissionResolved = true;
+        notifyListeners();
+        return;
       }
 
-      // Initialize persistent Location Coordinate stream changes dynamically
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        // Do not notifyListeners here — avoids rebuilding GoogleMap while the
+        // system permission sheet is visible.
+        permission = await Geolocator.requestPermission();
+      }
+
+      // Mount the map as soon as the permission sheet is gone (granted or not).
+      _locationPermissionResolved = true;
+      notifyListeners();
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      _isLoading = true;
+      notifyListeners();
+
+      await _positionStreamSubscription?.cancel();
       _positionStreamSubscription = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 2),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          distanceFilter: 10,
+        ),
       ).listen((Position position) {
         _latitude = position.latitude;
         _longitude = position.longitude;
-        notifyListeners();
+        _notifyLocationListeners();
       });
 
-      Position pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
+      );
       _latitude = pos.latitude;
       _longitude = pos.longitude;
 
-      if (_mapController != null) {
-        _mapController!.animateCamera(CameraUpdate.newLatLngZoom(LatLng(_latitude!, _longitude!), 15.0));
-      }
+      await _animateToCurrentLocation();
+      notifyListeners();
     } catch (e) {
-      debugPrint(e.toString());
+      debugPrint('getCurrentLocation failed: $e');
+    } finally {
+      _isLoading = false;
+      _locationPermissionResolved = true;
+      notifyListeners();
     }
-    _isLoading = false;
-    notifyListeners();
+  }
 
-    // Automatically trigger live safe route calculation on entering the dashboard
-    final double originLat = _latitude ?? 21.2158;
-    final double originLng = _longitude ?? 72.8372;
-
-    // await fetchSafeRoute(
-    //   originLat: originLat,
-    //   originLng: originLng,
-    //   destLat: 21.2035,
-    //   destLng: 72.7997,
-    // );
+  Future<void> _animateToCurrentLocation() async {
+    if (_mapController == null ||
+        _latitude == null ||
+        _longitude == null) {
+      return;
+    }
+    try {
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(_latitude!, _longitude!),
+          15,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Map camera animation failed: $e');
+    }
   }
 
   @override
   void dispose() {
-    _blinkTimer?.cancel();
     _positionStreamSubscription?.cancel();
-    _mapController?.dispose();
     super.dispose();
   }
 }

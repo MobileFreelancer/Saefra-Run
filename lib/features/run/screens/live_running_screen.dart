@@ -8,6 +8,7 @@ import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/secondary_button.dart';
+import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/generated/assets.dart';
 
 class LiveRunningScreen extends StatefulWidget {
@@ -78,20 +79,9 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
             Expanded(
               child: Stack(
                 children: [
-                  Container(
-                    margin: EdgeInsets.all(16.w),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16.r),
-                      image: DecorationImage(
-                        image: AssetImage(Assets.background),
-                        fit: BoxFit.cover,
-                        colorFilter: ColorFilter.mode(
-                          Colors.black.withValues(alpha: 0.35),
-                          BlendMode.darken,
-                        ),
-                      ),
-                    ),
+                  Padding(
+                    padding: EdgeInsets.all(16.w),
+                    child: const AppRouteMap(borderRadius: 16),
                   ),
                   Positioned(
                     top: 24.h,

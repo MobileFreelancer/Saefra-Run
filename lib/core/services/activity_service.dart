@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:saefra_run/core/data/app_mock_data.dart';
 import 'package:saefra_run/core/models/activity_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 
@@ -26,6 +27,10 @@ class ActivityService extends ChangeNotifier {
       _summary = await _api.getActivitySummary(_period);
       _recentRuns = await _api.getRecentActivities();
       _lifetime = await _api.getLifetimeStats();
+    } catch (_) {
+      _summary = AppMockData.activitySummary(_period);
+      _recentRuns = AppMockData.recentActivities;
+      _lifetime = AppMockData.lifetimeStats;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -39,6 +44,8 @@ class ActivityService extends ChangeNotifier {
     notifyListeners();
     try {
       _summary = await _api.getActivitySummary(period);
+    } catch (_) {
+      _summary = AppMockData.activitySummary(period);
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -1,22 +1,24 @@
+import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionService {
   PermissionService._();
 
-  /// Request Location Permission
+  /// Request Location Permission (Geolocator — same stack as dashboard map).
   static Future<bool> requestLocationPermission() async {
-    var status = await Permission.location.status;
-
-    if (status.isGranted) {
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse) {
       return true;
     }
 
-    if (status.isDenied) {
-      status = await Permission.location.request();
-      return status.isGranted;
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      return permission == LocationPermission.always ||
+          permission == LocationPermission.whileInUse;
     }
 
-    if (status.isPermanentlyDenied) {
+    if (permission == LocationPermission.deniedForever) {
       await openAppSettings();
       return false;
     }
@@ -26,7 +28,9 @@ class PermissionService {
 
   /// Check Location Permission
   static Future<bool> isLocationPermissionGranted() async {
-    return await Permission.location.isGranted;
+    final permission = await Geolocator.checkPermission();
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
   }
 
   /// Request Notification Permission

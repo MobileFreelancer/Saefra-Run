@@ -10,6 +10,7 @@ import 'package:saefra_run/core/services/route_search_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/recent_route_tile.dart';
 import 'package:saefra_run/core/widgets/search_route_bar.dart';
+import 'package:saefra_run/features/dashboard/widgets/map_style_sheet.dart';
 import 'package:saefra_run/generated/assets.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -74,6 +75,13 @@ class _SearchScreenState extends State<SearchScreen> {
                 controller: _controller,
                 autofocus: true,
                 onChanged: _onQueryChanged,
+                onFilterTap: () {
+                  showMapStyleSheet(context).then((_) {
+                    if (context.mounted) {
+                      context.pushNamed('generateRoute');
+                    }
+                  });
+                },
               ),
             ),
             SizedBox(height: 16.h),

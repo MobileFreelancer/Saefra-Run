@@ -6,9 +6,9 @@ import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/generate_route_filters.dart';
 import 'package:saefra_run/core/services/generate_route_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
+import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/segment_selector.dart';
-import 'package:saefra_run/generated/assets.dart';
 
 class GenerateRouteScreen extends StatefulWidget {
   const GenerateRouteScreen({super.key});
@@ -169,39 +169,32 @@ class _MapPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 160.h,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: AppColors.white.withValues(alpha: 0.05)),
-        image: DecorationImage(
-          image: AssetImage(Assets.generateRouteMapPreview),
-          fit: BoxFit.cover,
-          onError: (_, __) {},
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.r),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    AppColors.background.withValues(alpha: 0.7),
-                  ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16.r),
+      child: SizedBox(
+        height: 160.h,
+        child: Stack(
+          children: [
+            const AppRouteMap(height: 160, borderRadius: 16),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16.r),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      AppColors.background.withValues(alpha: 0.7),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            top: 12.h,
-            right: 12.w,
-            child: TextButton(
+            Positioned(
+              top: 12.h,
+              right: 12.w,
+              child: TextButton(
               onPressed: onReset,
               style: TextButton.styleFrom(
                 backgroundColor: AppColors.surfaceLight.withValues(alpha: 0.9),
@@ -212,6 +205,7 @@ class _MapPreviewCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -7,9 +7,11 @@ import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
-import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
+import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
+
+import '../../../core/widgets/asset_or_fallback.dart';
 
 class RouteDetailScreen extends StatefulWidget {
   const RouteDetailScreen({super.key, required this.routeId});
@@ -173,21 +175,7 @@ class _RouteMapCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(20.r),
       child: Stack(
         children: [
-          SizedBox(
-            height: 220.h,
-            width: double.infinity,
-            child: AssetOrFallback(
-              assetPath: route.imageAsset ?? Assets.homeRoutePreviewImg,
-              fallback: Container(
-                color: const Color(0xFF1E2A20),
-                child: const Icon(
-                  Icons.map_outlined,
-                  color: Color(0xFF4ADE80),
-                  size: 48,
-                ),
-              ),
-            ),
-          ),
+          AppRouteMap(height: 220.h, borderRadius: 20),
           Positioned(
             top: 12.h,
             right: 12.w,
