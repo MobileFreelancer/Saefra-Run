@@ -20,7 +20,7 @@ class DashboardServices extends ChangeNotifier {
   double? _longitude;
   bool _isLoading = false;
   int _currentBottomIndex = 0;
-  GoogleMapController? _mapController;
+
 
   // Blinking Live Marker Config
   Timer? _blinkTimer;
@@ -47,6 +47,8 @@ class DashboardServices extends ChangeNotifier {
   double? get longitude => _longitude;
   bool get isLoading => _isLoading;
   int get currentBottomIndex => _currentBottomIndex;
+  GoogleMapController? _mapController;
+
   GoogleMapController? get mapController => _mapController;
   List<dynamic> get placePredictions => _placePredictions;
   bool get isSearching => _isSearching;
@@ -59,6 +61,13 @@ class DashboardServices extends ChangeNotifier {
   bool get isRouteLoading => _isRouteLoading;
   String? get errorMessage => _errorMessage;
   DashboardMapStyle get mapStyle => _mapStyle;
+
+
+
+  set mapController(GoogleMapController? controller) {
+    _mapController = controller;
+    notifyListeners();
+  }
 
   DashboardServices() {
     _startBlinkAnimation();

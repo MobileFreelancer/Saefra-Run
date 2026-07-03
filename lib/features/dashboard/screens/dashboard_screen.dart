@@ -8,6 +8,10 @@ import 'package:saefra_run/core/widgets/recent_route_tile.dart';
 import 'package:saefra_run/core/widgets/recommended_route_card.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/services/dashboard_services.dart';
+import '../../../core/services/route_service.dart';
+import '../../../core/utils/app_tost.dart';
+import '../../../core/utils/map_style_service.dart';
+import '../../../core/widgets/show_bottom_sheet.dart';
 import '../../../generated/assets.dart';
 import '../widgets/map_style_sheet.dart';
 
@@ -16,7 +20,7 @@ class DashboardScreen extends StatefulWidget {
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(21.205194905801783, 72.77568113625402),
-    zoom: 10,
+    zoom: 15,
   );
 
   @override
@@ -35,19 +39,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         destLat: 21.205194905801783,
         destLng: 72.77568113625402,
       );
+      services.getCurrentLocation();
+      //fetchAndShowRouteData();
     });
     super.initState();
   }
-
+  late final services = context.read<DashboardServices>();
 
   @override
   Widget build(BuildContext context) {
-    // Schedule location fetch on layout render pass safely
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DashboardServices>().getCurrentLocation();
-
-    });
-
     final auth = context.watch<AuthService>();
     final user = auth.currentUser;
     final screenSize = MediaQuery.of(context).size;
@@ -82,22 +82,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             zoom: DashboardScreen._initialPosition.zoom,
                           ),
                           myLocationEnabled: true,
-                          myLocationButtonEnabled: true,
-                          zoomControlsEnabled: true,
+                          myLocationButtonEnabled: false,
+                          zoomControlsEnabled: false,
                           circles: services.getMapCircles(),
-                          markers: services.getMapMarkers(context),
-                          polylines: {
-                            if (services.routePolylinePoints.isNotEmpty)
-                              Polyline(
-                                polylineId: const PolylineId('safe_route_polyline'),
-                                points: services.routePolylinePoints,
-                                color: AppColors.primary,
-                                width: 5,
-                              ),
-                          },
-                          onMapCreated: (controller) {
+                           markers: services.getMapMarkers(context),
+                          // polylines: {
+                          //   if (services.routePolylinePoints.isNotEmpty)
+                          //     Polyline(
+                          //       polylineId: const PolylineId('safe_route_polyline'),
+                          //       points: services.routePolylinePoints,
+                          //       color: AppColors.primary,
+                          //       width: 5,
+                          //     ),
+                          // },
+                          onMapCreated: (controller)async{
                             context.read<DashboardServices>().setMapController(
                               controller,
+                            );
+                            services.setMapController(controller);
+                            await MapStyleService.applyStyle(
+                              controller: controller,
+                              theme: MapTheme.light,
                             );
                           },
                         );
@@ -405,7 +410,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    const SearchRouteField(),
+                      SearchRouteField(),
                   ],
                 ),
               ),
@@ -485,7 +490,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class SearchRouteField extends StatefulWidget {
-  const SearchRouteField({super.key});
+
+  const  SearchRouteField({super.key,});
 
   @override
   State<SearchRouteField> createState() => _SearchRouteFieldState();
@@ -510,135 +516,56 @@ class _SearchRouteFieldState extends State<SearchRouteField> {
   Widget build(BuildContext context) {
     final services = context.read<DashboardServices>();
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          height: 41.h,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B1B1B),
-            borderRadius: BorderRadius.circular(18.r),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(.25),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: TextFormField(
-            controller: _searchController,
-            style: const TextStyle(color: Colors.white),
-            onTap: () {
-              final query = _searchController.text.trim();
-              context.pushNamed(
-                'search',
-                queryParameters: query.isNotEmpty ? {'q': query} : {},
-              );
-            },
-            onChanged: (value) {
-              services.searchLocation(value);
-            },
-            decoration: InputDecoration(
-              hintText: "Search Route...",
-              hintStyle: TextStyle(color: Colors.white54, fontSize: 16.sp),
-              filled: true,
-              fillColor: const Color(0xFF222222),
-              contentPadding: EdgeInsets.symmetric(vertical: 8.h),
-              prefixIcon: Image.asset(Assets.Search, scale: 2.5),
-              prefixIconConstraints: const BoxConstraints(minWidth: 60),
-              suffixIcon: Consumer<DashboardServices>(
-                builder: (context, svc, _) {
-                  if (svc.isSearching) {
-                    return const Padding(
-                      padding: EdgeInsets.all(12.0),
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    );
-                  }
-                  return GestureDetector(
-                    onTap: () => context.pushNamed('generateRoute'),
-                    child: Image.asset(Assets.filter, scale: 2.5),
-                  );
-                },
-              ),
-              suffixIconConstraints: BoxConstraints(minWidth: 50.w),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.r),
-                borderSide: const BorderSide(
-                  width: 1.2,
-                  color: Color(0xFF131315),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.r),
-                borderSide: const BorderSide(
-                  width: 1.2,
-                  color: Color(0xFF131315),
-                ),
+
+    return Container(
+      width: 355.w,
+      height: 40.h,
+      padding: EdgeInsets.symmetric(horizontal: 10.h,vertical: 5.h),
+      decoration: BoxDecoration(
+        color: AppColors.textBorder,
+        border: Border.all(color: AppColors.textBorder),
+        borderRadius: BorderRadius.all(Radius.circular(10.r))
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: (){
+                final query = _searchController.text.trim();
+                context.pushNamed(
+                  'search',
+                  queryParameters: query.isNotEmpty ? {'q': query} : {},
+                );
+              },
+              child: Row(
+                children: [
+                  Image.asset(Assets.Search, scale: 2.5),
+                  SizedBox(width: 13.w,),
+                  Text("Search Route...",style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.searchColors,
+                      fontWeight: FontWeight.w400,
+                      fontSize: 12.sp
+                  ),)
+                ],
               ),
             ),
           ),
-        ),
-
-        // Dynamic Dropdown Overlay list for Location Autocomplete
-        Consumer<DashboardServices>(
-          builder: (context, svc, child) {
-            if (svc.placePredictions.isEmpty) return const SizedBox.shrink();
-
-            return Container(
-              height: 220.h,
-              margin: EdgeInsets.only(top: 8.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1B1B1B),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ListView.builder(
-                shrinkWrap: true,
-                padding: EdgeInsets.zero,
-                itemCount: svc.placePredictions.length,
-                itemBuilder: (context, index) {
-                  final prediction = svc.placePredictions[index];
-                  return ListTile(
-                    leading: const Icon(
-                      Icons.location_on,
-                      color: AppColors.primary,
-                      size: 20,
-                    ),
-                    title: Text(
-                      prediction['description'] ?? '',
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    onTap: () {
-                      _searchController.text = prediction['description'] ?? '';
-                      svc.selectPrediction(prediction['place_id']);
-                      FocusScope.of(
-                        context,
-                      ).unfocus(); // Close standard keyboard layout
-                    },
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ],
+          GestureDetector(
+            onTap: (){
+              if (services.mapController == null) {
+                AppToast.error('Map is not ready yet.');
+                return;
+              }
+              showMapStyleBottomSheet(
+                context,
+                services.mapController!,
+              );
+            },
+              child: Image.asset(Assets.filter, scale: 2.5)
+          )
+        ],
+      ),
     );
   }
 }

@@ -41,3 +41,6 @@ flutter:
     - .env
     - assets/images/
     - assets/icons/
+    - assets/map_style/light.json
+    - assets/map_style/dark.json
+    - assets/map_style/park.json
