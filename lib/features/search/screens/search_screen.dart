@@ -9,6 +9,7 @@ import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/route_search_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/recent_route_tile.dart';
+import 'package:saefra_run/core/widgets/search_route_bar.dart';
 import 'package:saefra_run/generated/assets.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -30,6 +31,7 @@ class _SearchScreenState extends State<SearchScreen> {
     _controller = TextEditingController(text: widget.initialQuery);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final search = context.read<RouteSearchService>();
+      search.setQuery(widget.initialQuery);
       if (widget.initialQuery.isNotEmpty) {
         search.search(widget.initialQuery);
       }
@@ -68,38 +70,14 @@ class _SearchScreenState extends State<SearchScreen> {
             const AppPageHeader(title: 'Search'),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
-              child: TextField(
+              child: SearchRouteBar(
                 controller: _controller,
                 autofocus: true,
-                style: const TextStyle(color: AppColors.white),
                 onChanged: _onQueryChanged,
-                decoration: InputDecoration(
-                  hintText: 'Search routes...',
-                  hintStyle: TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 14.sp,
-                  ),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  prefixIcon: Image.asset(
-                    Assets.homeSearchIcon,
-                    width: 20,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.search,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.r),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
               ),
             ),
             SizedBox(height: 16.h),
-            Expanded(
-              child: _buildBody(search),
-            ),
+            Expanded(child: _buildBody(search)),
           ],
         ),
       ),
@@ -112,17 +90,17 @@ class _SearchScreenState extends State<SearchScreen> {
         return Center(
           child: Text(
             'Find safe routes near you',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 14.sp),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
         );
       case RouteSearchStatus.loading:
-        return const Center(
+        return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: AppColors.primary),
-              SizedBox(height: 12),
-              Text('Loading...', style: TextStyle(color: AppColors.textMuted)),
+              const CircularProgressIndicator(color: AppColors.primary),
+              SizedBox(height: 12.h),
+              Text('Loading...', style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
         );
@@ -132,14 +110,7 @@ class _SearchScreenState extends State<SearchScreen> {
         return ListView(
           padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
           children: [
-            Text(
-              'Find Routes',
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            Text('Find Routes', style: Theme.of(context).textTheme.titleMedium),
             SizedBox(height: 12.h),
             ...search.results.map(
               (route) => Padding(
@@ -150,7 +121,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ? route.subtitleLabel
                       : '${route.distanceLabel} • ${route.durationMinutes} mins',
                   tag: route.tag ?? 'Route',
-                  thumbnailAssetPath: route.imageAsset,
+                  thumbnailAssetPath: route.imageAsset ?? Assets.background,
                   onTap: () => _openRoute(route),
                 ),
               ),
@@ -184,25 +155,14 @@ class _NotFoundState extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20.h),
-            Text(
-              'Not Found',
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            Text('Not Found', style: Theme.of(context).textTheme.titleLarge),
             SizedBox(height: 8.h),
             Text(
               query.isEmpty
                   ? 'Try searching for a route name or area.'
                   : 'We couldn\'t find a route that matches your preferences. Try adjusting your settings and search again.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 13.sp,
-                height: 1.4,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ),

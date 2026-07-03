@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/route_model.dart';
@@ -80,10 +81,12 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                             PrimaryButton(
                               label: 'Start Run',
                               onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Run tracking — coming soon'),
-                                  ),
+                                context.pushNamed(
+                                  'liveRunning',
+                                  queryParameters: {
+                                    'routeId': widget.routeId,
+                                    'routeName': route.name,
+                                  },
                                 );
                               },
                             ),

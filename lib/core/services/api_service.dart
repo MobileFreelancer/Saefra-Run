@@ -2,11 +2,16 @@ import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:saefra_run/core/config/api_config.dart';
+import 'package:saefra_run/core/models/activity_model.dart';
 import 'package:saefra_run/core/models/auth_response_model.dart';
+import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/generate_route_filters.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
+import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/models/route_model.dart';
+import 'package:saefra_run/core/models/run_review_form_model.dart';
+import 'package:saefra_run/core/models/run_session_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_exception.dart';
 import 'package:saefra_run/core/services/secure_storage_service.dart';
@@ -791,6 +796,307 @@ class ApiService {
         }),
       );
       _map(response);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  // ─── Community ──────────────────────────────────────────────────────────────
+
+  List<CommunityRouteModel> _mockCommunityRoutes() => const [
+        CommunityRouteModel(
+          id: 'c1',
+          name: 'Sunset Loop',
+          location: 'Central Park, NY',
+          distanceKm: 5.02,
+          durationMinutes: 42,
+          rating: 4.8,
+          likeCount: 128,
+          commentCount: 24,
+          difficultyTag: 'Beginner',
+          tags: ['Hill', 'Forest', 'Nature'],
+          elevationGainM: 154,
+          description:
+              'A scenic loop through tree-lined paths with excellent lighting and steady foot traffic.',
+        ),
+        CommunityRouteModel(
+          id: 'c2',
+          name: 'Lakeside Perimeter',
+          location: 'Hudson River',
+          distanceKm: 3.2,
+          durationMinutes: 24,
+          rating: 4.6,
+          likeCount: 86,
+          commentCount: 11,
+          difficultyTag: 'Easy',
+          tags: ['Waterfront', 'Flat'],
+          elevationGainM: 42,
+        ),
+        CommunityRouteModel(
+          id: 'c3',
+          name: 'North Loop Patrol',
+          location: 'Brooklyn Bridge',
+          distanceKm: 2.3,
+          durationMinutes: 18,
+          rating: 4.9,
+          likeCount: 210,
+          commentCount: 45,
+          difficultyTag: 'Moderate',
+          tags: ['Urban', 'Well-lit'],
+          elevationGainM: 88,
+        ),
+      ];
+
+  Future<List<CommunityRouteModel>> getPopularRoutes() async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return _mockCommunityRoutes();
+    }
+    try {
+      final response = await _dio.get(_path('/community/routes/popular'));
+      final map = _map(response);
+      final list = map['routes'] as List<dynamic>? ?? [];
+      return list
+          .map((e) => CommunityRouteModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<List<CommunityRouteModel>> getTopRatedRoutes() async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return _mockCommunityRoutes().reversed.toList();
+    }
+    try {
+      final response = await _dio.get(_path('/community/routes/top-rated'));
+      final map = _map(response);
+      final list = map['routes'] as List<dynamic>? ?? [];
+      return list
+          .map((e) => CommunityRouteModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<CommunityRouteModel> getCommunityRouteDetail(String routeId) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return _mockCommunityRoutes().firstWhere(
+        (r) => r.id == routeId,
+        orElse: () => _mockCommunityRoutes().first,
+      );
+    }
+    try {
+      final response = await _dio.get(_path('/community/routes/$routeId'));
+      final map = _map(response);
+      return CommunityRouteModel.fromJson(
+        Map<String, dynamic>.from((map['route'] ?? map) as Map),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<List<ReviewModel>> getRouteReviews(String routeId) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return const [
+        ReviewModel(
+          id: '1',
+          userName: 'Sarah M.',
+          rating: 5,
+          comment: 'Always well lit and plenty of other runners around.',
+          timeAgo: '2 days ago',
+        ),
+        ReviewModel(
+          id: '2',
+          userName: 'James K.',
+          rating: 4,
+          comment: 'Great route, a bit crowded on weekends.',
+          timeAgo: '1 week ago',
+        ),
+      ];
+    }
+    try {
+      final response = await _dio.get(_path('/community/routes/$routeId/reviews'));
+      final map = _map(response);
+      final list = map['reviews'] as List<dynamic>? ?? [];
+      return list
+          .map((e) => ReviewModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> submitRouteReview({
+    required String routeId,
+    required double rating,
+    required String comment,
+  }) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return;
+    }
+    try {
+      await _dio.post(
+        _path('/community/routes/$routeId/reviews'),
+        data: _form({'rating': '$rating', 'comment': comment}),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  // ─── Activity ───────────────────────────────────────────────────────────────
+
+  Future<ActivitySummaryModel> getActivitySummary(ActivityPeriod period) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return switch (period) {
+        ActivityPeriod.weekly => const ActivitySummaryModel(
+            totalDistanceKm: 18.4,
+            totalMinutes: 142,
+            totalCalories: 980,
+            avgPaceMinPerKm: 6.2,
+          ),
+        ActivityPeriod.monthly => const ActivitySummaryModel(
+            totalDistanceKm: 72.5,
+            totalMinutes: 540,
+            totalCalories: 3820,
+            avgPaceMinPerKm: 6.5,
+          ),
+        ActivityPeriod.yearly => const ActivitySummaryModel(
+            totalDistanceKm: 412.0,
+            totalMinutes: 3180,
+            totalCalories: 21400,
+            avgPaceMinPerKm: 6.4,
+          ),
+      };
+    }
+    try {
+      final response = await _dio.get(
+        _path('/activity/summary'),
+        queryParameters: {'period': period.name},
+      );
+      final map = _map(response);
+      return ActivitySummaryModel.fromJson(
+        Map<String, dynamic>.from((map['summary'] ?? map) as Map),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<List<RecentActivityModel>> getRecentActivities() async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return const [
+        RecentActivityModel(
+          id: 'a1',
+          name: 'Sunset Loop',
+          dateLabel: 'Today • 7:30 AM',
+          distanceKm: 5.02,
+          durationMinutes: 32,
+          paceLabel: '6\'32"/km',
+        ),
+        RecentActivityModel(
+          id: 'a2',
+          name: 'Lakeside Perimeter',
+          dateLabel: 'Yesterday • 6:10 PM',
+          distanceKm: 3.2,
+          durationMinutes: 24,
+          paceLabel: '7\'05"/km',
+        ),
+      ];
+    }
+    try {
+      final response = await _dio.get(_path('/activity/recent'));
+      final map = _map(response);
+      final list = map['activities'] as List<dynamic>? ?? [];
+      return list
+          .map((e) => RecentActivityModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<LifetimeStatsModel> getLifetimeStats() async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return const LifetimeStatsModel(
+        totalDistanceKm: 1248.5,
+        totalHours: 186,
+        totalCalories: 68420,
+        avgPaceMinPerKm: 6.3,
+        paceTrend: [0.4, 0.6, 0.5, 0.8, 0.7, 0.9, 0.6],
+      );
+    }
+    try {
+      final response = await _dio.get(_path('/activity/lifetime'));
+      final map = _map(response);
+      return LifetimeStatsModel.fromJson(
+        Map<String, dynamic>.from((map['lifetime'] ?? map) as Map),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  // ─── Live run / SOS / reviews ───────────────────────────────────────────────
+
+  Future<void> sendSos({
+    String? routeId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return;
+    }
+    try {
+      await _dio.post(
+        _path('/sos/activate'),
+        data: _form({
+          if (routeId != null) 'route_id': routeId,
+          'latitude': '$latitude',
+          'longitude': '$longitude',
+        }),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> submitRunSummary(Map<String, dynamic> payload) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return;
+    }
+    try {
+      await _dio.post(_path('/runs/summary'), data: _form(payload));
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> submitRunReview({
+    required String runId,
+    required RunReviewFormModel form,
+  }) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return;
+    }
+    try {
+      await _dio.post(
+        _path('/runs/$runId/review'),
+        data: _form(form.toJson()),
+      );
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

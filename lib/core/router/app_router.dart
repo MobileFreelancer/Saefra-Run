@@ -18,8 +18,16 @@ import 'package:saefra_run/features/onboarding/screens/goal_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/notifications_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/onboarding_intro_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/splash_screen.dart';
+import 'package:saefra_run/features/community/screens/community_route_detail_screen.dart';
+import 'package:saefra_run/features/community/screens/community_screen.dart';
+import 'package:saefra_run/features/community/screens/route_reviews_screen.dart';
+import 'package:saefra_run/features/activity/screens/activity_screen.dart';
 import 'package:saefra_run/features/routes/screens/generate_route_screen.dart';
 import 'package:saefra_run/features/routes/screens/route_detail_screen.dart';
+import 'package:saefra_run/features/run/screens/add_run_images_screen.dart';
+import 'package:saefra_run/features/run/screens/live_running_screen.dart';
+import 'package:saefra_run/features/run/screens/run_rate_screen.dart';
+import 'package:saefra_run/features/run/screens/run_summary_screen.dart';
 import 'package:saefra_run/features/search/screens/search_screen.dart';
 import 'package:saefra_run/features/settings/screens/about_us_screen.dart';
 import 'package:saefra_run/features/settings/screens/add_emergency_contact_screen.dart';
@@ -222,6 +230,63 @@ class AppRouter {
         path: '/settings/about',
         name: 'aboutUs',
         builder: (context, state) => const AboutUsScreen(),
+      ),
+      GoRoute(
+        path: '/community',
+        name: 'community',
+        builder: (context, state) => const CommunityScreen(),
+      ),
+      GoRoute(
+        path: '/community/routes/:id',
+        name: 'communityRouteDetail',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return CommunityRouteDetailScreen(routeId: id);
+        },
+      ),
+      GoRoute(
+        path: '/community/routes/:id/reviews',
+        name: 'routeReviews',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return RouteReviewsScreen(routeId: id);
+        },
+      ),
+      GoRoute(
+        path: '/activity',
+        name: 'activity',
+        builder: (context, state) => const ActivityScreen(),
+      ),
+      GoRoute(
+        path: '/run/live',
+        name: 'liveRunning',
+        builder: (context, state) {
+          final qp = state.uri.queryParameters;
+          return LiveRunningScreen(
+            routeId: qp['routeId'],
+            routeName: qp['routeName'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/run/sos',
+        name: 'sosActive',
+        builder: (context, state) => const SosActiveScreen(),
+      ),
+      GoRoute(
+        path: '/run/summary',
+        name: 'runSummary',
+        builder: (context, state) => const RunSummaryScreen(),
+      ),
+      GoRoute(
+        path: '/run/rate',
+        name: 'runRate',
+        builder: (context, state) => const RunRateScreen(),
+      ),
+      GoRoute(
+        path: '/run/images',
+        name: 'addRunImages',
+        builder: (context, state) => const AddRunImagesScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
