@@ -18,6 +18,18 @@ import 'package:saefra_run/features/onboarding/screens/goal_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/notifications_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/onboarding_intro_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/splash_screen.dart';
+import 'package:saefra_run/features/routes/screens/generate_route_screen.dart';
+import 'package:saefra_run/features/routes/screens/route_detail_screen.dart';
+import 'package:saefra_run/features/search/screens/search_screen.dart';
+import 'package:saefra_run/features/settings/screens/about_us_screen.dart';
+import 'package:saefra_run/features/settings/screens/add_emergency_contact_screen.dart';
+import 'package:saefra_run/features/settings/screens/change_password_screen.dart';
+import 'package:saefra_run/features/settings/screens/edit_profile_screen.dart';
+import 'package:saefra_run/features/settings/screens/emergency_contacts_screen.dart';
+import 'package:saefra_run/features/settings/screens/legal_content_screen.dart';
+import 'package:saefra_run/features/settings/screens/notification_settings_screen.dart';
+import 'package:saefra_run/features/settings/screens/safety_settings_screen.dart';
+import 'package:saefra_run/features/settings/screens/settings_screen.dart';
 
 class AppRouter {
   AppRouter._();
@@ -141,6 +153,75 @@ class AppRouter {
         path: '/dashboard',
         name: 'dashboard',
         builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/search',
+        name: 'search',
+        builder: (context, state) {
+          final query = state.uri.queryParameters['q'] ?? '';
+          return SearchScreen(initialQuery: query);
+        },
+      ),
+      GoRoute(
+        path: '/routes/generate',
+        name: 'generateRoute',
+        builder: (context, state) => const GenerateRouteScreen(),
+      ),
+      GoRoute(
+        path: '/routes/:id',
+        name: 'routeDetail',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return RouteDetailScreen(routeId: id);
+        },
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/edit-profile',
+        name: 'editProfile',
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings/safety',
+        name: 'safetySettings',
+        builder: (context, state) => const SafetySettingsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/emergency-contacts',
+        name: 'emergencyContacts',
+        builder: (context, state) => const EmergencyContactsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/emergency-contacts/add',
+        name: 'addEmergencyContact',
+        builder: (context, state) => const AddEmergencyContactScreen(),
+      ),
+      GoRoute(
+        path: '/settings/change-password',
+        name: 'changePassword',
+        builder: (context, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
+        path: '/settings/notifications',
+        name: 'notificationSettings',
+        builder: (context, state) => const NotificationSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/legal',
+        name: 'legalContent',
+        builder: (context, state) {
+          final type = state.uri.queryParameters['type'] ?? 'terms';
+          return LegalContentScreen(type: type);
+        },
+      ),
+      GoRoute(
+        path: '/settings/about',
+        name: 'aboutUs',
+        builder: (context, state) => const AboutUsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

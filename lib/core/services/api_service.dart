@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/auth_response_model.dart';
+import 'package:saefra_run/core/models/emergency_contact_model.dart';
+import 'package:saefra_run/core/models/generate_route_filters.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
+import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_exception.dart';
 import 'package:saefra_run/core/services/secure_storage_service.dart';
@@ -439,6 +442,19 @@ class ApiService {
   // ─── Preferences ────────────────────────────────────────────────────────────
 
   Future<UserPreferencesModel> getPreferences() async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      final userId = await _storage.read(key: ApiConfig.storageKeyUserId);
+      return UserPreferencesModel(
+        id: '1',
+        userId: userId ?? '1',
+        shareLiveLocation: true,
+        emergencyAlertsEnabled: true,
+        pushNotificationsEnabled: true,
+        emailNotificationsEnabled: false,
+      );
+    }
+
     try {
       final response = await _dio.get(_path('/preferences'));
       final map = _map(response);
@@ -566,6 +582,215 @@ class ApiService {
         data: json.encode(payload),
       );
       return _map(response);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  // ─── Routes ─────────────────────────────────────────────────────────────────
+
+  Future<List<RouteModel>> searchRoutes(String query) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      if (query.trim().length < 2) return [];
+      if (query.toLowerCase().contains('xyz')) return [];
+      return _mockRouteList();
+    }
+
+    try {
+      final response = await _dio.get(
+        _path('/routes/search'),
+        queryParameters: {'q': query},
+      );
+      final map = _map(response);
+      final list = map['routes'] as List<dynamic>? ?? [];
+      return list
+          .map((e) => RouteModel.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<RouteModel> getRouteDetail(String routeId) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return _mockRouteList().firstWhere(
+        (r) => r.id == routeId,
+        orElse: () => _mockRouteDetail(routeId),
+      );
+    }
+
+    try {
+      final response = await _dio.get(_path('/routes/$routeId'));
+      final map = _map(response);
+      return RouteModel.fromJson(
+        Map<String, dynamic>.from(
+          (map['route'] ?? map) as Map,
+        ),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<RouteModel> generateRoute(GenerateRouteFilters filters) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return RouteModel(
+        id: 'generated',
+        name: 'North Loop Patrol',
+        imageAsset: '',
+        distanceKm: filters.distanceKm,
+        durationMinutes: (filters.distanceKm * 12).round(),
+        runnerCount: 23,
+        isSecure: true,
+        safetyScore: '94%',
+        safePoints: 14,
+        locationLabel: 'Central Park, NY',
+        visibilityLabel: 'High Visibility Route',
+        saefraScore: 94,
+        trafficLevel: 'Low',
+        lightingLevel: 'High',
+        communityRating: 4.8,
+      );
+    }
+
+    try {
+      final response = await _dio.post(
+        _path('/routes/generate'),
+        queryParameters: filters.toQueryParams(),
+      );
+      final map = _map(response);
+      return RouteModel.fromJson(
+        Map<String, dynamic>.from((map['route'] ?? map) as Map),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  List<RouteModel> _mockRouteList() => [
+        RouteModel(
+          id: '1',
+          name: 'Lakeside Perimeter',
+          distanceKm: 3.2,
+          durationMinutes: 24,
+          tag: 'Popular',
+          runnerCount: 12,
+        ),
+        RouteModel(
+          id: '2',
+          name: 'North Loop Patrol',
+          distanceKm: 2.3,
+          durationMinutes: 18,
+          safePoints: 14,
+          runnerCount: 23,
+          saefraScore: 94,
+          locationLabel: 'Central Park, NY',
+          visibilityLabel: 'High Visibility Route',
+        ),
+        RouteModel(
+          id: '3',
+          name: 'River Trail Loop',
+          distanceKm: 5.0,
+          durationMinutes: 35,
+          tag: 'Scenic',
+          runnerCount: 8,
+        ),
+      ];
+
+  RouteModel _mockRouteDetail(String id) => RouteModel(
+        id: id,
+        name: 'North Loop Patrol',
+        distanceKm: 2.3,
+        durationMinutes: 18,
+        runnerCount: 23,
+        safePoints: 14,
+        saefraScore: 94,
+        safetyScore: '94%',
+        locationLabel: 'Central Park, NY',
+        visibilityLabel: 'High Visibility Route',
+        trafficLevel: 'Low',
+        lightingLevel: 'High',
+        communityRating: 4.8,
+        isSecure: true,
+      );
+
+  // ─── Settings / emergency contacts (API-ready stubs) ────────────────────────
+
+  Future<List<EmergencyContactModel>> getEmergencyContacts() async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return const [
+        EmergencyContactModel(id: '1', name: 'Jane Doe', phone: '+1 555 0100'),
+      ];
+    }
+    try {
+      final response = await _dio.get(_path('/emergency-contacts'));
+      final map = _map(response);
+      final list = map['contacts'] as List<dynamic>? ?? [];
+      return list
+          .map((e) => EmergencyContactModel.fromJson(
+                Map<String, dynamic>.from(e as Map),
+              ))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> addEmergencyContact({
+    required String name,
+    required String phone,
+  }) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return;
+    }
+    try {
+      final response = await _dio.post(
+        _path('/emergency-contacts'),
+        data: _form({'name': name, 'phone': phone}),
+      );
+      _map(response);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> removeEmergencyContact(String id) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return;
+    }
+    try {
+      final response = await _dio.delete(_path('/emergency-contacts/$id'));
+      _map(response);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return;
+    }
+    try {
+      final response = await _dio.post(
+        _path('/auth/change-password'),
+        data: _form({
+          'old_password': oldPassword,
+          'password': newPassword,
+          'password_confirmation': confirmPassword,
+        }),
+      );
+      _map(response);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

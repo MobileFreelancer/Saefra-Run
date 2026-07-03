@@ -8,7 +8,11 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/config/firebase_config.dart';
 import 'package:saefra_run/core/router/app_router.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/generate_route_service.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
+import 'package:saefra_run/core/services/route_detail_service.dart';
+import 'package:saefra_run/core/services/route_search_service.dart';
+import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/theme/app_theme.dart';
 import 'package:saefra_run/firebase_options.dart';
 
@@ -58,6 +62,12 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => DashboardServices(),
+        ),
+        ChangeNotifierProvider(create: (_) => RouteSearchService()),
+        ChangeNotifierProvider(create: (_) => GenerateRouteService()),
+        ChangeNotifierProvider(create: (_) => RouteDetailService()),
+        ChangeNotifierProvider(
+          create: (context) => SettingsService(context.read<AuthService>()),
         ),
       ],
       child: const SaefraRunApp(),

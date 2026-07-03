@@ -61,6 +61,25 @@ class Assets {
   static const String homeRouteThumbnailImg= '${mainImageUrl}home_route_thumbnail_img.png';
   static const String pluseIcon= '${mainImageUrl}pluseIcon.png';
 
+  // Search / routes / map style (add PNGs later — fallbacks used until then)
+  static const String searchNotFoundIllustration = '${mainImageUrl}search_not_found.png';
+  static const String generateRouteMapPreview = '${mainImageUrl}generate_route_map_preview.png';
+  static const String routeHighlightImg = '${mainImageUrl}route_highlight.png';
+  static const String mapStyleDarkBase = '${mainImageUrl}map_style_dark_base.png';
+  static const String mapStyleLight = '${mainImageUrl}map_style_light.png';
+  static const String mapStyleDark = '${mainImageUrl}map_style_dark.png';
+
+  // Settings icons (assets/icons/ — add files when ready)
+  static const String settingsEditProfileIcon = '${mainIconsUrl}settings_edit_profile.png';
+  static const String settingsSafetyIcon = '${mainIconsUrl}settings_safety.png';
+  static const String settingsEmergencyIcon = '${mainIconsUrl}settings_emergency.png';
+  static const String settingsPasswordIcon = '${mainIconsUrl}settings_password.png';
+  static const String settingsNotificationIcon = '${mainIconsUrl}settings_notification.png';
+  static const String settingsTermsIcon = '${mainIconsUrl}settings_terms.png';
+  static const String settingsPrivacyIcon = '${mainIconsUrl}settings_privacy.png';
+  static const String settingsLogoutIcon = '${mainIconsUrl}settings_logout.png';
+  static const String settingsAboutIcon = '${mainIconsUrl}settings_about.png';
+  static const String settingsCameraIcon = '${mainIconsUrl}settings_camera.png';
 
 
   static const String saefraRun = '.env';

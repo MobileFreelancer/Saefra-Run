@@ -6,6 +6,15 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:saefra_run/core/services/api_service.dart';
 
+enum DashboardMapStyle {
+  darkBase('Dark base'),
+  light('Light'),
+  dark('Dark');
+
+  const DashboardMapStyle(this.label);
+  final String label;
+}
+
 class DashboardServices extends ChangeNotifier {
   double? _latitude;
   double? _longitude;
@@ -30,6 +39,7 @@ class DashboardServices extends ChangeNotifier {
   List<LatLng> _routePolylinePoints = [];
   bool _isRouteLoading = false;
   String? _errorMessage;
+  DashboardMapStyle _mapStyle = DashboardMapStyle.darkBase;
 
   final ApiService _apiService = ApiService();
 
@@ -48,6 +58,7 @@ class DashboardServices extends ChangeNotifier {
   List<LatLng> get routePolylinePoints => _routePolylinePoints;
   bool get isRouteLoading => _isRouteLoading;
   String? get errorMessage => _errorMessage;
+  DashboardMapStyle get mapStyle => _mapStyle;
 
   DashboardServices() {
     _startBlinkAnimation();
@@ -62,6 +73,11 @@ class DashboardServices extends ChangeNotifier {
 
   void setBottomIndex(int index) {
     _currentBottomIndex = index;
+    notifyListeners();
+  }
+
+  void setMapStyle(DashboardMapStyle style) {
+    _mapStyle = style;
     notifyListeners();
   }
 

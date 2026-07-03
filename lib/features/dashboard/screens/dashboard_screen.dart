@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
@@ -7,8 +8,8 @@ import 'package:saefra_run/core/widgets/recent_route_tile.dart';
 import 'package:saefra_run/core/widgets/recommended_route_card.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/services/dashboard_services.dart';
-import '../../../core/services/route_service.dart';
 import '../../../generated/assets.dart';
+import '../widgets/map_style_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -109,7 +110,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     right: 16,
                     bottom: 43.h,
                     child: GestureDetector(
-                      onTap: () => _todo(context, 'Create a route'),
+                      onTap: () => context.pushNamed('generateRoute'),
                       child: Container(
                         width: 52,
                         height: 52,
@@ -192,7 +193,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ? services.recommendedRoute!['route_image']
                                   : Assets.background,
                               isSecure: services.recommendedRoute!['is_secure'] ?? true,
-                              onQuickStart: () => _todo(context, 'Quick start run'),
+                              onQuickStart: () {
+                                final id =
+                                    '${services.recommendedRoute?['route_id'] ?? services.recommendedRoute?['id'] ?? '2'}';
+                                context.pushNamed(
+                                  'routeDetail',
+                                  pathParameters: {'id': id},
+                                );
+                              },
                             ),
                           ] else if (services.errorMessage != null) ...[
                             Container(
@@ -252,7 +260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               ),
                               TextButton(
-                                onPressed: () => _todo(context, 'View all routes'),
+                                onPressed: () => context.pushNamed('search'),
                                 child: const Text(
                                   'View All',
                                   style: TextStyle(
@@ -302,7 +310,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   thumbnailAssetPath: route['route_image']?.isNotEmpty == true
                                       ? route['route_image']
                                       : Assets.background,
-                                  onTap: () => _todo(context, 'Open route detail'),
+                                  onTap: () {
+                                    final id =
+                                        '${route['route_id'] ?? route['id'] ?? index + 1}';
+                                    context.pushNamed(
+                                      'routeDetail',
+                                      pathParameters: {'id': id},
+                                    );
+                                  },
                                 );
                               },
                             ),
@@ -364,11 +379,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: (){
-                            fetchAndShowRouteData();
-
-                          },
-                          //onTap: () => _todo(context, 'Notifications'),
+                          onTap: () => context.pushNamed('notificationSettings'),
                           child: Container(
                             height: 38,
                             width: 38,
@@ -427,7 +438,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     onTap: () => services.setBottomIndex(1),
                   ),
                   GestureDetector(
-                    onTap: () => _todo(context, 'Start Run'),
+                    onTap: () {
+                      final route = services.recommendedRoute;
+                      final id =
+                          '${route?['route_id'] ?? route?['id'] ?? '2'}';
+                      context.pushNamed(
+                        'routeDetail',
+                        pathParameters: {'id': id},
+                      );
+                    },
                     behavior: HitTestBehavior.opaque,
                     child: SizedBox(
                       child: Image.asset(
@@ -450,7 +469,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     assetPath: Assets.bottomBarProfileIcon,
                     fallback: Icons.person_outline,
                     isSelected: services.currentBottomIndex == 3,
-                    onTap: () => services.setBottomIndex(3),
+                    onTap: () {
+                      services.setBottomIndex(3);
+                      context.pushNamed('settings');
+                    },
                   ),
                 ],
               );
@@ -507,6 +529,13 @@ class _SearchRouteFieldState extends State<SearchRouteField> {
           child: TextFormField(
             controller: _searchController,
             style: const TextStyle(color: Colors.white),
+            onTap: () {
+              final query = _searchController.text.trim();
+              context.pushNamed(
+                'search',
+                queryParameters: query.isNotEmpty ? {'q': query} : {},
+              );
+            },
             onChanged: (value) {
               services.searchLocation(value);
             },
@@ -533,7 +562,10 @@ class _SearchRouteFieldState extends State<SearchRouteField> {
                       ),
                     );
                   }
-                  return Image.asset(Assets.filter, scale: 2.5);
+                  return GestureDetector(
+                    onTap: () => context.pushNamed('generateRoute'),
+                    child: Image.asset(Assets.filter, scale: 2.5),
+                  );
                 },
               ),
               suffixIconConstraints: BoxConstraints(minWidth: 50.w),
@@ -727,14 +759,4 @@ class _BottomBarItem extends StatelessWidget {
       ),
     );
   }
-}
-
-void _todo(BuildContext context, String label) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('$label — coming soon'),
-      duration: const Duration(milliseconds: 900),
-      backgroundColor: AppColors.surfaceLight,
-    ),
-  );
 }
