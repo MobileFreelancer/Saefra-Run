@@ -1,11 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 
-// ==========================================
-// 1. EXTENDED DATA MODEL FOR JSON RESPONSE
-// ==========================================
 class LoopRouteResult {
   final String routeName;
   final int distanceMeters;
@@ -20,6 +18,7 @@ class LoopRouteResult {
   final int estimatedSteps;
   final double averageSpeedKmh;
   final String encodedPolyline;
+  final List<Map<String, double>> coordinates; // Holds decoded coordinates
 
   LoopRouteResult({
     required this.routeName,
@@ -35,9 +34,9 @@ class LoopRouteResult {
     required this.estimatedSteps,
     required this.averageSpeedKmh,
     required this.encodedPolyline,
+    required this.coordinates,
   });
 
-  /// Converts the complete object to your requested JSON structure
   Map<String, dynamic> toJson() {
     return {
       "routeName": routeName,
@@ -52,15 +51,13 @@ class LoopRouteResult {
       "estimatedSteps": estimatedSteps,
       "averageSpeedKmh": averageSpeedKmh,
       "encodedPolyline": encodedPolyline,
+      "coordinates": coordinates, // Output directly into the json file
     };
   }
 }
 
-// ==========================================
-// 2. ROUTE SERVICE CLASS
-// ==========================================
 class RouteService {
-  static String apiKey = "AIzaSyCbIzUN3ij3FCD-zBBshUZdEgBXDCcYsj8";
+  static String apiKey = "AIzaSyCbIzUN3ij3FCD-zBBshUZdEgBXDCcYsj8"; // Replace with your safe Key management setup
 
   Future<LoopRouteResult?> createLoopRoute({
     required LatLng currentLocation,
@@ -123,20 +120,13 @@ class RouteService {
           String rawDurationStr = route['duration'] ?? "0s";
           int rawSeconds = int.parse(rawDurationStr.replaceAll('s', ''));
 
-          // --- SMART CALCULATIONS ---
           double calculatedKm = double.parse((rawMeters / 1000).toStringAsFixed(2));
           double hoursTotal = rawSeconds / 3600;
 
-          // Speed (km/h)
           double speed = hoursTotal > 0 ? double.parse((calculatedKm / hoursTotal).toStringAsFixed(1)) : 0.0;
-
-          // Steps (Average step length = 0.76 meters for walk/run)
           int steps = (rawMeters / 0.76).round();
-
-          // Calories (Roughly 65 kcal per km for walking/running)
           int calories = (calculatedKm * 65).round();
 
-          // Difficulty based on distance
           String difficulty = "Easy";
           if (calculatedKm > 4 && calculatedKm <= 8) {
             difficulty = "Medium";
@@ -144,8 +134,11 @@ class RouteService {
             difficulty = "Hard";
           }
 
+          String encodedPolyline = route['polyline']['encodedPolyline'] ?? "";
+          List<Map<String, double>> coordinatesList = decodePolyline(encodedPolyline);
+
           return LoopRouteResult(
-            routeName: route['description'] ?? "Pal Gam - Palanpur Jakatnaka Rd",
+            routeName: route['description'] ?? "Palanpur Canal Rd",
             distanceMeters: rawMeters,
             distanceKm: calculatedKm,
             duration: rawDurationStr,
@@ -157,7 +150,8 @@ class RouteService {
             estimatedCalories: calories,
             estimatedSteps: steps,
             averageSpeedKmh: speed,
-            encodedPolyline: route['polyline']['encodedPolyline'] ?? "",
+            encodedPolyline: encodedPolyline,
+            coordinates: coordinatesList,
           );
         }
       } else {
@@ -209,29 +203,51 @@ class RouteService {
 
     return parts.join(' ');
   }
+
+  // Explicit Polyline parsing mapping loops back into standard LatLng blocks
+  List<Map<String, double>> decodePolyline(String encoded) {
+    List<Map<String, double>> poly = [];
+    int index = 0, len = encoded.length;
+    int lat = 0, lng = 0;
+
+    while (index < len) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+
+      poly.add({
+        "latitude": lat / 1E5,
+        "longitude": lng / 1E5,
+      });
+    }
+    return poly;
+  }
 }
 
-// ==========================================
-// 3. RUN / EXECUTION TEST METHOD
-// ==========================================
 void fetchAndShowRouteData() async {
   RouteService service = RouteService();
-
-  // 7.0 Km Loop around your Surat Coordinates
   LoopRouteResult? result = await service.createLoopRoute(
-    currentLocation: const LatLng(21.205194905801783, 72.77568113625402),
+    currentLocation: const LatLng(21.205195, 72.775681),
     distanceKm: 7.0,
     travelMode: "WALK",
   );
-
   if (result != null) {
-    // Generate clean, readable JSON format directly matching your structure
     String jsonOutput = const JsonEncoder.withIndent('  ').convert(result.toJson());
-
-    print("--- FULL JSON DATA RECEIVED ---");
     print(jsonOutput);
-    print("--------------------------------");
-  } else {
-    print("Data fetching failed. Verify API Key or connectivity.");
   }
 }

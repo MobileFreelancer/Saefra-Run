@@ -22,5 +22,6 @@ class AppColors {
   static const Color success = Color(0xFF22C55E);
   static const Color overlay = Color(0x99000000);
   static const Color white = Color(0xFFFFFFFF);
+  static const Color searchColors = Color(0xFF6E6E6E);
   static const Color transparent = Colors.transparent;
 }

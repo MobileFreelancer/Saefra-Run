@@ -20,7 +20,7 @@ class DashboardServices extends ChangeNotifier {
   double? _longitude;
   bool _isLoading = false;
   int _currentBottomIndex = 0;
-  GoogleMapController? _mapController;
+
 
   // Location stream
   StreamSubscription<Position>? _positionStreamSubscription;
@@ -51,6 +51,8 @@ class DashboardServices extends ChangeNotifier {
   /// system permission dialog — that combination causes native crashes/hangs.
   bool get isLocationPermissionResolved => _locationPermissionResolved;
   int get currentBottomIndex => _currentBottomIndex;
+  GoogleMapController? _mapController;
+
   GoogleMapController? get mapController => _mapController;
   List<dynamic> get placePredictions => _placePredictions;
   bool get isSearching => _isSearching;
@@ -61,6 +63,24 @@ class DashboardServices extends ChangeNotifier {
   bool get isRouteLoading => _isRouteLoading;
   String? get errorMessage => _errorMessage;
   DashboardMapStyle get mapStyle => _mapStyle;
+
+
+
+  set mapController(GoogleMapController? controller) {
+    _mapController = controller;
+    notifyListeners();
+  }
+
+  DashboardServices() {
+    _startBlinkAnimation();
+  }
+
+  void _startBlinkAnimation() {
+    _blinkTimer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
+      _isBlinkVisible = !_isBlinkVisible;
+      notifyListeners();
+    });
+  }
 
   void setBottomIndex(int index) {
     _currentBottomIndex = index;
@@ -435,7 +455,9 @@ class DashboardServices extends ChangeNotifier {
 
   @override
   void dispose() {
+    _blinkTimer?.cancel();
     _positionStreamSubscription?.cancel();
+    _mapController?.dispose();
     super.dispose();
   }
 }

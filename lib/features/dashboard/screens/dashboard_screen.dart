@@ -3,14 +3,15 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
-import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
-import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
 import 'package:saefra_run/core/widgets/recent_route_tile.dart';
 import 'package:saefra_run/core/widgets/recommended_route_card.dart';
-import 'package:saefra_run/core/widgets/search_route_bar.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/services/dashboard_services.dart';
+import '../../../core/services/route_service.dart';
+import '../../../core/utils/app_tost.dart';
+import '../../../core/utils/map_style_service.dart';
+import '../../../core/widgets/show_bottom_sheet.dart';
 import '../../../generated/assets.dart';
 import '../widgets/dashboard_map.dart';
 
@@ -19,7 +20,7 @@ class DashboardScreen extends StatefulWidget {
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(21.205194905801783, 72.77568113625402),
-    zoom: 10,
+    zoom: 15,
   );
 
   @override
@@ -42,8 +43,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         destLat: 21.205194905801783,
         destLng: 72.77568113625402,
       );
+      services.getCurrentLocation();
+      //fetchAndShowRouteData();
     });
   }
+  late final services = context.read<DashboardServices>();
 
   @override
   Widget build(BuildContext context) {
@@ -67,9 +71,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: DashboardMap(
-                      initialTarget: DashboardScreen._initialPosition.target,
-                      initialZoom: DashboardScreen._initialPosition.zoom,
+                    child: Consumer<DashboardServices>(
+                      builder: (context, services, child) {
+                        final mapTarget =
+                            (services.latitude != null &&
+                                services.longitude != null)
+                            ? LatLng(services.latitude!, services.longitude!)
+                            : DashboardScreen._initialPosition.target;
+
+                        return GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: mapTarget,
+                            zoom: DashboardScreen._initialPosition.zoom,
+                          ),
+                          myLocationEnabled: true,
+                          myLocationButtonEnabled: false,
+                          zoomControlsEnabled: false,
+                          circles: services.getMapCircles(),
+                           markers: services.getMapMarkers(context),
+                          // polylines: {
+                          //   if (services.routePolylinePoints.isNotEmpty)
+                          //     Polyline(
+                          //       polylineId: const PolylineId('safe_route_polyline'),
+                          //       points: services.routePolylinePoints,
+                          //       color: AppColors.primary,
+                          //       width: 5,
+                          //     ),
+                          // },
+                          onMapCreated: (controller)async{
+                            context.read<DashboardServices>().setMapController(
+                              controller,
+                            );
+                            services.setMapController(controller);
+                            await MapStyleService.applyStyle(
+                              controller: controller,
+                              theme: MapTheme.light,
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
 
@@ -375,7 +415,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    const SearchRouteBar(readOnly: true),
+                      SearchRouteField(),
                   ],
                 ),
               ),
