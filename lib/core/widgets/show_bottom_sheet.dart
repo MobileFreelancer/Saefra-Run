@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:saefra_run/core/widgets/app_asset_icon.dart';
 
+import '../../generated/assets.dart';
+import '../constants/app_colors.dart';
 import '../utils/map_style_service.dart';
 
 void showMapStyleBottomSheet(
@@ -21,16 +25,35 @@ void showMapStyleBottomSheet(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-
-              const Text(
-                "Select Map Style",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
+               Row(
+                 children: [
+                   Text(
+                    "Select Map Style",
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18.sp,
+                    ),
+                   ),
+                   //Image.asset(Assets.closeIcon,scale: 2.3,)
+                 ],
+               ),
               const SizedBox(height: 20),
+
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //   children: [
+              //     InkWell(
+              //         child: Image.asset(Assets.prrakImage,scale: 3.3,)
+              //     ),
+              //     InkWell(
+              //         child: Image.asset(Assets.lightMapImage,scale: 3.3,)
+              //     ),
+              //     InkWell(
+              //         child: Image.asset(Assets.darkMapImage,scale: 3.3,)
+              //     )
+              //   ],
+              // ),
 
               ListTile(
                 leading: const Icon(Icons.light_mode),

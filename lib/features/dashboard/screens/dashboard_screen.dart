@@ -7,10 +7,12 @@ import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/widgets/recent_route_tile.dart';
 import 'package:saefra_run/core/widgets/recommended_route_card.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../core/models/route_model.dart';
 import '../../../core/services/dashboard_services.dart';
 import '../../../core/services/route_service.dart';
 import '../../../core/utils/app_tost.dart';
 import '../../../core/utils/map_style_service.dart';
+import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/show_bottom_sheet.dart';
 import '../../../generated/assets.dart';
 import '../widgets/dashboard_map.dart';
@@ -87,8 +89,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           myLocationEnabled: true,
                           myLocationButtonEnabled: false,
                           zoomControlsEnabled: false,
-                          circles: services.getMapCircles(),
-                           markers: services.getMapMarkers(context),
                           // polylines: {
                           //   if (services.routePolylinePoints.isNotEmpty)
                           //     Polyline(
@@ -427,6 +427,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
+
+
+
+
+class SearchRouteField extends StatefulWidget {
+
+  const  SearchRouteField({super.key,});
+
+  @override
+  State<SearchRouteField> createState() => _SearchRouteFieldState();
+}
+
+class _SearchRouteFieldState extends State<SearchRouteField> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final services = context.read<DashboardServices>();
+
+
+    return Container(
+      width: 355.w,
+      height: 40.h,
+      padding: EdgeInsets.symmetric(horizontal: 10.h,vertical: 5.h),
+      decoration: BoxDecoration(
+          color: AppColors.textBorder,
+          border: Border.all(color: AppColors.textBorder),
+          borderRadius: BorderRadius.all(Radius.circular(10.r))
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: (){
+                final query = _searchController.text.trim();
+                context.pushNamed(
+                  'search',
+                  queryParameters: query.isNotEmpty ? {'q': query} : {},
+                );
+              },
+              child: Row(
+                children: [
+                  Image.asset(Assets.Search, scale: 2.5),
+                  SizedBox(width: 13.w,),
+                  Text("Search Route...",style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.searchColors,
+                      fontWeight: FontWeight.w400,
+                      fontSize: 12.sp
+                  ),)
+                ],
+              ),
+            ),
+          ),
+          GestureDetector(
+              onTap: (){
+                if (services.mapController == null) {
+                  AppToast.error('Map is not ready yet.');
+                  return;
+                }
+                showMapStyleBottomSheet(
+                  context,
+                  services.mapController!,
+                );
+              },
+              child: Image.asset(Assets.filter, scale: 2.5)
+          )
+        ],
+      ),
+    );
+  }
+}
+
+
+
+
+
 
 class _UserAvatar extends StatelessWidget {
   const _UserAvatar({required this.name});

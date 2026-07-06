@@ -81,9 +81,10 @@ class Assets {
   static const String settingsAboutIcon = '${mainIconsUrl}settings_about.png';
   static const String settingsCameraIcon = '${mainIconsUrl}settings_camera.png';
 
-  static const String darkMapImage = '${mainIconsUrl}dark_map.png.png';
-  static const String lightMapImage = '${mainIconsUrl}loght_map.png.png';
-  static const String prrakImage = '${mainIconsUrl}prak_map.png.png';
+  static const String darkMapImage = '${mainImageUrl}dark_map.png';
+  static const String lightMapImage = '${mainImageUrl}loght_map.png';
+  static const String prrakImage = '${mainImageUrl}prak_map.png';
+  static const String closeIcon = '${mainImageUrl}closedIcon.png';
 
 
   static const String saefraRun = '.env';
