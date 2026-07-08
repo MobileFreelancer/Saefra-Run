@@ -68,15 +68,41 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                               style: textTheme.titleLarge?.copyWith(fontSize: 18.sp),
                             ),
                             SizedBox(height: 6.h),
-                            Text(
-                              '${route.routeTypeLabel} • ${route.lightingLevel ?? 'Well-lit'}',
-                              style: textTheme.bodySmall,
+                            Row(
+                              spacing: 5.w,
+                              children: [
+                                Icon(Icons.location_on_outlined,color: AppColors.white,),
+
+                                Text(
+                                  '${route.routeTypeLabel} • ${route.lightingLevel ?? 'Well-lit'}',
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: AppColors.white,
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w500
+                                  ),
+                                ),
+                                Container(
+                                  margin: EdgeInsets.only(left: 8.w,right: 5.w),
+                                  width: 3.w,
+                                  height: 20.h,
+                                  color: AppColors.border,
+                                ),
+
+                                Text(
+                                  'High Visibility Route',
+                                  style: textTheme.bodySmall?.copyWith(
+                                      color: AppColors.buttonColor,
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w700
+                                  ),
+                                ),
+                              ],
                             ),
                             SizedBox(height: 16.h),
-                            _RouteMapCard(route: route),
-                            SizedBox(height: 12.h),
-                            _RouteStatsRow(route: route),
-                            SizedBox(height: 16.h),
+                             _RouteMapCard(route: route),
+                             SizedBox(height: 12.h),
+                            // _RouteStatsRow(route: route),
+                            // SizedBox(height: 16.h),
                             PrimaryButton(
                               label: 'Start Run',
                               onPressed: () {
@@ -180,12 +206,25 @@ class _RouteMapCard extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
               decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.9),
+                border: Border.all(
+                  color: AppColors.white,
+                  width: 2
+                ),
+                color: AppColors.border.withOpacity(.7),
                 borderRadius: BorderRadius.circular(8.r),
               ),
-              child: Text(
-                'Route Scope',
-                style: textTheme.bodySmall,
+              child: Row(
+                spacing: 8.w,
+                children: [
+                  Image.asset(Assets.seftiIcon, width: 18.w, height: 18.h,color: AppColors.white,),
+                  Text(
+                    'Route Scope',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

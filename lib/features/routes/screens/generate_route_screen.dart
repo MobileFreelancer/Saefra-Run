@@ -58,7 +58,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                     polylinePoints: service.previewPolylinePoints,
                     onReset: () {
                     service.setDistance(5);
-                    service.setDifficulty(RouteDifficulty.medium);
+                    service.setDifficulty(RouteDifficulty.moderate);
                     service.setShape(RouteShape.loop);
                     service.setLighting(RouteLighting.wellLit);
                   }),
@@ -102,7 +102,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                     onChanged: service.setDifficulty,
                     labelBuilder: (v) => switch (v) {
                       RouteDifficulty.easy => 'Easy',
-                      RouteDifficulty.medium => 'Medium',
+                      RouteDifficulty.moderate => 'Medium',
                       RouteDifficulty.hard => 'Hard',
                     },
                   ),

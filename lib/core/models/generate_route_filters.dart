@@ -1,4 +1,4 @@
-enum RouteDifficulty { easy, medium, hard }
+enum RouteDifficulty { easy, moderate, hard }
 
 enum RouteShape { loop, oneWay }
 
@@ -12,7 +12,7 @@ class GenerateRouteFilters {
 
   const GenerateRouteFilters({
     this.distanceKm = 5,
-    this.difficulty = RouteDifficulty.medium,
+    this.difficulty = RouteDifficulty.moderate,
     this.shape = RouteShape.loop,
     this.lighting = RouteLighting.wellLit,
   });
