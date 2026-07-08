@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/generate_route_filters.dart';
+import 'package:saefra_run/core/services/dashboard_services.dart';
 import 'package:saefra_run/core/services/generate_route_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_route_map.dart';
@@ -20,7 +22,11 @@ class GenerateRouteScreen extends StatefulWidget {
 class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
   Future<void> _generate() async {
     final service = context.read<GenerateRouteService>();
-    final route = await service.generate();
+    final dashboard = context.read<DashboardServices>();
+    final route = await service.generate(
+      latitude: dashboard.latitude,
+      longitude: dashboard.longitude,
+    );
     if (!mounted || route == null) {
       if (mounted && service.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -48,7 +54,9 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
               child: ListView(
                 padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
                 children: [
-                  _MapPreviewCard(onReset: () {
+                  _MapPreviewCard(
+                    polylinePoints: service.previewPolylinePoints,
+                    onReset: () {
                     service.setDistance(5);
                     service.setDifficulty(RouteDifficulty.medium);
                     service.setShape(RouteShape.loop);
@@ -138,9 +146,13 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
 }
 
 class _MapPreviewCard extends StatelessWidget {
-  const _MapPreviewCard({required this.onReset});
+  const _MapPreviewCard({
+    required this.onReset,
+    this.polylinePoints = const [],
+  });
 
   final VoidCallback onReset;
+  final List<LatLng> polylinePoints;
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +162,12 @@ class _MapPreviewCard extends StatelessWidget {
         height: 160.h,
         child: Stack(
           children: [
-            const AppRouteMap(height: 160, borderRadius: 16),
+            AppRouteMap(
+              height: 160,
+              borderRadius: 16,
+              polylinePoints:
+                  polylinePoints.isNotEmpty ? polylinePoints : null,
+            ),
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(

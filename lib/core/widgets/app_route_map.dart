@@ -62,14 +62,16 @@ class AppRouteMap extends StatelessWidget {
         routePolylinePoints: services.routePolylinePoints,
       ),
       builder: (context, snapshot, _) {
-        final target = snapshot.latitude != null && snapshot.longitude != null
-            ? LatLng(snapshot.latitude!, snapshot.longitude!)
-            : AppMockData.defaultMapTarget;
-
         final points = polylinePoints ??
             (snapshot.routePolylinePoints.isNotEmpty
                 ? snapshot.routePolylinePoints
                 : AppMockData.defaultPolyline);
+
+        final target = points.isNotEmpty
+            ? points.first
+            : (snapshot.latitude != null && snapshot.longitude != null
+                ? LatLng(snapshot.latitude!, snapshot.longitude!)
+                : AppMockData.defaultMapTarget);
 
         final markers = <Marker>{};
         if (showLocationMarker && snapshot.latitude != null) {

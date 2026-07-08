@@ -33,8 +33,16 @@ class GenerateRouteFilters {
 
   Map<String, dynamic> toQueryParams() => {
         'distance_km': distanceKm.toStringAsFixed(1),
-        'difficulty': difficulty.name,
+        'difficulty': difficulty.apiValue,
         'route_type': shape == RouteShape.loop ? 'loop' : 'one_way',
         'lighting': lighting == RouteLighting.wellLit ? 'well_lit' : 'dim_dark',
       };
+}
+
+extension RouteDifficultyApi on RouteDifficulty {
+  String get apiValue => name;
+}
+
+extension RouteLightingApi on RouteLighting {
+  String get apiValue => this == RouteLighting.wellLit ? 'Well-lit' : 'Dim/Dark';
 }

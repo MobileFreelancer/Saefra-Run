@@ -69,17 +69,29 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                             ),
                             SizedBox(height: 6.h),
                             Text(
-                              '${route.locationLabel ?? 'Your area'} | ${route.visibilityLabel ?? 'Safe route'}',
+                              '${route.routeTypeLabel} • ${route.lightingLevel ?? 'Well-lit'}',
                               style: textTheme.bodySmall,
                             ),
                             SizedBox(height: 16.h),
                             _RouteMapCard(route: route),
+                            SizedBox(height: 12.h),
+                            _RouteStatsRow(route: route),
                             SizedBox(height: 16.h),
                             PrimaryButton(
                               label: 'Start Run',
                               onPressed: () {
-                                const start = LatLng(21.205194905801783, 72.77568113625402);
-                                const end = LatLng(21.2035, 72.7997);
+                                final start = route.startPoint;
+                                final end = route.endPoint;
+                                if (start == null || end == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Route coordinates are not available yet.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
                                 context.read<RunningProvider>().selectDestination(
                                   startPoint: start,
                                   endPoint: end,
@@ -108,8 +120,11 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                             SizedBox(height: 10.h),
                             _SafetyInfoRow(
                               label: 'Lighting Level',
-                              value: route.lightingLevel ?? 'High',
+                              value: route.lightingLevel ?? '—',
                               valueColor: AppColors.primary,
+                              difficulty: route.difficulty,
+                              travelMode: route.travelMode,
+                              communityRating: route.communityRating,
                             ),
                             SizedBox(height: 20.h),
                             Text(
@@ -152,7 +167,13 @@ class _RouteMapCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(20.r),
       child: Stack(
         children: [
-          AppRouteMap(height: 220.h, borderRadius: 20),
+          AppRouteMap(
+            height: 220.h,
+            borderRadius: 20,
+            polylinePoints: route.polylinePoints.isNotEmpty
+                ? route.polylinePoints
+                : null,
+          ),
           Positioned(
             top: 12.h,
             right: 12.w,
@@ -190,7 +211,7 @@ class _RouteMapCard extends StatelessWidget {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          '${route.distanceLabel} • ${route.safePoints ?? 0} Data Points',
+                          '${route.distanceLabel} • ${route.durationLabel} • ${route.safePoints ?? 0} SafePoints',
                           style: textTheme.bodySmall,
                         ),
                       ],
@@ -204,7 +225,7 @@ class _RouteMapCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Text(
-                      '${route.runnerCount} active',
+                      route.isSecure ? 'Secure' : 'Open',
                       style: textTheme.bodySmall?.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600,
@@ -216,6 +237,74 @@ class _RouteMapCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RouteStatsRow extends StatelessWidget {
+  const _RouteStatsRow({required this.route});
+
+  final RouteModel route;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Row(
+      children: [
+        _StatChip(
+          label: 'Calories',
+          value: '${route.estimatedCalories ?? 0}',
+          textTheme: textTheme,
+        ),
+        SizedBox(width: 8.w),
+        _StatChip(
+          label: 'Steps',
+          value: '${route.estimatedSteps ?? 0}',
+          textTheme: textTheme,
+        ),
+        SizedBox(width: 8.w),
+        _StatChip(
+          label: 'Speed',
+          value: '${route.avgSpeedKmh?.toStringAsFixed(1) ?? '0'} km/h',
+          textTheme: textTheme,
+        ),
+      ],
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({
+    required this.label,
+    required this.value,
+    required this.textTheme,
+  });
+
+  final String label;
+  final String value;
+  final TextTheme textTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: textTheme.bodySmall),
+            SizedBox(height: 4.h),
+            Text(
+              value,
+              style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -288,12 +377,18 @@ class _SafetyInfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.valueColor,
+    this.difficulty,
+    this.travelMode,
+    this.communityRating,
     this.trailing,
   });
 
   final String label;
   final String value;
   final Color valueColor;
+  final String? difficulty;
+  final String? travelMode;
+  final double? communityRating;
   final Widget? trailing;
 
   @override
@@ -321,6 +416,16 @@ class _SafetyInfoRow extends StatelessWidget {
             ],
           ),
           SizedBox(height: 12.h,),
+          if (difficulty != null || travelMode != null) ...[
+            Text(
+              [
+                if (difficulty != null) 'Difficulty: $difficulty',
+                if (travelMode != null) 'Mode: $travelMode',
+              ].join(' • '),
+              style: textTheme.bodySmall,
+            ),
+            SizedBox(height: 12.h),
+          ],
           Container(
             width: 300.w,
             height: 50.h,
@@ -332,14 +437,16 @@ class _SafetyInfoRow extends StatelessWidget {
             child: Row(
               spacing: 5.w,
               children: [
-                Icon(Icons.star_border, color: Colors.amberAccent),
+                const Icon(Icons.star_border, color: Colors.amberAccent),
                 Text(
                   'Community Rating',
                   style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500,color: AppColors.background),
                 ),
                 const Spacer(),
                 Text(
-                  "48",
+                  communityRating != null && communityRating! > 0
+                      ? communityRating!.toStringAsFixed(1)
+                      : '—',
                   style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500,color: Colors.amberAccent),
                 ),
                 Text(

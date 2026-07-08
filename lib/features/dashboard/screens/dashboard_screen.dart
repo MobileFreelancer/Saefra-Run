@@ -299,8 +299,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               separatorBuilder: (context, index) => const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final route = services.recentRoutes[index];
-                                final distance = route['distance'] ?? 0.0;
-                                final duration = route['duration'] ?? 0;
+                                final distance =
+                                    route['distance_km'] ?? route['distance'] ?? 0.0;
+                                final duration = route['estimated_time'] ??
+                                    route['estimated_time_minutes'] ??
+                                    route['duration'] ??
+                                    0;
                                 final tag = route['tag'] ?? 'NA';
                                 final title = route['route_name'] ?? 'Route';
                                 final dateStr = route['date'];
@@ -315,7 +319,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                                 return RecentRouteTile(
                                   title: title,
-                                  subtitle: '$dateLabel • $distance km • $duration mins',
+                                  subtitle: '$dateLabel • $distance km • $duration',
                                   tag: tag == 'Na' || tag == 'NA' ? 'Route' : tag,
                                   thumbnailAssetPath: route['route_image']?.isNotEmpty == true
                                       ? route['route_image']

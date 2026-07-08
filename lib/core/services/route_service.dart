@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:saefra_run/core/utils/polyline_decoder.dart';
 
 class LoopRouteResult {
   final String routeName;
@@ -18,7 +18,7 @@ class LoopRouteResult {
   final int estimatedSteps;
   final double averageSpeedKmh;
   final String encodedPolyline;
-  final List<Map<String, double>> coordinates; // Holds decoded coordinates
+  final List<Map<String, double>> coordinates;
 
   LoopRouteResult({
     required this.routeName,
@@ -36,6 +36,9 @@ class LoopRouteResult {
     required this.encodedPolyline,
     required this.coordinates,
   });
+
+  String get apiRouteType =>
+      routeType.toLowerCase() == 'one_way' ? 'one_way' : 'loop';
 
   Map<String, dynamic> toJson() {
     return {
@@ -62,50 +65,101 @@ class RouteService {
   Future<LoopRouteResult?> createLoopRoute({
     required LatLng currentLocation,
     required double distanceKm,
-    String travelMode = "WALK",
+    String travelMode = 'WALK',
+    String difficulty = 'medium',
+    String routeType = 'loop',
+    String lighting = 'Well-lit',
+    String? routeName,
   }) async {
-    double radius = (distanceKm * 1000) / (2 * pi);
-    List<LatLng> waypoints = generateLoopWaypoints(currentLocation, radius);
+    final radius = (distanceKm * 1000) / (2 * pi);
+    final waypoints = generateLoopWaypoints(currentLocation, radius);
 
-    final body = {
-      "origin": {
-        "location": {
-          "latLng": {
-            "latitude": currentLocation.latitude,
-            "longitude": currentLocation.longitude,
+    return _computeRoute(
+      origin: currentLocation,
+      destination: currentLocation,
+      intermediates: waypoints,
+      travelMode: travelMode,
+      difficulty: difficulty,
+      routeType: routeType,
+      lighting: lighting,
+      routeName: routeName,
+    );
+  }
+
+  Future<LoopRouteResult?> createOneWayRoute({
+    required LatLng origin,
+    required double distanceKm,
+    String travelMode = 'WALK',
+    String difficulty = 'medium',
+    String lighting = 'Well-lit',
+    String? routeName,
+  }) async {
+    final destination = calculatePoint(origin, distanceKm * 1000, 0);
+
+    return _computeRoute(
+      origin: origin,
+      destination: destination,
+      travelMode: travelMode,
+      difficulty: difficulty,
+      routeType: 'one_way',
+      lighting: lighting,
+      routeName: routeName,
+    );
+  }
+
+  Future<LoopRouteResult?> _computeRoute({
+    required LatLng origin,
+    required LatLng destination,
+    List<LatLng> intermediates = const [],
+    String travelMode = 'WALK',
+    String difficulty = 'medium',
+    String routeType = 'loop',
+    String lighting = 'Well-lit',
+    String? routeName,
+  }) async {
+    final body = <String, dynamic>{
+      'origin': {
+        'location': {
+          'latLng': {
+            'latitude': origin.latitude,
+            'longitude': origin.longitude,
           }
         }
       },
-      "destination": {
-        "location": {
-          "latLng": {
-            "latitude": currentLocation.latitude,
-            "longitude": currentLocation.longitude,
+      'destination': {
+        'location': {
+          'latLng': {
+            'latitude': destination.latitude,
+            'longitude': destination.longitude,
           }
         }
       },
-      "intermediates": waypoints.map((e) {
+      'travelMode': travelMode,
+      'computeAlternativeRoutes': false,
+    };
+
+    if (intermediates.isNotEmpty) {
+      body['intermediates'] = intermediates.map((point) {
         return {
-          "location": {
-            "latLng": {
-              "latitude": e.latitude,
-              "longitude": e.longitude,
+          'location': {
+            'latLng': {
+              'latitude': point.latitude,
+              'longitude': point.longitude,
             }
           },
-          "via": true
+          'via': true,
         };
-      }).toList(),
-      "travelMode": travelMode,
-      "computeAlternativeRoutes": false,
-    };
+      }).toList();
+    }
 
     try {
       final response = await http.post(
-        Uri.parse("https://routes.googleapis.com/directions/v2:computeRoutes"),
+        Uri.parse('https://routes.googleapis.com/directions/v2:computeRoutes'),
         headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": apiKey,
-          "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline,routes.description",
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask':
+              'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline,routes.description',
         },
         body: jsonEncode(body),
       );
@@ -116,37 +170,43 @@ class RouteService {
         if (data.containsKey('routes') && (data['routes'] as List).isNotEmpty) {
           final route = data['routes'][0];
 
-          int rawMeters = route['distanceMeters'] ?? 0;
-          String rawDurationStr = route['duration'] ?? "0s";
-          int rawSeconds = int.parse(rawDurationStr.replaceAll('s', ''));
+          final rawMeters = route['distanceMeters'] ?? 0;
+          final rawDurationStr = route['duration'] ?? '0s';
+          final rawSeconds = int.parse(rawDurationStr.replaceAll('s', ''));
 
-          double calculatedKm = double.parse((rawMeters / 1000).toStringAsFixed(2));
-          double hoursTotal = rawSeconds / 3600;
+          final calculatedKm =
+              double.parse((rawMeters / 1000).toStringAsFixed(2));
+          final hoursTotal = rawSeconds / 3600;
 
-          double speed = hoursTotal > 0 ? double.parse((calculatedKm / hoursTotal).toStringAsFixed(1)) : 0.0;
-          int steps = (rawMeters / 0.76).round();
-          int calories = (calculatedKm * 65).round();
+          final speed = hoursTotal > 0
+              ? double.parse((calculatedKm / hoursTotal).toStringAsFixed(1))
+              : 0.0;
+          final steps = (rawMeters / 0.76).round();
+          final calories = (calculatedKm * 65).round();
 
-          String difficulty = "Easy";
-          if (calculatedKm > 4 && calculatedKm <= 8) {
-            difficulty = "Medium";
-          } else if (calculatedKm > 8) {
-            difficulty = "Hard";
-          }
-
-          String encodedPolyline = route['polyline']['encodedPolyline'] ?? "";
-          List<Map<String, double>> coordinatesList = decodePolyline(encodedPolyline);
+          final encodedPolyline = route['polyline']['encodedPolyline'] ?? '';
+          final decodedPoints = PolylineDecoder.decode(encodedPolyline);
+          final coordinatesList = decodedPoints
+              .map(
+                (point) => {
+                  'latitude': point.latitude,
+                  'longitude': point.longitude,
+                },
+              )
+              .toList();
 
           return LoopRouteResult(
-            routeName: route['description'] ?? "Palanpur Canal Rd",
+            routeName: routeName ??
+                route['description'] as String? ??
+                'Safe Route ${calculatedKm.toStringAsFixed(1)} km',
             distanceMeters: rawMeters,
             distanceKm: calculatedKm,
             duration: rawDurationStr,
             formattedDuration: formatDuration(rawSeconds),
             travelMode: travelMode,
             difficulty: difficulty,
-            routeType: "Loop",
-            lighting: "Well-lit",
+            routeType: routeType,
+            lighting: lighting,
             estimatedCalories: calories,
             estimatedSteps: steps,
             averageSpeedKmh: speed,
@@ -155,10 +215,10 @@ class RouteService {
           );
         }
       } else {
-        print("API Error: ${response.body}");
+        print('API Error: ${response.body}');
       }
     } catch (e) {
-      print("Exception: $e");
+      print('Exception: $e');
     }
     return null;
   }
@@ -202,40 +262,6 @@ class RouteService {
     if (parts.isEmpty) parts.add("0 min");
 
     return parts.join(' ');
-  }
-
-  // Explicit Polyline parsing mapping loops back into standard LatLng blocks
-  List<Map<String, double>> decodePolyline(String encoded) {
-    List<Map<String, double>> poly = [];
-    int index = 0, len = encoded.length;
-    int lat = 0, lng = 0;
-
-    while (index < len) {
-      int b, shift = 0, result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
-
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
-
-      poly.add({
-        "latitude": lat / 1E5,
-        "longitude": lng / 1E5,
-      });
-    }
-    return poly;
   }
 }
 

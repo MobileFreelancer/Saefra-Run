@@ -7,7 +7,6 @@ import 'package:saefra_run/core/models/activity_model.dart';
 import 'package:saefra_run/core/models/auth_response_model.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
-import 'package:saefra_run/core/models/generate_route_filters.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/models/route_model.dart';
@@ -617,41 +616,42 @@ class ApiService {
     );
   }
 
-  Future<RouteModel> generateRoute(GenerateRouteFilters filters) async {
+  Future<RouteModel> saveRoute(Map<String, dynamic> body) async {
     return _apiOrMock(
       () async {
         final response = await _dio.post(
-          _path('/routes/generate'),
-          queryParameters: filters.toQueryParams(),
+          _path('/routes'),
+          data: body,
+          options: Options(
+            headers: {'Content-Type': 'application/json'},
+          ),
         );
         final map = _map(response);
         return RouteModel.fromJson(
           Map<String, dynamic>.from((map['route'] ?? map) as Map),
         );
       },
-      () async => _mockGeneratedRoute(filters),
-    );
-  }
-
-  RouteModel _mockGeneratedRoute(GenerateRouteFilters filters) {
-    return RouteModel(
-      id: 'generated',
-      name: 'North Loop Patrol',
-      imageAsset: 'assets/images/background.png',
-      distanceKm: filters.distanceKm,
-      durationMinutes: (filters.distanceKm * 12).round(),
-      runnerCount: 23,
-      isSecure: true,
-      safetyScore: '94%',
-      safePoints: 14,
-      locationLabel: 'Central Park, NY',
-      visibilityLabel: 'High Visibility Route',
-      saefraScore: 94,
-      trafficLevel: 'Low',
-      lightingLevel: filters.lighting == RouteLighting.wellLit
-          ? 'High'
-          : 'Low',
-      communityRating: 4.8,
+      () async => RouteModel.fromJson({
+        'id': 'mock_saved',
+        'route_name': body['routeName'] ?? 'Saved Route',
+        'distance_km': body['distanceKm'],
+        'estimated_time': body['formattedDuration'],
+        'route_encoded_polyline': body['encodedPolyline'],
+        'difficulty': body['difficulty'],
+        'route_type': body['routeType'],
+        'lighting': body['lighting'],
+        'travel_mode': body['travelMode'],
+        'estimated_calories': body['estimatedCalories'],
+        'estimated_steps': body['estimatedSteps'],
+        'avg_speed_kmh': body['averageSpeedKmh'],
+        'safepoints': 17,
+        'safety_score': 80,
+        'is_secure': true,
+        'start_latitude': body['start_latitude'],
+        'start_longitude': body['start_longitude'],
+        'end_latitude': body['end_latitude'],
+        'end_longitude': body['end_longitude'],
+      }),
     );
   }
 
