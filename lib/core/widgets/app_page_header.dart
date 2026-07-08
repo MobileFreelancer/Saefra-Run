@@ -18,7 +18,6 @@ class AppPageHeader extends StatelessWidget {
   final Widget? trailing;
   final String? backAssetPath;
 
-  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.fromLTRB(8.w, 8.h, 16.w, 8.h),

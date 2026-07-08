@@ -85,6 +85,8 @@ class Assets {
   static const String lightMapImage = '${mainImageUrl}loght_map.png';
   static const String prrakImage = '${mainImageUrl}prak_map.png';
   static const String closeIcon = '${mainImageUrl}closedIcon.png';
+  static const String seftiIcon = '${mainImageUrl}seftiIcon.png';
+  static const String saftyinfoIcon = '${mainImageUrl}saftyinfo.png';
 
 
   static const String saefraRun = '.env';

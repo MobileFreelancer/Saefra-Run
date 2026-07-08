@@ -111,40 +111,25 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                               value: route.lightingLevel ?? 'High',
                               valueColor: AppColors.primary,
                             ),
-                            _SafetyInfoRow(
-                              label: 'Traffic Level',
-                              value: route.trafficLevel ?? 'Low',
-                              valueColor: AppColors.success,
-                            ),
-                            _SafetyInfoRow(
-                              label: 'Community Rating',
-                              value:
-                                  '${route.communityRating?.toStringAsFixed(1) ?? '4.8'} / 5',
-                              valueColor: AppColors.textPrimary,
-                              trailing: Icon(
-                                Icons.star,
-                                color: Colors.amber,
-                                size: 16.sp,
-                              ),
-                            ),
                             SizedBox(height: 20.h),
                             Text(
                               'Live Highlights',
                               style: textTheme.bodyMedium,
                             ),
                             SizedBox(height: 10.h),
-                            SizedBox(
-                              height: 120.h,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: 3,
-                                separatorBuilder: (_, __) =>
-                                    SizedBox(width: 12.w),
-                                itemBuilder: (context, index) {
-                                  return _HighlightCard(index: index);
-                                },
-                              ),
-                            ),
+                            LiveHighlightsCard()
+                            // SizedBox(
+                            //   height: 120.h,
+                            //   child: ListView.separated(
+                            //     scrollDirection: Axis.horizontal,
+                            //     itemCount: 3,
+                            //     separatorBuilder: (_, __) =>
+                            //         SizedBox(width: 12.w),
+                            //     itemBuilder: (context, index) {
+                            //       return _HighlightCard(index: index);
+                            //     },
+                            //   ),
+                            // ),
                           ],
                         ),
                       ),
@@ -257,17 +242,23 @@ class _SaefraScoreCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                'SAEFRA SCORE',
-                style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6),
+              Column(
+                spacing: 8.h,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SAEFRA SCORE',
+                    style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    '${pct.round()}%',
+                    style: textTheme.displayLarge?.copyWith(fontSize: 38.sp, fontWeight: FontWeight.w800, color: AppColors.primary),
+                  ),
+                ],
               ),
+
               const Spacer(),
-              Icon(Icons.check_circle, color: AppColors.primary, size: 18.sp),
-              SizedBox(width: 6.w),
-              Text(
-                '${pct.round()}%',
-                style: textTheme.titleLarge?.copyWith(fontSize: 16.sp),
-              ),
+              Image.asset(Assets.seftiIcon, width: 24.w, height: 24.h),
             ],
           ),
           SizedBox(height: 10.h),
@@ -275,11 +266,17 @@ class _SaefraScoreCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4.r),
             child: LinearProgressIndicator(
               value: pct / 100,
-              minHeight: 6.h,
+              minHeight: 8.h,
               backgroundColor: AppColors.surfaceLight,
               color: AppColors.primary,
             ),
           ),
+          SizedBox(height: 10.w),
+          Text(
+            'Optimal conditions for your morning run.',
+            style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 12.sp,fontWeight: FontWeight.w500,color: AppColors.white),
+          ),
+
         ],
       ),
     );
@@ -303,66 +300,179 @@ class _SafetyInfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return Container(
-      margin: EdgeInsets.only(bottom: 8.h),
+     // margin: EdgeInsets.only(bottom: 8.h),
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
+        border: Border.all(width: 1.2,color: AppColors.textBorder),
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12.r),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: textTheme.bodyMedium),
-          const Spacer(),
-          Text(
-            value,
-            style: textTheme.bodyMedium?.copyWith(
-              color: valueColor,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            spacing: 8.w,
+            children: [
+              Image.asset(Assets.saftyinfoIcon, width: 24.w, height: 24.h),
+              Text(
+                'Safety Information',
+                style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500,color: AppColors.white),
+              ),
+            ],
           ),
-          if (trailing != null) ...[SizedBox(width: 4.w), trailing!],
+          SizedBox(height: 12.h,),
+          Container(
+            width: 300.w,
+            height: 50.h,
+            padding: EdgeInsets.symmetric(horizontal: 14.w,),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Row(
+              spacing: 5.w,
+              children: [
+                Icon(Icons.star_border, color: Colors.amberAccent),
+                Text(
+                  'Community Rating',
+                  style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500,color: AppColors.background),
+                ),
+                const Spacer(),
+                Text(
+                  "48",
+                  style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500,color: Colors.amberAccent),
+                ),
+                Text(
+                  "/ 5",
+                  style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500,color: Colors.black),
+                ),
+
+              ],
+            ),
+          )
         ],
       ),
     );
   }
 }
 
-class _HighlightCard extends StatelessWidget {
-  const _HighlightCard({required this.index});
 
-  final int index;
+
+class LiveHighlightsCard extends StatelessWidget {
+  const LiveHighlightsCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final titles = ['Sunset trail', 'Community run', 'Safe loop'];
     return Container(
-      width: 160.w,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14.r),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: AssetOrFallback(
-              assetPath: Assets.routeHighlightImg,
-              fallback: Container(
-                color: AppColors.surfaceLight,
-                child: Icon(Icons.image_outlined, color: AppColors.textMuted),
+      color: Colors.black87,
+      //padding: const EdgeInsets.all(16),
+      child: Card(
+        elevation: 5,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+
+                  const Text(
+                    "Live Highlights",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xff222222),
+                    ),
+                  ),
+
+                  Text(
+                    "View All",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.error,
+                    ),
+                  ),
+
+                ],
               ),
-            ),
+
+
+              const SizedBox(height: 20),
+
+
+              // Images
+              Row(
+                children: [
+
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.network(
+                        "https://w7.pngwing.com/pngs/692/245/png-transparent-two-women-running-running-jogging-running-man-physical-fitness-sport-people-thumbnail.png",
+                        height: 200,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+
+
+                  const SizedBox(width: 12),
+
+
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.network(
+                        "https://w7.pngwing.com/pngs/692/245/png-transparent-two-women-running-running-jogging-running-man-physical-fitness-sport-people-thumbnail.png",
+                        height: 200,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+
+                ],
+              ),
+
+
+              const SizedBox(height: 22),
+
+
+              // Quote
+              Text(
+                '"Always well lit and plenty of other runners around. Feel very safe here!"',
+                style: TextStyle(
+                  fontSize: 20,
+                  height: 1.5,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.brown.shade600,
+                ),
+              ),
+
+
+              const SizedBox(height: 8),
+
+
+              // Author
+              Text(
+                "— Sarah M.",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.brown.shade600,
+                ),
+              ),
+
+            ],
           ),
-          Padding(
-            padding: EdgeInsets.all(10.w),
-            child: Text(
-              titles[index % titles.length],
-              style: textTheme.titleMedium?.copyWith(fontSize: 12.sp),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
