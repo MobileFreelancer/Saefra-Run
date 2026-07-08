@@ -16,6 +16,7 @@ import 'package:saefra_run/features/onboarding/screens/enable_location_screen.da
 import 'package:saefra_run/features/onboarding/screens/gender_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/goal_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/notifications_screen.dart';
+import 'package:saefra_run/features/notifications/screens/notifications_inbox_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/onboarding_intro_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/splash_screen.dart';
 import 'package:saefra_run/features/community/screens/community_route_detail_screen.dart';
@@ -29,6 +30,8 @@ import 'package:saefra_run/features/run/screens/live_running_screen.dart';
 import 'package:saefra_run/features/run/screens/run_rate_screen.dart';
 import 'package:saefra_run/features/run/screens/run_summary_screen.dart';
 import 'package:saefra_run/features/search/screens/search_screen.dart';
+import 'package:saefra_run/features/search/screens/search_filters_screen.dart';
+import 'package:saefra_run/features/run/screens/safety_checkin_screen.dart';
 import 'package:saefra_run/features/settings/screens/about_us_screen.dart';
 import 'package:saefra_run/features/settings/screens/add_emergency_contact_screen.dart';
 import 'package:saefra_run/features/settings/screens/change_password_screen.dart';
@@ -168,6 +171,16 @@ class AppRouter {
         builder: (context, state) => const DashboardScreen(),
       ),
       GoRoute(
+        path: '/notifications',
+        name: 'notificationsInbox',
+        builder: (context, state) => const NotificationsInboxScreen(),
+      ),
+      GoRoute(
+        path: '/search/filters',
+        name: 'searchFilters',
+        builder: (context, state) => const SearchFiltersScreen(),
+      ),
+      GoRoute(
         path: '/search',
         name: 'search',
         builder: (context, state) {
@@ -261,6 +274,17 @@ class AppRouter {
         path: '/activity',
         name: 'activity',
         builder: (context, state) => const ActivityScreen(),
+      ),
+      GoRoute(
+        path: '/run/safety-checkin',
+        name: 'safetyCheckIn',
+        builder: (context, state) {
+          final qp = state.uri.queryParameters;
+          return SafetyCheckInScreen(
+            routeId: qp['routeId'],
+            routeName: qp['routeName'],
+          );
+        },
       ),
       GoRoute(
         path: '/run/live',

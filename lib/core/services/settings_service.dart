@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:saefra_run/core/data/app_mock_data.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/models/user_preferences_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/local_emergency_contacts_storage.dart';
 
 class SettingsService extends ChangeNotifier {
   SettingsService(this._auth);
@@ -54,19 +54,31 @@ class SettingsService extends ChangeNotifier {
       _hydrateProfile(user);
       _preferences = await _api.getPreferences();
       _liveTracking = _preferences?.shareLiveLocation ?? _liveTracking;
-      _emergencyAlerts = _preferences?.emergencyAlertsEnabled ?? _emergencyAlerts;
+      _emergencyAlerts =
+          _preferences?.emergencyAlertsEnabled ?? _emergencyAlerts;
       _pushNotifications =
           _preferences?.pushNotificationsEnabled ?? _pushNotifications;
       _emailNotifications =
           _preferences?.emailNotificationsEnabled ?? _emailNotifications;
-      _contacts = await _api.getEmergencyContacts();
+
+      final apiContacts = await _api.getEmergencyContacts();
+      final localContacts = await LocalEmergencyContactsStorage.read();
+      _contacts = _mergeContacts(apiContacts, localContacts);
     } catch (e) {
       _error = e.toString();
-      _contacts = AppMockData.emergencyContacts;
+      _contacts = await LocalEmergencyContactsStorage.read();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  List<EmergencyContactModel> _mergeContacts(
+    List<EmergencyContactModel> apiContacts,
+    List<EmergencyContactModel> localContacts,
+  ) {
+    if (apiContacts.isNotEmpty) return apiContacts;
+    return localContacts;
   }
 
   void _hydrateProfile(UserModel user) {
@@ -166,28 +178,50 @@ class SettingsService extends ChangeNotifier {
   }
 
   Future<bool> addContact(String name, String phone) async {
-    try {
-      await _api.addEmergencyContact(name: name, phone: phone);
-      await load();
-      return true;
-    } catch (e) {
-      _error = e.toString();
+    final normalizedPhone = phone.trim();
+    final normalizedName = name.trim();
+    if (normalizedName.isEmpty || normalizedPhone.isEmpty) return false;
+
+    final exists = _contacts.any((c) => c.phone == normalizedPhone);
+    if (exists) {
+      _error = 'This contact is already added.';
       notifyListeners();
       return false;
     }
+
+    final contact = EmergencyContactModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: normalizedName,
+      phone: normalizedPhone,
+    );
+
+    try {
+      await _api.addEmergencyContact(
+        name: normalizedName,
+        phone: normalizedPhone,
+      );
+    } catch (e) {
+      debugPrint('API addEmergencyContact failed, saving locally: $e');
+    }
+
+    _contacts = [..._contacts, contact];
+    await LocalEmergencyContactsStorage.write(_contacts);
+    _error = null;
+    notifyListeners();
+    return true;
   }
 
   Future<bool> removeContact(String id) async {
     try {
       await _api.removeEmergencyContact(id);
-      _contacts = _contacts.where((c) => c.id != id).toList();
-      notifyListeners();
-      return true;
     } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return false;
+      debugPrint('API removeEmergencyContact failed, removing locally: $e');
     }
+
+    _contacts = _contacts.where((c) => c.id != id).toList();
+    await LocalEmergencyContactsStorage.write(_contacts);
+    notifyListeners();
+    return true;
   }
 
   Future<bool> changePassword({

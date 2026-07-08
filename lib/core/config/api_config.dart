@@ -53,4 +53,5 @@ class ApiConfig {
   static const String storageKeyRefreshToken = 'refresh_token';
   static const String storageKeyUserId = 'user_id';
   static const String storageKeyOnboardingComplete = 'onboarding_complete';
+  static const String storageKeyEmergencyContacts = 'emergency_contacts_local';
 }

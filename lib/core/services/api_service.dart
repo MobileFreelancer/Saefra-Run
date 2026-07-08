@@ -716,7 +716,7 @@ class ApiService {
                 ))
             .toList();
       },
-      () async => AppMockData.emergencyContacts,
+      () async => <EmergencyContactModel>[],
     );
   }
 

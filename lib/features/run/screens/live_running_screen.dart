@@ -4,13 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
-import 'package:saefra_run/core/services/live_runing_services.dart';
 import 'package:saefra_run/core/services/run_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/secondary_button.dart';
+import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/generated/assets.dart';
+
+import '../../../core/services/live_runing_services.dart';
 
 class LiveRunningScreen extends StatefulWidget {
   const LiveRunningScreen({super.key, this.routeId, this.routeName});
@@ -35,34 +37,22 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
     });
   }
 
-  void _onPause(RunService run) {
-    if (run.isRunning) {
-      run.pause();
-      showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => _PauseRunDialog(
-          onResume: () {
-            Navigator.pop(ctx);
-            run.resume();
-            context.read<RunningProvider>().resumeSession();
-          },
-          onEnd: () {
-            Navigator.pop(ctx);
-            _finishRun(run);
-          },
-        ),
-      );
-    } else if (run.isPaused) {
-      run.resume();
-      context.read<RunningProvider>().resumeSession();
-    }
-  }
-
-  void _finishRun(RunService run) {
-    run.stop();
-    context.read<RunningProvider>().finishRun();
-    if (mounted) context.pushReplacementNamed('runSummary');
+  void _showPauseDialog() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _PauseRunDialog(
+        onResume: () {
+          Navigator.pop(ctx);
+          context.read<RunService>().resume();
+        },
+        onEnd: () {
+          Navigator.pop(ctx);
+          context.read<RunService>().stop();
+          context.pushReplacementNamed('runSummary');
+        },
+      ),
+    );
   }
 
   void _showSosDialog() {
@@ -81,327 +71,212 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tracking = context.watch<RunningProvider>();
-    final run = context.watch<RunService>();
-    final session = run.session;
-    final textTheme = Theme.of(context).textTheme;
-
+    final trackingProvider = context.watch<RunningProvider>();
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           GoogleMap(
             initialCameraPosition: CameraPosition(
-              target: tracking.currentPosition ??
-                  const LatLng(21.205194905801783, 72.77568113625402),
+              target: trackingProvider.currentPosition ?? const LatLng(37.7749, -122.4194),
               zoom: 16,
             ),
-            onMapCreated: (controller) {
-              if (!tracking.mapController.isCompleted) {
-                tracking.mapController.complete(controller);
+            onMapCreated: (GoogleMapController controller) {
+              if (!trackingProvider.mapController.isCompleted) {
+                trackingProvider.mapController.complete(controller);
               }
             },
-            polylines: Set<Polyline>.of(tracking.polylines.values),
-            markers: Set<Marker>.of(tracking.markers.values),
+            polylines: Set<Polyline>.of(trackingProvider.polylines.values),
+            markers: Set<Marker>.of(trackingProvider.markers.values),
+            onTap: (LatLng position) {
+              // if (!trackingProvider.mapController.isCompleted) {
+              //   trackingProvider.mapController.complete(trackingProvider.mapController);
+              // }
+              //trackingProvider.selectDestination(position);
+            },
             myLocationEnabled: false,
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
           ),
 
-          // Header overlay
           Positioned(
-            top: 0,
+            bottom: 0,
             left: 0,
             right: 0,
-            child: SafeArea(
-              bottom: false,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.background.withValues(alpha: 0.85),
-                      AppColors.background.withValues(alpha: 0),
-                    ],
-                  ),
-                ),
-                child: const AppPageHeader(title: 'Live Run'),
-              ),
-            ),
-          ),
-
-          // Track details bottom sheet
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 72.h,
             child: Container(
-              margin: EdgeInsets.symmetric(horizontal: 12.w),
-              padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-                border: Border.all(color: AppColors.white.withValues(alpha: 0.06)),
+              decoration: const BoxDecoration(
+                color: Color(0xFF0D0D0D),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(35),
+                  topRight: Radius.circular(35),
+                ),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Track Details',
-                    style: textTheme.titleLarge?.copyWith(fontSize: 18.sp),
+                  // Sesi Judul Detail & Tombol SOS
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Track Details',
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            trackingProvider.destinationPosition == null
+                                ? '👉 Tap map to select destination'
+                                : 'Route Remaining: ${trackingProvider.routeRemainingStr}',
+                            style: TextStyle(fontSize: 15, color: Colors.grey[500]),
+                          ),
+                        ],
+                      ),
+                      // SOS EMERGENCY BUTTON
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0x33E52344),
+                          shape: BoxShape.circle,
+                        ),
+                        child: CircleAvatar(
+                          backgroundColor: const Color(0xFFE52344),
+                          radius: 20,
+                          child: InkWell(
+                            onTap: () {
+                              _showSosDialog();
+                            },
+                            child: const Text('SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          ),
+                        ),
+                      )
+                    ],
                   ),
-                  SizedBox(height: 4.h),
+                  const SizedBox(height: 15),
+
+                  // LIVE RUNNING TIME DISPLAY
+                  Text('Running time', style: TextStyle(fontSize: 14, color: Colors.grey[400])),
                   Text(
-                    tracking.destinationPosition == null
-                        ? 'Following your route'
-                        : 'Remaining: ${tracking.routeRemainingStr}',
-                    style: textTheme.bodySmall,
+                    trackingProvider.formattedDuration,
+                    style: const TextStyle(fontSize: 42, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
-                  SizedBox(height: 16.h),
-                  Text('Running time', style: textTheme.bodySmall),
-                  SizedBox(height: 4.h),
-                  Text(
-                    _formatDuration(session.elapsed),
-                    style: textTheme.displayLarge?.copyWith(
-                      fontSize: 36.sp,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
+                  const SizedBox(height: 20),
+
+                  // WHITE METRICS ROW CARD (KM, STEPS, KM/HR)
                   Container(
-                    padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 8.w),
                     decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(16.r),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _LiveMetric(
-                          icon: Icons.straighten,
-                          value: session.distanceKm.toStringAsFixed(1),
-                          unit: 'km',
-                        ),
-                        _LiveMetricDivider(),
-                        _LiveMetric(
-                          icon: Icons.speed,
-                          value: session.paceLabel.split(' ').first,
-                          unit: '/km',
-                        ),
-                        _LiveMetricDivider(),
-                        _LiveMetric(
-                          icon: Icons.local_fire_department_outlined,
-                          value: '${session.calories}',
-                          unit: 'Kcal',
-                        ),
+                        _buildMetricItem(Icons.directions_run, trackingProvider.totalDistanceKm.toStringAsFixed(1), "km"),
+                        _buildVerticalDivider(),
+                        _buildMetricItem(Icons.directions_walk, "${trackingProvider.totalSteps}", "Steps"),
+                        _buildVerticalDivider(),
+                        _buildMetricItem(Icons.flash_on, trackingProvider.currentSpeedKmh.toStringAsFixed(1), "km/hr"),
                       ],
                     ),
                   ),
-                  SizedBox(height: 20.h),
+                  const SizedBox(height: 25),
+
+
                   Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => _onPause(run),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.border),
-                            padding: EdgeInsets.symmetric(vertical: 14.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28.r),
+                      if (!trackingProvider.isTracking && trackingProvider.secondsElapsed == 0) ...[
+
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: trackingProvider.destinationPosition == null
+                                ? null
+                                : () => context.read<RunningProvider>().startRunSession(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE52344),
+                              disabledBackgroundColor: Colors.grey[800],
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                             ),
-                          ),
-                          child: Text(
-                            run.isPaused ? 'Resume' : 'Pause',
-                            style: textTheme.labelLarge,
+                            child: const Text("Start Run Session", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                         ),
-                      ),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => _finishRun(run),
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: 14.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28.r),
+                      ] else ...[
+
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => context.read<RunningProvider>().togglePauseResume(),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFE52344), width: 1.5),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(trackingProvider.isTracking ? Icons.pause : Icons.play_arrow, color: Colors.white),
+                                const SizedBox(width: 8),
+                                Text(trackingProvider.isTracking ? "Pause" : "Resume", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                              ],
                             ),
                           ),
-                          child: Text('Stop', style: textTheme.labelLarge),
                         ),
-                      ),
+                        const SizedBox(width: 16),
+
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => context.read<RunningProvider>().finishRun(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE52344),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.flag, color: Colors.white),
+                                const SizedBox(width: 8),
+                                Text("Finish", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
-          ),
-
-          // Bottom action bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: Container(
-                height: 64.h,
-                padding: EdgeInsets.symmetric(horizontal: 24.w),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  border: Border(
-                    top: BorderSide(color: AppColors.white.withValues(alpha: 0.06)),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _BottomAction(
-                      label: 'SOS',
-                      isSos: true,
-                      onTap: _showSosDialog,
-                    ),
-                    _BottomAction(
-                      icon: Icons.music_note_outlined,
-                      onTap: () {},
-                    ),
-                    _BottomAction(
-                      icon: run.isRunning ? Icons.pause : Icons.play_arrow,
-                      isPrimary: true,
-                      onTap: () => _onPause(run),
-                    ),
-                    _BottomAction(
-                      icon: Icons.camera_alt_outlined,
-                      onTap: () {},
-                    ),
-                    _BottomAction(
-                      icon: Icons.more_horiz,
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          )
         ],
       ),
     );
   }
 
-  String _formatDuration(Duration d) {
-    final h = d.inHours.toString().padLeft(2, '0');
-    final m = (d.inMinutes % 60).toString().padLeft(2, '0');
-    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
-    return '$h:$m:$s';
+  Widget _buildVerticalDivider() {
+    return Container(height: 30, width: 1, color: Colors.grey[300]);
   }
-}
 
-class _LiveMetric extends StatelessWidget {
-  const _LiveMetric({
-    required this.icon,
-    required this.value,
-    required this.unit,
-  });
-
-  final IconData icon;
-  final String value;
-  final String unit;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Expanded(
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: AppColors.primary, size: 16.sp),
-              SizedBox(width: 4.w),
-              Text(
-                value,
-                style: textTheme.titleMedium?.copyWith(fontSize: 16.sp),
-              ),
-            ],
-          ),
-          SizedBox(height: 2.h),
-          Text(unit, style: textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
-}
-
-class _LiveMetricDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 28.h,
-      width: 1,
-      color: AppColors.border,
-    );
-  }
-}
-
-class _BottomAction extends StatelessWidget {
-  const _BottomAction({
-    this.icon,
-    this.label,
-    this.onTap,
-    this.isSos = false,
-    this.isPrimary = false,
-  });
-
-  final IconData? icon;
-  final String? label;
-  final VoidCallback? onTap;
-  final bool isSos;
-  final bool isPrimary;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isSos) {
-      return GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 44.w,
-          height: 44.w,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.2),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label ?? 'SOS',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.primary,
-                  fontSize: 11.sp,
-                ),
-          ),
+  Widget _buildMetricItem(IconData icon, String value, String unit) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: const Color(0xFFF07522), size: 18), // Warna jingga ikon sesuai Screenshot
+            const SizedBox(width: 4),
+            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+          ],
         ),
-      );
-    }
-
-    if (isPrimary) {
-      return GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 48.w,
-          height: 48.w,
-          decoration: const BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: AppColors.white, size: 24.sp),
-        ),
-      );
-    }
-
-    return IconButton(
-      onPressed: onTap,
-      icon: Icon(icon, color: AppColors.textMuted, size: 24.sp),
+        Text(unit, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
     );
   }
 }
+
+
 
 class _PauseRunDialog extends StatelessWidget {
   const _PauseRunDialog({required this.onResume, required this.onEnd});
@@ -419,7 +294,7 @@ class _PauseRunDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.pause_circle_filled, color: AppColors.primary, size: 56.sp),
+            const Icon(Icons.pause_circle_filled, color: AppColors.primary, size: 56),
             SizedBox(height: 12.h),
             Text('Run Paused', style: Theme.of(context).textTheme.titleLarge),
             SizedBox(height: 8.h),
@@ -431,7 +306,7 @@ class _PauseRunDialog extends StatelessWidget {
             SizedBox(height: 16.h),
             PrimaryButton(label: 'Resume Run', onPressed: onResume),
             SizedBox(height: 8.h),
-            SecondaryButton(label: 'Finish', onPressed: onEnd),
+            SecondaryButton(label: 'End Run', onPressed: onEnd),
           ],
         ),
       ),
@@ -449,21 +324,12 @@ class _SosConfirmDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
       child: Padding(
         padding: EdgeInsets.all(20.w),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              Assets.sos,
-              width: 48.w,
-              errorBuilder: (_, __, ___) => Icon(
-                Icons.warning_amber,
-                color: AppColors.primary,
-                size: 48.sp,
-              ),
-            ),
+            Image.asset(Assets.sos, width: 48, errorBuilder: (_, __, ___) => const Icon(Icons.warning_amber, color: AppColors.primary, size: 48)),
             SizedBox(height: 12.h),
             Text('Emergency SOS', style: Theme.of(context).textTheme.titleLarge),
             SizedBox(height: 8.h),
@@ -507,7 +373,6 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsService>();
     final run = context.watch<RunService>();
-    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -537,12 +402,10 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                       alignment: Alignment.center,
                       child: Image.asset(
                         Assets.sos,
-                        width: 56.w,
-                        errorBuilder: (_, __, ___) => Text(
+                        width: 56,
+                        errorBuilder: (_, __, ___) => const Text(
                           'SOS',
-                          style: textTheme.titleLarge?.copyWith(
-                            color: AppColors.primary,
-                          ),
+                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 24),
                         ),
                       ),
                     ),
@@ -551,55 +414,17 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                   Text(
                     'SOS Activated. Your location is now being shared with your emergency contacts.',
                     textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium,
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   SizedBox(height: 20.h),
-                  Text(
-                    'Emergency Contacts Notified',
-                    style: textTheme.titleMedium,
-                  ),
+                  Text('Emergency Contacts Notified', style: Theme.of(context).textTheme.titleMedium),
                   SizedBox(height: 10.h),
                   ...settings.contacts.map(
-                    (c) => Container(
-                      margin: EdgeInsets.only(bottom: 8.h),
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 18.r,
-                            backgroundColor: AppColors.surfaceLight,
-                            child: Text(
-                              c.name[0],
-                              style: textTheme.labelLarge,
-                            ),
-                          ),
-                          SizedBox(width: 12.w),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(c.name, style: textTheme.titleMedium?.copyWith(fontSize: 14.sp)),
-                                Text(c.phone, style: textTheme.bodySmall),
-                              ],
-                            ),
-                          ),
-                          SizedBox(
-                            width: 80.w,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4.r),
-                              child: const LinearProgressIndicator(
-                                value: 1,
-                                color: AppColors.success,
-                                backgroundColor: AppColors.surfaceLight,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    (c) => ListTile(
+                      leading: CircleAvatar(child: Text(c.name[0])),
+                      title: Text(c.name),
+                      subtitle: Text(c.phone),
+                      trailing: const Icon(Icons.check_circle, color: AppColors.success),
                     ),
                   ),
                 ],
@@ -610,7 +435,7 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
               child: Column(
                 children: [
                   PrimaryButton(
-                    label: 'Send Current Location',
+                    label: 'Share Live Notification',
                     onPressed: () {},
                   ),
                   SizedBox(height: 8.h),

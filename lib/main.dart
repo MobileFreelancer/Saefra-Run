@@ -12,11 +12,14 @@ import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/contact_service.dart';
 import 'package:saefra_run/core/services/community_service.dart';
 import 'package:saefra_run/core/services/generate_route_service.dart';
+import 'package:saefra_run/core/services/notification_inbox_service.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/services/route_search_service.dart';
 import 'package:saefra_run/core/services/run_review_service.dart';
 import 'package:saefra_run/core/services/run_service.dart';
+import 'package:saefra_run/core/services/safety_checkin_service.dart';
+import 'package:saefra_run/core/services/search_filter_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/theme/app_theme.dart';
 import 'package:saefra_run/firebase_options.dart';
@@ -74,6 +77,9 @@ Future<void> main() async {
           create: (context) => SettingsService(context.read<AuthService>()),
         ),
         ChangeNotifierProvider(create: (_) => ContactService()),
+        ChangeNotifierProvider(create: (_) => NotificationInboxService()),
+        ChangeNotifierProvider(create: (_) => SearchFilterService()),
+        ChangeNotifierProvider(create: (_) => SafetyCheckInService()),
         ChangeNotifierProvider(create: (_) => CommunityService()),
         ChangeNotifierProvider(create: (_) => ActivityService()),
         ChangeNotifierProvider(create: (_) => RunService()),

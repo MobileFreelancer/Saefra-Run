@@ -1,7 +1,7 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:saefra_run/core/models/activity_model.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
-import 'package:saefra_run/core/models/emergency_contact_model.dart';
+import 'package:saefra_run/core/models/notification_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/models/route_model.dart';
 
@@ -204,16 +204,28 @@ class AppMockData {
     paceTrend: [0.4, 0.6, 0.5, 0.8, 0.7, 0.9, 0.6],
   );
 
-  static List<EmergencyContactModel> get emergencyContacts => const [
-        EmergencyContactModel(
+  static List<AppNotificationModel> get notifications => const [
+        AppNotificationModel(
           id: '1',
-          name: 'Jane Doe',
-          phone: '+1 555 0100',
+          userName: 'Milly Jane',
+          message:
+              'invited to join their group "Bicycle Riders Group".',
+          timestamp: '12:45pm',
+          isRead: false,
         ),
-        EmergencyContactModel(
+        AppNotificationModel(
           id: '2',
-          name: 'John Smith',
-          phone: '+1 555 0101',
+          userName: 'Milly Jane',
+          message: 'reviewed your route "North Loop Patrol".',
+          timestamp: '10:30',
+          isRead: false,
+        ),
+        AppNotificationModel(
+          id: '3',
+          userName: 'Milly Jane',
+          message: 'posted a picture on your route.',
+          timestamp: '11:00',
+          isRead: false,
         ),
       ];
 

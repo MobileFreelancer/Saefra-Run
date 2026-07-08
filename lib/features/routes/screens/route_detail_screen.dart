@@ -85,7 +85,7 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                                   endPoint: end,
                                 );
                                 context.pushNamed(
-                                  'liveRunning',
+                                  'safetyCheckIn',
                                   queryParameters: {
                                     'routeId': widget.routeId,
                                     'routeName': route.name,

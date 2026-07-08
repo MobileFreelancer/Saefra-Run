@@ -389,7 +389,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => context.pushNamed('notificationSettings'),
+                          onTap: () => context.pushNamed('notificationsInbox'),
                           child: Container(
                             height: 38,
                             width: 38,
