@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 
 class PrimaryButton extends StatelessWidget {
@@ -36,7 +37,10 @@ class PrimaryButton extends StatelessWidget {
                 color: AppColors.white,
               ),
             )
-          : Text(label),
+          : Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(
+        color: AppColors.white,
+        fontSize: 12.sp,
+      ),),
     );
   }
 }

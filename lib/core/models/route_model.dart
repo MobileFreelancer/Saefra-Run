@@ -95,7 +95,7 @@ class RouteModel {
       saefraScore: _toDouble(json['safety_score'] ?? json['saefra_score']),
       trafficLevel: json['traffic_level'] as String?,
       lightingLevel: json['lighting'] as String? ?? json['lighting_level'] as String?,
-      communityRating: _toDouble(json['community_rating']),
+      communityRating: _toNullableDouble(json['community_rating']),
       travelMode: json['travel_mode'] as String?,
       difficulty: json['difficulty'] as String?,
       routeType: json['route_type'] as String?,
@@ -149,6 +149,14 @@ class RouteModel {
       default:
         return routeType ?? 'Route';
     }
+  }
+
+  bool get hasCommunityRating =>
+      communityRating != null && communityRating! > 0;
+
+  String get communityRatingLabel {
+    if (!hasCommunityRating) return 'No ratings yet';
+    return '${communityRating!.toStringAsFixed(1)} / 5';
   }
 
   static String? _coordinateLabel(Map<String, dynamic> json) {

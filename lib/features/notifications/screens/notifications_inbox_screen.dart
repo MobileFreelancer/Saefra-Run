@@ -31,7 +31,7 @@ class NotificationsInboxScreen extends StatelessWidget {
                         'Clear All',
                         style: textTheme.labelLarge?.copyWith(
                           color: AppColors.primary,
-                          fontSize: 13.sp,
+                          fontSize: 10.sp,
                         ),
                       ),
                     ),
@@ -43,9 +43,10 @@ class NotificationsInboxScreen extends StatelessWidget {
                       padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
                       children: [
                         Text(
-                          'You have ${inbox.todayUnreadCount} New notifications today',
-                          style: textTheme.bodyLarge?.copyWith(
+                          'You have ${inbox.todayUnreadCount} New notifications total',
+                          style: textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.w600,
+                              color: AppColors.white
                           ),
                         ),
                         SizedBox(height: 16.h),

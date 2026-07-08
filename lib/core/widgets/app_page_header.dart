@@ -43,10 +43,7 @@ class AppPageHeader extends StatelessWidget {
                   ),
             ),
           ),
-          SizedBox(
-            width: 48,
-            child: trailing ?? const SizedBox.shrink(),
-          ),
+          trailing ?? const SizedBox.shrink(),
         ],
       ),
     );

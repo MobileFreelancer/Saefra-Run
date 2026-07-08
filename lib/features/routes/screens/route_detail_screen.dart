@@ -485,7 +485,7 @@ class _SafetyInfoRow extends StatelessWidget {
                 Text(
                   communityRating != null && communityRating! > 0
                       ? communityRating!.toStringAsFixed(1)
-                      : '—',
+                      : '0',
                   style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500,color: Colors.amberAccent),
                 ),
                 Text(
