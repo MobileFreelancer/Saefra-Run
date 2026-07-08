@@ -26,6 +26,7 @@ void showMapStyleBottomSheet(
             mainAxisSize: MainAxisSize.min,
             children: [
                Row(
+                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                  children: [
                    Text(
                     "Select Map Style",
@@ -35,61 +36,116 @@ void showMapStyleBottomSheet(
                       fontSize: 18.sp,
                     ),
                    ),
-                   //Image.asset(Assets.closeIcon,scale: 2.3,)
+                   GestureDetector(
+                     onTap: (){
+                       Navigator.pop(context);
+                     },
+                       child: Image.asset(Assets.closeIcon,scale: 2.3,)
+                   )
                  ],
                ),
-              const SizedBox(height: 20),
+               SizedBox(height: 22.h),
 
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //   children: [
-              //     InkWell(
-              //         child: Image.asset(Assets.prrakImage,scale: 3.3,)
-              //     ),
-              //     InkWell(
-              //         child: Image.asset(Assets.lightMapImage,scale: 3.3,)
-              //     ),
-              //     InkWell(
-              //         child: Image.asset(Assets.darkMapImage,scale: 3.3,)
-              //     )
-              //   ],
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      await MapStyleService.applyStyle(
+                        controller: controller,
+                        theme: MapTheme.park,
+                      );
+                      Navigator.pop(context);
+                    },
+                    child: Column(
+                      spacing: 10.h,
+                      children: [
+                        InkWell(
+                            child: Image.asset(Assets.prrakImage,scale: 3.3,)
+                        ),
+                        Text(
+                          "Park",
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      await MapStyleService.applyStyle(
+                        controller: controller,
+                        theme: MapTheme.light,
+                      );
+                      Navigator.pop(context);
+                    },
+                    child: Column(
+                      spacing: 10.h,
+                      children: [
+                        InkWell(
+                            child: Image.asset(Assets.lightMapImage,scale: 3.3,)
+                        ),
+
+                        Text(
+                          "Light",
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      await MapStyleService.applyStyle(
+                        controller: controller,
+                        theme: MapTheme.dark,
+                      );
+                      Navigator.pop(context);
+                    },
+                    child: Column(
+                      spacing: 10.h,
+                      children: [
+                        InkWell(
+                            child: Image.asset(Assets.darkMapImage,scale: 3.3,),
+                        ),
+                        Text(
+                          "Dark",
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+
+              // ListTile(
+              //   leading: const Icon(Icons.light_mode),
+              //   title: const Text("Light"),
+
               // ),
+              //
+              // ListTile(
+              //   leading: const Icon(Icons.dark_mode),
+              //   title: const Text("Dark"),
 
-              ListTile(
-                leading: const Icon(Icons.light_mode),
-                title: const Text("Light"),
-                onTap: () async {
-                  await MapStyleService.applyStyle(
-                    controller: controller,
-                    theme: MapTheme.light,
-                  );
-                  Navigator.pop(context);
-                },
-              ),
+              // ),
+              //
+              // ListTile(
+              //   leading: const Icon(Icons.park),
+              //   title: const Text("Park"),
 
-              ListTile(
-                leading: const Icon(Icons.dark_mode),
-                title: const Text("Dark"),
-                onTap: () async {
-                  await MapStyleService.applyStyle(
-                    controller: controller,
-                    theme: MapTheme.dark,
-                  );
-                  Navigator.pop(context);
-                },
-              ),
-
-              ListTile(
-                leading: const Icon(Icons.park),
-                title: const Text("Park"),
-                onTap: () async {
-                  await MapStyleService.applyStyle(
-                    controller: controller,
-                    theme: MapTheme.park,
-                  );
-                  Navigator.pop(context);
-                },
-              ),
+              // ),
             ],
           ),
         ),
