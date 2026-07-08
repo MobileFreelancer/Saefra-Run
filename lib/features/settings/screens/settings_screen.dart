@@ -26,26 +26,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _confirmLogout() async {
+    final textTheme = Theme.of(context).textTheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         title: Row(
           children: [
             Image.asset(
               Assets.settingsLogoutIcon,
-              width: 28,
+              width: 28.w,
               errorBuilder: (_, __, ___) =>
                   const Icon(Icons.logout, color: AppColors.primary),
             ),
             SizedBox(width: 10.w),
-            const Text('Logout', style: TextStyle(color: AppColors.white)),
+            Text('Logout', style: textTheme.titleMedium),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to logout?',
-          style: TextStyle(color: AppColors.textSecondary),
+          style: textTheme.bodyMedium,
         ),
         actions: [
           TextButton(
@@ -72,6 +73,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final settings = context.watch<SettingsService>();
     final auth = context.watch<AuthService>();
     final user = auth.currentUser;
+    final textTheme = Theme.of(context).textTheme;
     final displayName = settings.firstName.isNotEmpty
         ? '${settings.firstName} ${settings.lastName}'.trim()
         : user?.fullName ?? user?.email ?? 'User';
@@ -103,11 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: user?.profileImage == null
                         ? Text(
                             displayName.isNotEmpty ? displayName[0] : '?',
-                            style: TextStyle(
-                              color: AppColors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18.sp,
-                            ),
+                            style: textTheme.titleLarge,
                           )
                         : null,
                   ),
@@ -116,22 +114,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          displayName,
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        Text(displayName, style: textTheme.titleMedium),
                         SizedBox(height: 4.h),
-                        Text(
-                          email,
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12.sp,
-                          ),
-                        ),
+                        Text(email, style: textTheme.bodySmall),
                       ],
                     ),
                   ),

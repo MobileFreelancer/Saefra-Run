@@ -70,6 +70,10 @@ class ApiFieldMapper {
       'password_confirmation': password,
       'gender': genderToApi(onboarding.gender),
       'birthdate': formatBirthdate(onboarding.dateOfBirth),
+      if (onboarding.firstName != null && onboarding.firstName!.isNotEmpty)
+        'first_name': onboarding.firstName,
+      if (onboarding.lastName != null && onboarding.lastName!.isNotEmpty)
+        'last_name': onboarding.lastName,
       'visit_reason': visitReasonToApi(onboarding.goal),
       'run_preference': runPreferenceToApi(onboarding.activityLevel),
     };
@@ -79,6 +83,10 @@ class ApiFieldMapper {
     return {
       'gender': genderToApi(onboarding.gender),
       'birthdate': formatBirthdate(onboarding.dateOfBirth),
+      if (onboarding.firstName != null && onboarding.firstName!.isNotEmpty)
+        'first_name': onboarding.firstName,
+      if (onboarding.lastName != null && onboarding.lastName!.isNotEmpty)
+        'last_name': onboarding.lastName,
     };
   }
 }

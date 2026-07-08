@@ -69,16 +69,9 @@ class RunningProvider extends ChangeNotifier {
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          debugPrint("⚠️ Location permission denied.");
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        debugPrint("⚠️ Location permission permanently denied.");
+      if (permission != LocationPermission.always &&
+          permission != LocationPermission.whileInUse) {
+        debugPrint('Location not granted — skipping live tracking init.');
         return;
       }
 
@@ -402,6 +395,13 @@ class RunningProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint("❌ Error toggling state: $e");
     }
+  }
+
+  void resumeSession() {
+    if (_isTracking) return;
+    _isTracking = true;
+    _startLiveLocationTracking();
+    notifyListeners();
   }
 
   void finishRun() {

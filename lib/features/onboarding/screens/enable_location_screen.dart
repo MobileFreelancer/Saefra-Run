@@ -46,7 +46,7 @@ class _EnableLocationScreenState extends State<EnableLocationScreen> {
       icon: Icons.location_on,
       iconAssetPath: Assets.onboardingLocationIcon,
       backgroundAssetPath: Assets.onboardingLocationBg,
-      onBack: () => context.go('/onboarding/dob'),
+      onBack: () => context.go('/onboarding/goal'),
       title: 'Location & Phone permissions required',
       description: 'Saefra Run needs your location to suggest safe routes '
           'and provide real-time safety alerts while you run.',

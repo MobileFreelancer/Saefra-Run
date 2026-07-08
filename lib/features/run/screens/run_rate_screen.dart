@@ -99,7 +99,10 @@ class _RunRateScreenState extends State<RunRateScreen> {
                       onChanged: (val) {
                         if (val != null) review.setCompanion(val);
                       },
-                      title: Text(_companionLabel(v)),
+                      title: Text(
+                        _companionLabel(v),
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                     ),
                   ),
                   Text('How was the running environment?', style: Theme.of(context).textTheme.titleMedium),
@@ -124,7 +127,10 @@ class _RunRateScreenState extends State<RunRateScreen> {
                       onChanged: (val) {
                         if (val != null) review.setAccuracy(val);
                       },
-                      title: Text(v[0].toUpperCase() + v.substring(1)),
+                      title: Text(
+                        v[0].toUpperCase() + v.substring(1),
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
                     ),
                   ),
                   Text('Running surface', style: Theme.of(context).textTheme.titleMedium),
@@ -180,7 +186,7 @@ class _RunRateScreenState extends State<RunRateScreen> {
                     controller: _feedback,
                     maxLines: 4,
                     onChanged: review.setFeedback,
-                    style: const TextStyle(color: AppColors.white),
+                    style: Theme.of(context).textTheme.bodyLarge,
                     decoration: const InputDecoration(hintText: 'Share your experience...'),
                   ),
                 ],

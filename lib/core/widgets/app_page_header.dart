@@ -39,11 +39,9 @@ class AppPageHeader extends StatelessWidget {
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: 18.sp,
+                  ),
             ),
           ),
           SizedBox(

@@ -139,8 +139,8 @@ class _GenderScreenState extends State<GenderScreen> {
             ),
             OnboardingContinueBar(
               isEnabled: selected != null && selected.isNotEmpty,
-              onContinue: () => context.go('/onboarding/activity-level'),
-              onSkip: () => context.go('/onboarding/activity-level'),
+              onContinue: () => context.go('/onboarding/basic-info'),
+              onSkip: () => context.go('/onboarding/basic-info'),
             ),
           ],
         ),

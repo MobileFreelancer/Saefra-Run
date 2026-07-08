@@ -53,7 +53,7 @@ class _GoalScreenState extends State<GoalScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             OnboardingStepHeader(
-              step: 3,
+              step: 4,
               totalSteps: 4,
               onBack: () => context.go('/onboarding/activity-level'),
             ),
@@ -123,8 +123,8 @@ class _GoalScreenState extends State<GoalScreen> {
             OnboardingContinueBar(
               isEnabled: selected != null &&
                   (selected != _trainingForAGoal || selectedTarget != null),
-              onContinue: () => context.go('/onboarding/dob'),
-              onSkip: () => context.go('/onboarding/dob'),
+              onContinue: () => context.go('/onboarding/location'),
+              onSkip: () => context.go('/onboarding/location'),
             ),
           ],
         ),

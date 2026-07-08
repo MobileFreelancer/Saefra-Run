@@ -9,6 +9,8 @@ class OnboardingModel {
 
   final DateTime? dateOfBirth;
   final int? age;
+  final String? firstName;
+  final String? lastName;
   final bool locationEnabled;
   final bool pushNotificationsEnabled;
   final bool emailNotificationsEnabled;
@@ -20,6 +22,8 @@ class OnboardingModel {
     this.goalTrainingTarget,
     this.dateOfBirth,
     this.age,
+    this.firstName,
+    this.lastName,
     this.locationEnabled = false,
     this.pushNotificationsEnabled = false,
     this.emailNotificationsEnabled = false,
@@ -35,6 +39,8 @@ class OnboardingModel {
     String? goalTrainingTarget,
     DateTime? dateOfBirth,
     int? age,
+    String? firstName,
+    String? lastName,
     bool? locationEnabled,
     bool? pushNotificationsEnabled,
     bool? emailNotificationsEnabled,
@@ -49,6 +55,8 @@ class OnboardingModel {
           : (goalTrainingTarget ?? this.goalTrainingTarget),
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       age: age ?? this.age,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       locationEnabled: locationEnabled ?? this.locationEnabled,
       pushNotificationsEnabled:
           pushNotificationsEnabled ?? this.pushNotificationsEnabled,
@@ -66,6 +74,8 @@ class OnboardingModel {
         if (dateOfBirth != null)
           'date_of_birth': dateOfBirth!.toIso8601String(),
         if (age != null) 'age': age,
+        if (firstName != null) 'first_name': firstName,
+        if (lastName != null) 'last_name': lastName,
         'location_enabled': locationEnabled,
         'push_notifications_enabled': pushNotificationsEnabled,
         'email_notifications_enabled': emailNotificationsEnabled,

@@ -63,6 +63,16 @@ class OnboardingService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setFirstName(String value) {
+    _data = _data.copyWith(firstName: value.trim());
+    notifyListeners();
+  }
+
+  void setLastName(String value) {
+    _data = _data.copyWith(lastName: value.trim());
+    notifyListeners();
+  }
+
   void setDateOfBirth(DateTime dateOfBirth) {
     final now = DateTime.now();
     var age = now.year - dateOfBirth.year;

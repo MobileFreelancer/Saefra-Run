@@ -6,14 +6,13 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/live_runing_services.dart';
 import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_route_map.dart';
+import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
-
-import '../../../core/services/live_runing_services.dart';
-import '../../../core/widgets/asset_or_fallback.dart';
 
 class RouteDetailScreen extends StatefulWidget {
   const RouteDetailScreen({super.key, required this.routeId});
@@ -38,6 +37,7 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
     final auth = context.watch<AuthService>();
     final detail = context.watch<RouteDetailService>();
     final route = detail.route;
+    final textTheme = Theme.of(context).textTheme;
     final userName = auth.currentUser?.fullName?.split(' ').first ??
         auth.currentUser?.email?.split('@').first ??
         'Runner';
@@ -53,7 +53,7 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                 ? Center(
                     child: Text(
                       detail.error ?? 'Route not found',
-                      style: const TextStyle(color: AppColors.textMuted),
+                      style: textTheme.bodyMedium,
                     ),
                   )
                 : Column(
@@ -65,19 +65,12 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                           children: [
                             Text(
                               'Ready, $userName?',
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: 18.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: textTheme.titleLarge?.copyWith(fontSize: 18.sp),
                             ),
                             SizedBox(height: 6.h),
                             Text(
                               '${route.locationLabel ?? 'Your area'} | ${route.visibilityLabel ?? 'Safe route'}',
-                              style: TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 12.sp,
-                              ),
+                              style: textTheme.bodySmall,
                             ),
                             SizedBox(height: 16.h),
                             _RouteMapCard(route: route),
@@ -85,9 +78,11 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                             PrimaryButton(
                               label: 'Start Run',
                               onPressed: () {
+                                const start = LatLng(21.205194905801783, 72.77568113625402);
+                                const end = LatLng(21.2035, 72.7997);
                                 context.read<RunningProvider>().selectDestination(
-                                  startPoint: LatLng(22.2500000, 72.2100000),
-                                  endPoint: LatLng(22.2659000, 72.2231200),
+                                  startPoint: start,
+                                  endPoint: end,
                                 );
                                 context.pushNamed(
                                   'liveRunning',
@@ -101,21 +96,14 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                             SizedBox(height: 24.h),
                             Text(
                               'More Information',
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: textTheme.titleMedium,
                             ),
                             SizedBox(height: 12.h),
                             _SaefraScoreCard(score: route.saefraScore ?? 0),
                             SizedBox(height: 16.h),
                             Text(
                               'Safety Information',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13.sp,
-                              ),
+                              style: textTheme.bodyMedium,
                             ),
                             SizedBox(height: 10.h),
                             _SafetyInfoRow(
@@ -132,20 +120,17 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                               label: 'Community Rating',
                               value:
                                   '${route.communityRating?.toStringAsFixed(1) ?? '4.8'} / 5',
-                              valueColor: AppColors.white,
-                              trailing: const Icon(
+                              valueColor: AppColors.textPrimary,
+                              trailing: Icon(
                                 Icons.star,
                                 color: Colors.amber,
-                                size: 16,
+                                size: 16.sp,
                               ),
                             ),
                             SizedBox(height: 20.h),
                             Text(
                               'Live Highlights',
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13.sp,
-                              ),
+                              style: textTheme.bodyMedium,
                             ),
                             SizedBox(height: 10.h),
                             SizedBox(
@@ -177,6 +162,7 @@ class _RouteMapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return ClipRRect(
       borderRadius: BorderRadius.circular(20.r),
       child: Stack(
@@ -193,7 +179,7 @@ class _RouteMapCard extends StatelessWidget {
               ),
               child: Text(
                 'Route Scope',
-                style: TextStyle(color: AppColors.white, fontSize: 11.sp),
+                style: textTheme.bodySmall,
               ),
             ),
           ),
@@ -215,19 +201,12 @@ class _RouteMapCard extends StatelessWidget {
                       children: [
                         Text(
                           route.name,
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: textTheme.titleMedium?.copyWith(fontSize: 14.sp),
                         ),
                         SizedBox(height: 4.h),
                         Text(
                           '${route.distanceLabel} • ${route.safePoints ?? 0} Data Points',
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 11.sp,
-                          ),
+                          style: textTheme.bodySmall,
                         ),
                       ],
                     ),
@@ -241,9 +220,8 @@ class _RouteMapCard extends StatelessWidget {
                     ),
                     child: Text(
                       '${route.runnerCount} active',
-                      style: TextStyle(
+                      style: textTheme.bodySmall?.copyWith(
                         color: AppColors.primary,
-                        fontSize: 10.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -265,6 +243,7 @@ class _SaefraScoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     final pct = score.clamp(0, 100);
     return Container(
       padding: EdgeInsets.all(16.w),
@@ -280,22 +259,14 @@ class _SaefraScoreCard extends StatelessWidget {
             children: [
               Text(
                 'SAEFRA SCORE',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 11.sp,
-                  letterSpacing: 0.6,
-                ),
+                style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6),
               ),
               const Spacer(),
               Icon(Icons.check_circle, color: AppColors.primary, size: 18.sp),
               SizedBox(width: 6.w),
               Text(
                 '${pct.round()}%',
-                style: TextStyle(
-                  color: AppColors.white,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: textTheme.titleLarge?.copyWith(fontSize: 16.sp),
               ),
             ],
           ),
@@ -330,6 +301,7 @@ class _SafetyInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
@@ -339,16 +311,12 @@ class _SafetyInfoRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(
-            label,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13.sp),
-          ),
+          Text(label, style: textTheme.bodyMedium),
           const Spacer(),
           Text(
             value,
-            style: TextStyle(
+            style: textTheme.bodyMedium?.copyWith(
               color: valueColor,
-              fontSize: 13.sp,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -366,6 +334,7 @@ class _HighlightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     final titles = ['Sunset trail', 'Community run', 'Safe loop'];
     return Container(
       width: 160.w,
@@ -390,11 +359,7 @@ class _HighlightCard extends StatelessWidget {
             padding: EdgeInsets.all(10.w),
             child: Text(
               titles[index % titles.length],
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-              ),
+              style: textTheme.titleMedium?.copyWith(fontSize: 12.sp),
             ),
           ),
         ],

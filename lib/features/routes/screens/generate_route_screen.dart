@@ -36,6 +36,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
   Widget build(BuildContext context) {
     final service = context.watch<GenerateRouteService>();
     final filters = service.filters;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -54,31 +55,16 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                     service.setLighting(RouteLighting.wellLit);
                   }),
                   SizedBox(height: 24.h),
-                  Text(
-                    'Route Setup',
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  Text('Route Setup', style: textTheme.titleMedium),
                   SizedBox(height: 16.h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Distance',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13.sp,
-                        ),
-                      ),
+                      Text('Distance', style: textTheme.bodyMedium),
                       Text(
                         '${filters.distanceKm.toStringAsFixed(1)} km',
-                        style: TextStyle(
+                        style: textTheme.titleMedium?.copyWith(
                           color: AppColors.primary,
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -95,12 +81,12 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('1 km', style: _hintStyle),
-                      Text('10+ km', style: _hintStyle),
+                      Text('1 km', style: textTheme.bodySmall),
+                      Text('10+ km', style: textTheme.bodySmall),
                     ],
                   ),
                   SizedBox(height: 20.h),
-                  Text('Difficulty', style: _sectionLabel),
+                  Text('Difficulty', style: textTheme.bodyMedium),
                   SizedBox(height: 10.h),
                   SegmentSelector<RouteDifficulty>(
                     options: RouteDifficulty.values,
@@ -113,7 +99,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                     },
                   ),
                   SizedBox(height: 20.h),
-                  Text('Route Type', style: _sectionLabel),
+                  Text('Route Type', style: textTheme.bodyMedium),
                   SizedBox(height: 10.h),
                   SegmentSelector<RouteShape>(
                     options: RouteShape.values,
@@ -123,7 +109,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                         v == RouteShape.loop ? 'Loop' : 'One way',
                   ),
                   SizedBox(height: 20.h),
-                  Text('Lighting & Visibility', style: _sectionLabel),
+                  Text('Lighting & Visibility', style: textTheme.bodyMedium),
                   SizedBox(height: 10.h),
                   SegmentSelector<RouteLighting>(
                     options: RouteLighting.values,
@@ -149,17 +135,6 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
       ),
     );
   }
-
-  TextStyle get _sectionLabel => TextStyle(
-        color: AppColors.textSecondary,
-        fontSize: 13.sp,
-        fontWeight: FontWeight.w500,
-      );
-
-  TextStyle get _hintStyle => TextStyle(
-        color: AppColors.textMuted,
-        fontSize: 11.sp,
-      );
 }
 
 class _MapPreviewCard extends StatelessWidget {

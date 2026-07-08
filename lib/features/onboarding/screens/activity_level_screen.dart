@@ -53,9 +53,9 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             OnboardingStepHeader(
-              step: 2,
-              totalSteps: 4, // Matches '1 of 2' from the target layout asset image_2edd4f.png
-              onBack: () => context.go('/onboarding/gender'),
+              step: 3,
+              totalSteps: 4,
+              onBack: () => context.go('/onboarding/basic-info'),
             ),
             Expanded(
               child: SingleChildScrollView(

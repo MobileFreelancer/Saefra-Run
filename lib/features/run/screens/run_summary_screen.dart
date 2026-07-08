@@ -114,7 +114,10 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
                               color: selected ? AppColors.primary : AppColors.border,
                             ),
                           ),
-                          child: Text(_moodEmoji(mood), style: TextStyle(fontSize: 22.sp)),
+                          child: Text(
+                            _moodEmoji(mood),
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
                         ),
                       );
                     }).toList(),
