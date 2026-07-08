@@ -12,6 +12,8 @@ class AppColors {
   static const Color backgroundBlackTra =  Color(0xFF141414);
   static const Color surface = Color(0xFF1A1A1A);
   static const Color surfaceLight = Color(0xFF2A2A2A);
+  static const Color surfaced = Color(0xFF131315);
+  static const Color borderColor = Color(0xFF222222);
   static const Color border = Color(0xFF3A3A3A);
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textBorder = Color(0xFF222222);
