@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/route_model.dart';
@@ -11,6 +12,7 @@ import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
 
+import '../../../core/services/live_runing_services.dart';
 import '../../../core/widgets/asset_or_fallback.dart';
 
 class RouteDetailScreen extends StatefulWidget {
@@ -83,6 +85,10 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                             PrimaryButton(
                               label: 'Start Run',
                               onPressed: () {
+                                context.read<RunningProvider>().selectDestination(
+                                  startPoint: LatLng(22.2500000, 72.2100000),
+                                  endPoint: LatLng(22.2659000, 72.2231200),
+                                );
                                 context.pushNamed(
                                   'liveRunning',
                                   queryParameters: {

@@ -21,6 +21,7 @@ import 'package:saefra_run/core/theme/app_theme.dart';
 import 'package:saefra_run/firebase_options.dart';
 
 import 'core/services/dashboard_services.dart';
+import 'core/services/live_runing_services.dart';
 
 
 
@@ -75,6 +76,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ActivityService()),
         ChangeNotifierProvider(create: (_) => RunService()),
         ChangeNotifierProvider(create: (_) => RunReviewService()),
+        ChangeNotifierProvider(create: (_) => RunningProvider()),
       ],
       child: const SaefraRunApp(),
     ),
