@@ -92,7 +92,7 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                                   'High Visibility Route',
                                   style: textTheme.bodySmall?.copyWith(
                                       color: AppColors.buttonColor,
-                                      fontSize: 14.sp,
+                                      fontSize: 12.sp,
                                       fontWeight: FontWeight.w700
                                   ),
                                 ),
@@ -100,7 +100,7 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                             ),
                             SizedBox(height: 16.h),
                              _RouteMapCard(route: route),
-                             SizedBox(height: 12.h),
+                             SizedBox(height: 30.h),
                             // _RouteStatsRow(route: route),
                             // SizedBox(height: 16.h),
                             PrimaryButton(
@@ -153,11 +153,11 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                               communityRating: route.communityRating,
                             ),
                             SizedBox(height: 20.h),
-                            Text(
-                              'Live Highlights',
-                              style: textTheme.bodyMedium,
-                            ),
-                            SizedBox(height: 10.h),
+                            // Text(
+                            //   'Live Highlights',
+                            //   style: textTheme.bodyMedium,
+                            // ),
+                            // SizedBox(height: 10.h),
                             LiveHighlightsCard()
                             // SizedBox(
                             //   height: 120.h,
@@ -210,8 +210,8 @@ class _RouteMapCard extends StatelessWidget {
                   color: AppColors.white,
                   width: 2
                 ),
-                color: AppColors.border.withOpacity(.7),
-                borderRadius: BorderRadius.circular(8.r),
+                color: AppColors.textBorder.withOpacity(.6),
+                borderRadius: BorderRadius.circular(25.r),
               ),
               child: Row(
                 spacing: 8.w,
@@ -380,13 +380,13 @@ class _SaefraScoreCard extends StatelessWidget {
                   ),
                   Text(
                     '${pct.round()}%',
-                    style: textTheme.displayLarge?.copyWith(fontSize: 38.sp, fontWeight: FontWeight.w800, color: AppColors.primary),
+                    style: textTheme.displayLarge?.copyWith(fontSize: 30.sp, fontWeight: FontWeight.w800, color: AppColors.primary),
                   ),
                 ],
               ),
 
               const Spacer(),
-              Image.asset(Assets.seftiIcon, width: 24.w, height: 24.h),
+              Image.asset(Assets.seftiIcon, width: 22.w, height: 22.h),
             ],
           ),
           SizedBox(height: 10.h),
@@ -394,7 +394,7 @@ class _SaefraScoreCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4.r),
             child: LinearProgressIndicator(
               value: pct / 100,
-              minHeight: 8.h,
+              minHeight: 6.5.h,
               backgroundColor: AppColors.surfaceLight,
               color: AppColors.primary,
             ),
@@ -447,7 +447,7 @@ class _SafetyInfoRow extends StatelessWidget {
           Row(
             spacing: 8.w,
             children: [
-              Image.asset(Assets.saftyinfoIcon, width: 24.w, height: 24.h),
+              Image.asset(Assets.saftyinfoIcon, width: 22.w, height: 22.h),
               Text(
                 'Safety Information',
                 style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500,color: AppColors.white),
@@ -455,19 +455,19 @@ class _SafetyInfoRow extends StatelessWidget {
             ],
           ),
           SizedBox(height: 12.h,),
-          if (difficulty != null || travelMode != null) ...[
-            Text(
-              [
-                if (difficulty != null) 'Difficulty: $difficulty',
-                if (travelMode != null) 'Mode: $travelMode',
-              ].join(' • '),
-              style: textTheme.bodySmall,
-            ),
-            SizedBox(height: 12.h),
-          ],
+          // if (difficulty != null || travelMode != null) ...[
+          //   Text(
+          //     [
+          //       if (difficulty != null) 'Difficulty: $difficulty',
+          //       if (travelMode != null) 'Mode: $travelMode',
+          //     ].join(' • '),
+          //     style: textTheme.bodySmall,
+          //   ),
+          //   SizedBox(height: 12.h),
+          // ],
           Container(
             width: 300.w,
-            height: 50.h,
+            height: 40.h,
             padding: EdgeInsets.symmetric(horizontal: 14.w,),
             decoration: BoxDecoration(
               color: AppColors.white,

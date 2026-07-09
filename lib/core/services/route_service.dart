@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:saefra_run/core/utils/polyline_decoder.dart';
@@ -62,7 +63,7 @@ class LoopRouteResult {
 class RouteService {
   static String apiKey = "AIzaSyCbIzUN3ij3FCD-zBBshUZdEgBXDCcYsj8"; // Replace with your safe Key management setup
 
-  Future<LoopRouteResult?> createLoopRoute({
+  Future<LoopRouteResult?>  createLoopRoute({
     required LatLng currentLocation,
     required double distanceKm,
     String travelMode = 'WALK',
@@ -166,7 +167,9 @@ class RouteService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-
+        if (kDebugMode) {
+          print("--------------Response Api call Start Form Google----------");
+        }
         if (data.containsKey('routes') && (data['routes'] as List).isNotEmpty) {
           final route = data['routes'][0];
 

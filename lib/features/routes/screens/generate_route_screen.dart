@@ -10,7 +10,6 @@ import 'package:saefra_run/core/services/generate_route_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
-
 import '../../../generated/assets.dart';
 
 class GenerateRouteScreen extends StatefulWidget {
@@ -21,7 +20,7 @@ class GenerateRouteScreen extends StatefulWidget {
 }
 
 class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
-  // Local state variable to manage dynamic unit toggling
+
   bool _isKm = true;
 
   Future<void> _generate() async {
@@ -48,14 +47,13 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
     final filters = service.filters;
     final textTheme = Theme.of(context).textTheme;
 
-    // Derived theme elements using AppColors parameters
     final cardBg = AppColors.surfaced;
     final cardBorderColor = AppColors.border.withValues(alpha: 0.5);
     final unselectedItemBorder = AppColors.border.withValues(alpha: 0.5);
-    final selectedBg =  AppColors.primary.withValues(alpha: 0.2); // Dark crimson matching mockup active state
+    final selectedBg =  AppColors.primary.withValues(alpha: 0.2);
     final selectedBorder = AppColors.primary;
     final textMuted = AppColors.white.withValues(alpha: 0.8);
-    // Dynamic math conversion calculation: 1 mile = 1.60934 km
+
     final double displayedDistance = _isKm ? filters.distanceKm : (filters.distanceKm / 1.60934);
 
     return Scaffold(
@@ -153,6 +151,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                           ],
                         ),
                         SizedBox(height: 2.h),
+
                         SliderTheme(
                           data: SliderTheme.of(context).copyWith(
                             trackHeight: 10.h,
@@ -161,10 +160,10 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                             overlayColor: AppColors.primary.withValues(alpha: 0.15),
                             // Using our custom pixel-perfect square block shape builder
                             thumbShape: _CustomSquareSliderThumbShape(
-                              thumbRadius: 14.r,
+                              thumbRadius: 10.r,
                               thumbColor: AppColors.primary,
                               borderColor: Colors.white,
-                              borderWidth: 2.w,
+                              borderWidth: 1.5.w,
                               borderRadius: 6.r,
                             ),
                             // Strips away default padding limits for seamless edges
@@ -208,7 +207,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                               child: _buildOptionBlock(
                                 label: 'Easy',
                                 icon: Icons.run_circle_outlined,
-                                imageAssetPath: Assets.onboardingEasyPaceIcon, // Dynamic asset image
+                                imageAssetPath: Assets.onboardingEasyPaceIcon,
                                 isSelected: filters.difficulty == RouteDifficulty.easy,
                                 selectedBg: selectedBg,
                                 selectedBorder: selectedBorder,
@@ -222,7 +221,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                               child: _buildOptionBlock(
                                 label: 'Medium',
                                 icon: Icons.directions_run,
-                                imageAssetPath: Assets.onboardingModerateChallengeIcon, // Dynamic asset image
+                                imageAssetPath: Assets.onboardingModerateChallengeIcon,
                                 isSelected: filters.difficulty == RouteDifficulty.moderate,
                                 selectedBg: selectedBg,
                                 selectedBorder: selectedBorder,
@@ -236,7 +235,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                                 label: 'Hard',
                                 icon: Icons.terrain,
                                 isSelected: filters.difficulty == RouteDifficulty.hard,
-                                imageAssetPath: Assets.onboardingPushMyLimitIcon, // Dynamic asset image
+                                imageAssetPath: Assets.onboardingPushMyLimitIcon,
                                 selectedBg: selectedBg,
                                 selectedBorder: selectedBorder,
                                 unselectedBorder: unselectedItemBorder,
@@ -363,7 +362,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
   Widget _buildOptionBlock({
     required String label,
     IconData? icon,
-    String? imageAssetPath, // Accepts asset path strings seamlessly
+    String? imageAssetPath,
     required bool isSelected,
     required Color selectedBg,
     required Color selectedBorder,
@@ -375,13 +374,13 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
     final contentColor = isSelected ? AppColors.white : (accentIconColor ?? AppColors.white.withValues(alpha: 0.4));
     final textColor = isSelected ? AppColors.white : AppColors.white.withValues(alpha: 0.5);
 
-    // Render Image Asset if provided; otherwise fall back to regular Icon layout
+
     final Widget visualElement = imageAssetPath != null
         ? Image.asset(
       imageAssetPath,
       width: 24.r,
       height: 24.r,
-      color: isSelected ? null : AppColors.white.withValues(alpha: 0.8), // Keeps unselected assets subtle
+      color: isSelected ? null : AppColors.white.withValues(alpha: 0.8),
     )
         : Icon(icon, color: contentColor, size: 22.r);
 
@@ -467,13 +466,11 @@ class _CustomSquareSliderThumbShape extends SliderComponentShape {
       Radius.circular(borderRadius),
     );
 
-    // 1. Paint the solid background color
     final fillPaint = Paint()
       ..color = thumbColor
       ..style = PaintingStyle.fill;
     canvas.drawRRect(rrect, fillPaint);
 
-    // 2. Paint the crisp outer border accent layer
     final borderPaint = Paint()
       ..color = borderColor
       ..style = PaintingStyle.stroke
@@ -481,6 +478,7 @@ class _CustomSquareSliderThumbShape extends SliderComponentShape {
     canvas.drawRRect(rrect, borderPaint);
   }
 }
+
 class _NoPaddingSliderTrackShape extends RectangularSliderTrackShape {
   const _NoPaddingSliderTrackShape();
 
@@ -496,10 +494,13 @@ class _NoPaddingSliderTrackShape extends RectangularSliderTrackShape {
     final double trackWidth = parentBox.size.width;
     final double trackTop = offset.dy + (parentBox.size.height - trackHeight) / 2;
 
-    // Returns full parent container width with zero margin offsets
     return Rect.fromLTWH(offset.dx, trackTop, trackWidth, trackHeight);
   }
 }
+
+
+
+
 class _MapPreviewCard extends StatelessWidget {
   const _MapPreviewCard({
     required this.onReset,
@@ -511,6 +512,7 @@ class _MapPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.r),
       child: SizedBox(
@@ -526,19 +528,25 @@ class _MapPreviewCard extends StatelessWidget {
               top: 12.h,
               right: 12.w,
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                 decoration: BoxDecoration(
-                  color: AppColors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20.r),
+                  border: Border.all(
+                      color: AppColors.white,
+                      width: 2
+                  ),
+                  color: AppColors.textBorder.withOpacity(.6),
+                  borderRadius: BorderRadius.circular(25.r),
                 ),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                  spacing: 8.w,
                   children: [
-                    Icon(Icons.shield_outlined, color: AppColors.white, size: 14.r),
-                    SizedBox(width: 4.w),
+                    Image.asset(Assets.seftiIcon, width: 18.w, height: 18.h,color: AppColors.white,),
                     Text(
-                      'Route Secure',
-                      style: TextStyle(color: AppColors.white, fontSize: 11.sp, fontWeight: FontWeight.w600),
+                      'Route Scope',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),

@@ -871,6 +871,12 @@ class DashboardServices extends ChangeNotifier {
       _longitude = pos.longitude;
 
       await _animateToCurrentLocation();
+      await fetchSafeRoute(
+        originLat: _latitude!,
+        originLng: _longitude!,
+        destLat: _latitude!,
+        destLng: _longitude!,
+      );
       notifyListeners();
     } catch (e) {
       debugPrint('getCurrentLocation failed: $e');

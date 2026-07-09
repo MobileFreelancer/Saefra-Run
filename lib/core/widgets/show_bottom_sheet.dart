@@ -13,6 +13,7 @@ void showMapStyleBottomSheet(
     ) {
   showModalBottomSheet(
     context: context,
+    isDismissible: false,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(20),
@@ -128,24 +129,6 @@ void showMapStyleBottomSheet(
                   )
                 ],
               ),
-
-              // ListTile(
-              //   leading: const Icon(Icons.light_mode),
-              //   title: const Text("Light"),
-
-              // ),
-              //
-              // ListTile(
-              //   leading: const Icon(Icons.dark_mode),
-              //   title: const Text("Dark"),
-
-              // ),
-              //
-              // ListTile(
-              //   leading: const Icon(Icons.park),
-              //   title: const Text("Park"),
-
-              // ),
             ],
           ),
         ),
