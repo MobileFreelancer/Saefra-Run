@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/models/user_preferences_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/local_emergency_contacts_storage.dart';
+import 'package:saefra_run/core/services/secure_storage_service.dart';
 
 class SettingsService extends ChangeNotifier {
   SettingsService(this._auth);
@@ -19,6 +21,8 @@ class SettingsService extends ChangeNotifier {
 
   bool _liveTracking = true;
   bool _emergencyAlerts = true;
+  bool _safetyZoneAlerts = true;
+  bool _routeSafetyAlerts = false;
   bool _pushNotifications = true;
   bool _emailNotifications = false;
   bool _smsNotifications = false;
@@ -27,6 +31,9 @@ class SettingsService extends ChangeNotifier {
   String _lastName = '';
   String _email = '';
   String _phone = '';
+  String _gender = 'Male';
+  String _birthdate = '';
+  String _runningLevel = 'Intermediate';
 
   UserPreferencesModel? get preferences => _preferences;
   List<EmergencyContactModel> get contacts => _contacts;
@@ -35,6 +42,8 @@ class SettingsService extends ChangeNotifier {
 
   bool get liveTracking => _liveTracking;
   bool get emergencyAlerts => _emergencyAlerts;
+  bool get safetyZoneAlerts => _safetyZoneAlerts;
+  bool get routeSafetyAlerts => _routeSafetyAlerts;
   bool get pushNotifications => _pushNotifications;
   bool get emailNotifications => _emailNotifications;
   bool get smsNotifications => _smsNotifications;
@@ -43,6 +52,9 @@ class SettingsService extends ChangeNotifier {
   String get lastName => _lastName;
   String get email => _email;
   String get phone => _phone;
+  String get gender => _gender;
+  String get birthdate => _birthdate;
+  String get runningLevel => _runningLevel;
 
   Future<void> load() async {
     _isLoading = true;
@@ -64,9 +76,11 @@ class SettingsService extends ChangeNotifier {
       final apiContacts = await _api.getEmergencyContacts();
       final localContacts = await LocalEmergencyContactsStorage.read();
       _contacts = _mergeContacts(apiContacts, localContacts);
+      await _loadLocalSafetySettings();
     } catch (e) {
       _error = e.toString();
       _contacts = await LocalEmergencyContactsStorage.read();
+      await _loadLocalSafetySettings();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -88,6 +102,33 @@ class SettingsService extends ChangeNotifier {
     final parts = name.split(' ');
     _firstName = parts.isNotEmpty ? parts.first : '';
     _lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    _gender = _formatGender(user.gender);
+    if (user.birthdate != null) {
+      final d = user.birthdate!;
+      _birthdate =
+          '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+    }
+    _runningLevel = _formatRunningLevel(user.runPreference);
+  }
+
+  String _formatGender(String? value) {
+    if (value == null || value.isEmpty) return 'Male';
+    final lower = value.toLowerCase();
+    if (lower == 'female') return 'Female';
+    if (lower.contains('not')) return 'Prefer not to say';
+    return 'Male';
+  }
+
+  String _formatRunningLevel(String? value) {
+    if (value == null || value.isEmpty) return 'Intermediate';
+    final lower = value.toLowerCase();
+    if (lower.contains('easy') || lower.contains('beginner')) {
+      return 'Beginner';
+    }
+    if (lower.contains('hard') || lower.contains('advanced')) {
+      return 'Advanced';
+    }
+    return 'Intermediate';
   }
 
   void updateProfileFields({
@@ -95,11 +136,17 @@ class SettingsService extends ChangeNotifier {
     String? lastName,
     String? email,
     String? phone,
+    String? gender,
+    String? birthdate,
+    String? runningLevel,
   }) {
     if (firstName != null) _firstName = firstName;
     if (lastName != null) _lastName = lastName;
     if (email != null) _email = email;
     if (phone != null) _phone = phone;
+    if (gender != null) _gender = gender;
+    if (birthdate != null) _birthdate = birthdate;
+    if (runningLevel != null) _runningLevel = runningLevel;
     notifyListeners();
   }
 
@@ -110,6 +157,16 @@ class SettingsService extends ChangeNotifier {
 
   void setEmergencyAlerts(bool v) {
     _emergencyAlerts = v;
+    notifyListeners();
+  }
+
+  void setSafetyZoneAlerts(bool v) {
+    _safetyZoneAlerts = v;
+    notifyListeners();
+  }
+
+  void setRouteSafetyAlerts(bool v) {
+    _routeSafetyAlerts = v;
     notifyListeners();
   }
 
@@ -134,8 +191,12 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
     try {
       await _api.updateProfile(
-        gender: _auth.currentUser?.gender ?? 'male',
-        birthdate: '01-01-1990',
+        gender: _gender.toLowerCase().contains('female')
+            ? 'female'
+            : _gender.toLowerCase().contains('not')
+                ? 'prefer_not_to_say'
+                : 'male',
+        birthdate: _birthdate.isNotEmpty ? _birthdate : '01-01-1990',
       );
       return true;
     } catch (e) {
@@ -149,9 +210,10 @@ class SettingsService extends ChangeNotifier {
 
   Future<bool> saveSafetySettings() async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+      await _persistLocalSafetySettings();
       return true;
     } catch (e) {
       _error = e.toString();
@@ -160,6 +222,36 @@ class SettingsService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _loadLocalSafetySettings() async {
+    try {
+      final raw = await SecureStorageService.instance.read(
+        key: ApiConfig.storageKeySafetySettings,
+      );
+      if (raw == null || raw.isEmpty) return;
+
+      final decoded = raw.split('|');
+      if (decoded.length >= 2) {
+        _safetyZoneAlerts = decoded[0] == '1';
+        _routeSafetyAlerts = decoded[1] == '1';
+      }
+    } catch (e) {
+      debugPrint('Failed to load local safety settings: $e');
+    }
+  }
+
+  Future<void> _persistLocalSafetySettings() async {
+    final payload = [
+      _safetyZoneAlerts ? '1' : '0',
+      _routeSafetyAlerts ? '1' : '0',
+    ].join('|');
+
+    await SecureStorageService.instance.write(
+      key: ApiConfig.storageKeySafetySettings,
+      value: payload,
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 300));
   }
 
   Future<bool> saveNotificationSettings() async {
@@ -237,6 +329,10 @@ class SettingsService extends ChangeNotifier {
         oldPassword: oldPassword,
         newPassword: newPassword,
         confirmPassword: confirmPassword,
+      );
+      await SecureStorageService.instance.write(
+        key: ApiConfig.storageKeyUserPassword,
+        value: newPassword,
       );
       return true;
     } catch (e) {

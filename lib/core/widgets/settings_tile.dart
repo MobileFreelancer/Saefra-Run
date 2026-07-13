@@ -13,6 +13,7 @@ class SettingsTile extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.showChevron = true,
+    this.isDestructive = false,
   });
 
   final String label;
@@ -22,9 +23,15 @@ class SettingsTile extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final bool showChevron;
+  final bool isDestructive;
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final labelColor = isDestructive ? AppColors.primary : AppColors.white;
+    final chevronColor =
+        isDestructive ? AppColors.primary : AppColors.textMuted;
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -38,12 +45,17 @@ class SettingsTile extends StatelessWidget {
                   assetPath: iconAssetPath!,
                   fallbackIcon: fallbackIcon,
                   size: 22,
+                  color: isDestructive ? AppColors.primary : null,
                 ),
               )
             else
               Padding(
                 padding: EdgeInsets.only(right: 14.w),
-                child: Icon(fallbackIcon, size: 22, color: AppColors.textPrimary),
+                child: Icon(
+                  fallbackIcon,
+                  size: 22.sp,
+                  color: labelColor,
+                ),
               ),
             Expanded(
               child: Column(
@@ -51,20 +63,17 @@ class SettingsTile extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: TextStyle(
-                      color: AppColors.white,
+                    style: textTheme.bodyLarge?.copyWith(
                       fontSize: 15.sp,
                       fontWeight: FontWeight.w500,
+                      color: labelColor,
                     ),
                   ),
                   if (subtitle != null) ...[
                     SizedBox(height: 4.h),
                     Text(
                       subtitle!,
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 12.sp,
-                      ),
+                      style: textTheme.bodySmall?.copyWith(fontSize: 12.sp),
                     ),
                   ],
                 ],
@@ -74,7 +83,7 @@ class SettingsTile extends StatelessWidget {
                 (showChevron
                     ? Icon(
                         Icons.chevron_right,
-                        color: AppColors.textMuted,
+                        color: chevronColor,
                         size: 22.sp,
                       )
                     : const SizedBox.shrink()),

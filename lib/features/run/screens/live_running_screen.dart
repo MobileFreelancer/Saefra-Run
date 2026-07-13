@@ -9,7 +9,6 @@ import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/secondary_button.dart';
-import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/generated/assets.dart';
 
 import '../../../core/services/live_runing_services.dart';
@@ -37,19 +36,34 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
     });
   }
 
+  void _endRunAndGoToSummary() {
+    final tracking = context.read<RunningProvider>();
+    context.read<RunService>().completeFromTracking(
+      distanceKm: tracking.totalDistanceKm,
+      steps: tracking.totalSteps,
+      secondsElapsed: tracking.secondsElapsed,
+      routePath: List<LatLng>.from(tracking.runningPathCoordinates),
+    );
+    tracking.finishRun();
+    context.pushReplacementNamed('runSummary');
+  }
+
   void _showPauseDialog() {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.75),
       builder: (ctx) => _PauseRunDialog(
         onResume: () {
           Navigator.pop(ctx);
+          if (!context.read<RunningProvider>().isTracking) {
+            context.read<RunningProvider>().togglePauseResume();
+          }
           context.read<RunService>().resume();
         },
         onEnd: () {
           Navigator.pop(ctx);
-          context.read<RunService>().stop();
-          context.pushReplacementNamed('runSummary');
+          _endRunAndGoToSummary();
         },
       ),
     );
@@ -58,6 +72,8 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
   void _showSosDialog() {
     showDialog<void>(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.75),
       builder: (ctx) => _SosConfirmDialog(
         onCancel: () => Navigator.pop(ctx),
         onSend: () async {
@@ -67,6 +83,18 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
         },
       ),
     );
+  }
+
+  void _onPausePressed() {
+    final tracking = context.read<RunningProvider>();
+    if (tracking.isTracking) {
+      tracking.togglePauseResume();
+      context.read<RunService>().pause();
+      _showPauseDialog();
+    } else {
+      tracking.togglePauseResume();
+      context.read<RunService>().resume();
+    }
   }
 
   @override
@@ -207,7 +235,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
 
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () => context.read<RunningProvider>().togglePauseResume(),
+                            onPressed: _onPausePressed,
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Color(0xFFE52344), width: 1.5),
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -227,7 +255,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
 
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () => context.read<RunningProvider>().finishRun(),
+                            onPressed: _endRunAndGoToSummary,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFE52344),
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -286,27 +314,80 @@ class _PauseRunDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Dialog(
       backgroundColor: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+      insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
       child: Padding(
-        padding: EdgeInsets.all(20.w),
+        padding: EdgeInsets.fromLTRB(24.w, 28.h, 24.w, 24.h),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.pause_circle_filled, color: AppColors.primary, size: 56),
-            SizedBox(height: 12.h),
-            Text('Run Paused', style: Theme.of(context).textTheme.titleLarge),
-            SizedBox(height: 8.h),
-            Text(
-              'Your progress is saved. Take a breath. When you\'re ready.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+            Image.asset(
+              Assets.pauseDialogImg,
+              height: 88.h,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.pause_circle_filled,
+                color: AppColors.primary,
+                size: 72.sp,
+              ),
             ),
-            SizedBox(height: 16.h),
-            PrimaryButton(label: 'Resume Run', onPressed: onResume),
-            SizedBox(height: 8.h),
-            SecondaryButton(label: 'End Run', onPressed: onEnd),
+            SizedBox(height: 20.h),
+            Text(
+              'Run Paused',
+              style: textTheme.titleLarge?.copyWith(
+                color: AppColors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 22.sp,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              'Your progress is saved. Take a breath, check your surroundings.',
+              textAlign: TextAlign.center,
+              style: textTheme.bodyMedium?.copyWith(
+                color: AppColors.textMuted,
+                fontSize: 14.sp,
+                height: 1.45,
+              ),
+            ),
+            SizedBox(height: 24.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onResume,
+                icon: const Icon(Icons.play_arrow_rounded, color: AppColors.white),
+                label: const Text('Resume Run'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.buttonColor,
+                  foregroundColor: AppColors.white,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30.r),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 12.h),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onEnd,
+                icon: const Icon(Icons.stop_circle_outlined, color: AppColors.white),
+                label: const Text('End Run'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.white,
+                  side: const BorderSide(color: AppColors.buttonColor, width: 1.5),
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30.r),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -322,28 +403,78 @@ class _SosConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Dialog(
       backgroundColor: AppColors.surface,
+      insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
       child: Padding(
-        padding: EdgeInsets.all(20.w),
+        padding: EdgeInsets.fromLTRB(24.w, 28.h, 24.w, 24.h),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(Assets.sos, width: 48, errorBuilder: (_, __, ___) => const Icon(Icons.warning_amber, color: AppColors.primary, size: 48)),
-            SizedBox(height: 12.h),
-            Text('Emergency SOS', style: Theme.of(context).textTheme.titleLarge),
-            SizedBox(height: 8.h),
-            Text(
-              'Your location will be shared with your emergency contacts. Do you want to continue?',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+            Image.asset(
+              Assets.emergencyDialogImg,
+              height: 88.h,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.primary,
+                size: 72,
+              ),
             ),
-            SizedBox(height: 16.h),
+            SizedBox(height: 20.h),
+            Text(
+              'Emergency SOS',
+              style: textTheme.titleLarge?.copyWith(
+                color: AppColors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 22.sp,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Text(
+              'Your live location will be shared with your emergency contacts. Do you want to continue?',
+              textAlign: TextAlign.center,
+              style: textTheme.bodyMedium?.copyWith(
+                color: AppColors.textMuted,
+                fontSize: 14.sp,
+                height: 1.45,
+              ),
+            ),
+            SizedBox(height: 24.h),
             Row(
               children: [
-                Expanded(child: SecondaryButton(label: 'Cancel', onPressed: onCancel)),
-                SizedBox(width: 8.w),
-                Expanded(child: PrimaryButton(label: 'Send SOS', onPressed: onSend)),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onCancel,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.white,
+                      side: const BorderSide(color: AppColors.buttonColor, width: 1.5),
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.r),
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onSend,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.buttonColor,
+                      foregroundColor: AppColors.white,
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.r),
+                      ),
+                    ),
+                    child: const Text('Send SOS'),
+                  ),
+                ),
               ],
             ),
           ],

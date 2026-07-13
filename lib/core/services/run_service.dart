@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:saefra_run/core/models/run_session_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 
@@ -76,14 +77,48 @@ class RunService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void completeFromTracking({
+    required double distanceKm,
+    required int steps,
+    required int secondsElapsed,
+    required List<LatLng> routePath,
+  }) {
+    _timer?.cancel();
+    _status = RunStatus.stopped;
+
+    final elapsed = Duration(seconds: secondsElapsed);
+    final paceLabel = _formatPaceLabel(elapsed, distanceKm);
+
+    _session = _session.copyWith(
+      distanceKm: double.parse(distanceKm.toStringAsFixed(2)),
+      elapsed: elapsed,
+      steps: steps,
+      paceLabel: paceLabel,
+      calories: (distanceKm * 72).round(),
+      routePath: List<LatLng>.from(routePath),
+      splits: _buildSplits(distanceKm),
+    );
+    notifyListeners();
+  }
+
+  String _formatPaceLabel(Duration elapsed, double distanceKm) {
+    if (distanceKm <= 0) return "0'00\" /km";
+    final paceSeconds = elapsed.inSeconds / distanceKm;
+    final min = paceSeconds ~/ 60;
+    final sec = (paceSeconds % 60).round().toString().padLeft(2, '0');
+    return "$min'$sec\" /km";
+  }
+
   List<RunSplitModel> _buildSplits(double totalKm) {
     final count = totalKm.floor().clamp(1, 10);
     return List.generate(count, (i) {
       final km = i + 1;
+      final minutes = 5 + i;
+      final seconds = 20 + i * 3;
       return RunSplitModel(
         km: km,
-        timeLabel: '${5 + i}:${(20 + i * 3).toString().padLeft(2, '0')}',
-        paceFactor: 0.4 + (i % 3) * 0.2,
+        timeLabel: "$minutes'${seconds.toString().padLeft(2, '0')}\"",
+        paceFactor: 0.35 + (i % 4) * 0.15,
       );
     });
   }

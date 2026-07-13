@@ -84,6 +84,16 @@ class Assets {
   static const String settingsAboutIcon = '${mainIconsUrl}settings_about.png';
   static const String settingsCameraIcon = '${mainIconsUrl}settings_camera.png';
 
+  // live running dialog icon
+
+  static const String pauseDialogImg = '${mainImageUrl}Pause_dialog_img.png';
+  static const String emergencyDialogImg = '${mainImageUrl}emergency_dialog_img.png';
+  static const String runSummaryImg = '${mainImageUrl}run_summary_vistory_img.png';
+  static const String reviewSubmittedDialogImg = '${mainImageUrl}review_submitted_dialog_img.png';
+  static const String IIcon = '${mainImageUrl}i_icon.png';
+  static const String passwordChangeSuccessDialogImg = '${mainImageUrl}password_change_succes_dialog_img.png';
+  static const String logoutDialogImg = '${mainImageUrl}logout_dialog_img.png';
+
   static const String darkMapImage = '${mainImageUrl}dark_map.png';
   static const String lightMapImage = '${mainImageUrl}loght_map.png';
   static const String prrakImage = '${mainImageUrl}prak_map.png';

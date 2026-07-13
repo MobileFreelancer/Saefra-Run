@@ -1,6 +1,8 @@
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 enum RunStatus { idle, running, paused, stopped }
 
-enum RunMood { sore, tired, okay, good, great }
+enum RunMood { great, good, okay, tough, exhausted }
 
 class RunSessionModel {
   final String? routeId;
@@ -9,8 +11,10 @@ class RunSessionModel {
   final Duration elapsed;
   final String paceLabel;
   final int calories;
+  final int steps;
   final int routeRemainingMeters;
   final List<RunSplitModel> splits;
+  final List<LatLng> routePath;
 
   const RunSessionModel({
     this.routeId,
@@ -19,8 +23,10 @@ class RunSessionModel {
     this.elapsed = Duration.zero,
     this.paceLabel = '0:00 min/km',
     this.calories = 0,
+    this.steps = 0,
     this.routeRemainingMeters = 0,
     this.splits = const [],
+    this.routePath = const [],
   });
 
   RunSessionModel copyWith({
@@ -30,8 +36,10 @@ class RunSessionModel {
     Duration? elapsed,
     String? paceLabel,
     int? calories,
+    int? steps,
     int? routeRemainingMeters,
     List<RunSplitModel>? splits,
+    List<LatLng>? routePath,
   }) {
     return RunSessionModel(
       routeId: routeId ?? this.routeId,
@@ -40,8 +48,10 @@ class RunSessionModel {
       elapsed: elapsed ?? this.elapsed,
       paceLabel: paceLabel ?? this.paceLabel,
       calories: calories ?? this.calories,
+      steps: steps ?? this.steps,
       routeRemainingMeters: routeRemainingMeters ?? this.routeRemainingMeters,
       splits: splits ?? this.splits,
+      routePath: routePath ?? this.routePath,
     );
   }
 
@@ -58,6 +68,14 @@ class RunSessionModel {
     return '$m:$s';
   }
 
+  String get paceDisplayLabel {
+    if (distanceKm <= 0) return paceLabel;
+    final paceSeconds = elapsed.inSeconds / distanceKm;
+    final min = paceSeconds ~/ 60;
+    final sec = (paceSeconds % 60).round().toString().padLeft(2, '0');
+    return "$min'$sec\" /km";
+  }
+
   factory RunSessionModel.fromJson(Map<String, dynamic> json) {
     return RunSessionModel(
       routeId: json['route_id'] as String?,
@@ -66,6 +84,7 @@ class RunSessionModel {
       elapsed: Duration(seconds: json['elapsed_seconds'] as int? ?? 0),
       paceLabel: json['pace'] as String? ?? '',
       calories: json['calories'] as int? ?? 0,
+      steps: json['steps'] as int? ?? 0,
       routeRemainingMeters: json['route_remaining_m'] as int? ?? 0,
       splits: (json['splits'] as List<dynamic>?)
               ?.map((e) => RunSplitModel.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -80,6 +99,7 @@ class RunSessionModel {
         'elapsed_seconds': elapsed.inSeconds,
         'pace': paceLabel,
         'calories': calories,
+        'steps': steps,
         if (mood != null) 'mood': mood.name,
         'splits': splits.map((s) => s.toJson()).toList(),
       };

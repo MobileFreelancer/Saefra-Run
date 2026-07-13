@@ -52,6 +52,9 @@ class ApiConfig {
   static const String storageKeyAccessToken = 'access_token';
   static const String storageKeyRefreshToken = 'refresh_token';
   static const String storageKeyUserId = 'user_id';
+  static const String storageKeyUserEmail = 'user_email';
+  static const String storageKeyUserPassword = 'user_password';
   static const String storageKeyOnboardingComplete = 'onboarding_complete';
   static const String storageKeyEmergencyContacts = 'emergency_contacts_local';
+  static const String storageKeySafetySettings = 'safety_settings_local';
 }

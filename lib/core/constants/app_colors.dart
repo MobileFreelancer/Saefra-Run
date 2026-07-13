@@ -13,13 +13,16 @@ class AppColors {
   static const Color surface = Color(0xFF1A1A1A);
   static const Color surfaceLight = Color(0xFF2A2A2A);
   static const Color surfaced = Color(0xFF131315);
+  static const Color surfaced1B = Color(0xFF1B1B1B);
   static const Color borderColor = Color(0xFF222222);
+  static const Color borderColorB0 = Color(0xFFF0F0F0);
   static const Color border = Color(0xFF3A3A3A);
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textBorder = Color(0xFF222222);
   static const Color textSecondary = Color(0xFFB0B0B0);
   static const Color textThird = Color(0xFFD9D9D9);
   static const Color textMuted = Color(0xFF9A9999);
+  static const Color orangeShadow = Color(0xFFFF5F00);
   static const Color error = Color(0xFFEF4444);
   static const Color success = Color(0xFF22C55E);
   static const Color overlay = Color(0x99000000);

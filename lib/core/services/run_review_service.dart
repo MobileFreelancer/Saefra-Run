@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:saefra_run/core/models/run_review_form_model.dart';
+import 'package:saefra_run/core/models/run_session_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 
 class RunReviewService extends ChangeNotifier {
@@ -15,48 +17,33 @@ class RunReviewService extends ChangeNotifier {
   bool get isSubmitting => _isSubmitting;
   bool get submitted => _submitted;
 
-  void setCompanion(RunCompanion value) {
-    _form = _form.copyWith(companion: value);
+  void setRouteFeel(RouteFeel value) {
+    _form = _form.copyWith(routeFeel: value);
     notifyListeners();
   }
 
-  void toggleEnvironmentTag(String tag) {
-    final tags = List<String>.from(_form.environmentTags);
-    if (tags.contains(tag)) {
-      tags.remove(tag);
-    } else {
-      tags.add(tag);
-    }
-    _form = _form.copyWith(environmentTags: tags);
+  void setSurfaceType(RouteSurfaceType value) {
+    _form = _form.copyWith(surfaceType: value);
     notifyListeners();
   }
 
-  void setAccuracy(String value) {
-    _form = _form.copyWith(accuracyRating: value);
+  void setSidewalks(SidewalkAvailability value) {
+    _form = _form.copyWith(sidewalks: value);
     notifyListeners();
   }
 
-  void setRunMode(String value) {
-    _form = _form.copyWith(runMode: value);
+  void setStarRating(int value) {
+    _form = _form.copyWith(starRating: value.clamp(0, 5));
     notifyListeners();
   }
 
-  void setFeedback(String value) {
-    _form = _form.copyWith(feedback: value);
-    notifyListeners();
-  }
-
-  void setSurface(RunSurface value) {
-    _form = _form.copyWith(surface: value);
-    notifyListeners();
-  }
-
-  void setWeather(RunWeather value) {
-    _form = _form.copyWith(weather: value);
+  void setReviewText(String value) {
+    _form = _form.copyWith(reviewText: value);
     notifyListeners();
   }
 
   void addImage(String path) {
+    if (_form.imagePaths.length >= 3) return;
     _form = _form.copyWith(imagePaths: [..._form.imagePaths, path]);
     notifyListeners();
   }
@@ -78,7 +65,8 @@ class RunReviewService extends ChangeNotifier {
       );
       _submitted = true;
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('RunReviewService.submit failed: $e');
       return false;
     } finally {
       _isSubmitting = false;

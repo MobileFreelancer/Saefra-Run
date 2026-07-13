@@ -420,11 +420,26 @@ class ApiService {
     }
   }
 
-  Future<void> logout() async {
+  Future<void> logout({
+    required String email,
+    required String password,
+  }) async {
+    if (ApiConfig.useMockApi) {
+      await _mockDelay();
+      return;
+    }
     try {
-      await _storage.delete(key: ApiConfig.storageKeyAccessToken);
-      await _storage.delete(key: ApiConfig.storageKeyUserId);
-    } catch (_) {}
+      final response = await _dio.post(
+        _path('/auth/logout'),
+        data: _form({
+          'email': email,
+          'password': password,
+        }),
+      );
+      _map(response);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
   }
 
   // ─── Profile ────────────────────────────────────────────────────────────────
@@ -765,7 +780,7 @@ class ApiService {
       final response = await _dio.post(
         _path('/auth/change-password'),
         data: _form({
-          'old_password': oldPassword,
+          'current_password': oldPassword,
           'password': newPassword,
           'password_confirmation': confirmPassword,
         }),

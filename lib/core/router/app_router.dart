@@ -35,6 +35,7 @@ import 'package:saefra_run/features/run/screens/safety_checkin_screen.dart';
 import 'package:saefra_run/features/settings/screens/about_us_screen.dart';
 import 'package:saefra_run/features/settings/screens/add_emergency_contact_screen.dart';
 import 'package:saefra_run/features/settings/screens/change_password_screen.dart';
+import 'package:saefra_run/features/settings/screens/contact_us_screen.dart';
 import 'package:saefra_run/features/settings/screens/edit_profile_screen.dart';
 import 'package:saefra_run/features/settings/screens/emergency_contacts_screen.dart';
 import 'package:saefra_run/features/settings/screens/legal_content_screen.dart';
@@ -243,6 +244,11 @@ class AppRouter {
           final type = state.uri.queryParameters['type'] ?? 'terms';
           return LegalContentScreen(type: type);
         },
+      ),
+      GoRoute(
+        path: '/settings/contact-us',
+        name: 'contactUs',
+        builder: (context, state) => const ContactUsScreen(),
       ),
       GoRoute(
         path: '/settings/about',

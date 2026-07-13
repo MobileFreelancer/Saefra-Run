@@ -108,6 +108,14 @@ class AuthService extends ChangeNotifier {
         password: password,
       );
       await _persistSession(response);
+      await _storage.write(
+        key: ApiConfig.storageKeyUserEmail,
+        value: identifier.trim(),
+      );
+      await _storage.write(
+        key: ApiConfig.storageKeyUserPassword,
+        value: password,
+      );
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -145,6 +153,8 @@ class AuthService extends ChangeNotifier {
         onboarding: onboarding,
       );
       await _persistSession(response);
+      await _storage.write(key: ApiConfig.storageKeyUserEmail, value: email);
+      await _storage.write(key: ApiConfig.storageKeyUserPassword, value: password);
       _clearPendingSignup();
       return true;
     } catch (e) {
@@ -221,10 +231,23 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> logout() async {
+  Future<bool> logout() async {
     _setLoading(true);
     try {
-      await _apiService.logout();
+      final email = await _storage.read(key: ApiConfig.storageKeyUserEmail) ??
+          _currentUser?.email ??
+          '';
+      final password =
+          await _storage.read(key: ApiConfig.storageKeyUserPassword) ?? '';
+
+      if (email.isNotEmpty && password.isNotEmpty) {
+        try {
+          await _apiService.logout(email: email, password: password);
+        } catch (e) {
+          debugPrint('Logout API failed: $e');
+        }
+      }
+      return true;
     } finally {
       await _clearTokens();
       _currentUser = null;
@@ -251,6 +274,8 @@ class AuthService extends ChangeNotifier {
   Future<void> _clearTokens() async {
     await _storage.delete(key: ApiConfig.storageKeyAccessToken);
     await _storage.delete(key: ApiConfig.storageKeyUserId);
+    await _storage.delete(key: ApiConfig.storageKeyUserEmail);
+    await _storage.delete(key: ApiConfig.storageKeyUserPassword);
   }
 
   void _clearPendingSignup() {

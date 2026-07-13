@@ -7,7 +7,7 @@ import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/settings_tile.dart';
-import 'package:saefra_run/generated/assets.dart';
+import 'package:saefra_run/features/settings/widgets/logout_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -26,46 +26,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _confirmLogout() async {
-    final textTheme = Theme.of(context).textTheme;
-    final confirmed = await showDialog<bool>(
+    var isLoading = false;
+
+    await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-        title: Row(
-          children: [
-            Image.asset(
-              Assets.settingsLogoutIcon,
-              width: 28.w,
-              errorBuilder: (_, __, ___) =>
-                  const Icon(Icons.logout, color: AppColors.primary),
-            ),
-            SizedBox(width: 10.w),
-            Text('Logout', style: textTheme.titleMedium),
-          ],
-        ),
-        content: Text(
-          'Are you sure you want to logout?',
-          style: textTheme.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Logout'),
-          ),
-        ],
+      barrierDismissible: !isLoading,
+      barrierColor: Colors.black.withValues(alpha: 0.75),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return LogoutDialog(
+            isLoading: isLoading,
+            onCancel: isLoading ? () {} : () => Navigator.pop(ctx),
+            onConfirm: () async {
+              setDialogState(() => isLoading = true);
+              await context.read<AuthService>().logout();
+              if (!ctx.mounted) return;
+              Navigator.pop(ctx);
+              if (mounted) context.goNamed('login');
+            },
+          );
+        },
       ),
     );
-
-    if (confirmed == true && mounted) {
-      await context.read<AuthService>().logout();
-      if (mounted) context.goNamed('login');
-    }
   }
 
   @override
@@ -92,100 +74,133 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             if (settings.isLoading)
               const LinearProgressIndicator(color: AppColors.primary),
-            Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
-              child: Row(
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
                 children: [
-                  CircleAvatar(
-                    radius: 28.r,
-                    backgroundColor: AppColors.surfaceLight,
-                    backgroundImage: user?.profileImage != null
-                        ? NetworkImage(user!.profileImage!)
-                        : null,
-                    child: user?.profileImage == null
-                        ? Text(
-                            displayName.isNotEmpty ? displayName[0] : '?',
-                            style: textTheme.titleLarge,
-                          )
-                        : null,
-                  ),
-                  SizedBox(width: 14.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  Container(
+                    padding: EdgeInsets.all(14.w),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(color: AppColors.borderColor),
+                    ),
+                    child: Row(
                       children: [
-                        Text(displayName, style: textTheme.titleMedium),
-                        SizedBox(height: 4.h),
-                        Text(email, style: textTheme.bodySmall),
+                        CircleAvatar(
+                          radius: 28.r,
+                          backgroundColor: AppColors.surfaceLight,
+                          backgroundImage: user?.profileImage != null
+                              ? NetworkImage(user!.profileImage!)
+                              : null,
+                          child: user?.profileImage == null
+                              ? Text(
+                                  displayName.isNotEmpty
+                                      ? displayName[0].toUpperCase()
+                                      : '?',
+                                  style: textTheme.titleLarge?.copyWith(
+                                    fontSize: 20.sp,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        SizedBox(width: 14.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                style: textTheme.titleMedium?.copyWith(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                email,
+                                style: textTheme.bodySmall?.copyWith(
+                                  fontSize: 13.sp,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                children: [
-                  SettingsTile(
-                    label: 'Edit Profile',
-                    iconAssetPath: Assets.settingsEditProfileIcon,
-                    fallbackIcon: Icons.person_outline,
-                    onTap: () => context.pushNamed('editProfile'),
+                  SizedBox(height: 16.h),
+                  _SettingsGroup(
+                    children: [
+                      SettingsTile(
+                        label: 'Personal Information',
+                        fallbackIcon: Icons.person_outline,
+                        onTap: () => context.pushNamed('editProfile'),
+                      ),
+                      _SettingsDivider(),
+                      SettingsTile(
+                        label: 'Safety Settings',
+                        fallbackIcon: Icons.shield_outlined,
+                        onTap: () => context.pushNamed('safetySettings'),
+                      ),
+                      _SettingsDivider(),
+                      SettingsTile(
+                        label: 'Notification',
+                        fallbackIcon: Icons.notifications_none,
+                        onTap: () => context.pushNamed('notificationSettings'),
+                      ),
+                      _SettingsDivider(),
+                      SettingsTile(
+                        label: 'Change Password',
+                        fallbackIcon: Icons.lock_outline,
+                        onTap: () => context.pushNamed('changePassword'),
+                      ),
+                    ],
                   ),
-                  SettingsTile(
-                    label: 'Safety Settings',
-                    iconAssetPath: Assets.settingsSafetyIcon,
-                    fallbackIcon: Icons.shield_outlined,
-                    onTap: () => context.pushNamed('safetySettings'),
+                  SizedBox(height: 12.h),
+                  _SettingsGroup(
+                    children: [
+                      SettingsTile(
+                        label: 'Contact Us',
+                        fallbackIcon: Icons.mail_outline,
+                        onTap: () => context.pushNamed('contactUs'),
+                      ),
+                      _SettingsDivider(),
+                      SettingsTile(
+                        label: 'Privacy & Policy',
+                        fallbackIcon: Icons.privacy_tip_outlined,
+                        onTap: () => context.pushNamed(
+                          'legalContent',
+                          queryParameters: {'type': 'privacy'},
+                        ),
+                      ),
+                      _SettingsDivider(),
+                      SettingsTile(
+                        label: 'Terms & Conditions',
+                        fallbackIcon: Icons.description_outlined,
+                        onTap: () => context.pushNamed(
+                          'legalContent',
+                          queryParameters: {'type': 'terms'},
+                        ),
+                      ),
+                      _SettingsDivider(),
+                      SettingsTile(
+                        label: 'About saefra',
+                        fallbackIcon: Icons.info_outline,
+                        onTap: () => context.pushNamed('aboutUs'),
+                      ),
+                    ],
                   ),
-                  SettingsTile(
-                    label: 'Emergency Contacts',
-                    iconAssetPath: Assets.settingsEmergencyIcon,
-                    fallbackIcon: Icons.contact_emergency_outlined,
-                    onTap: () => context.pushNamed('emergencyContacts'),
-                  ),
-                  SettingsTile(
-                    label: 'Change Password',
-                    iconAssetPath: Assets.settingsPasswordIcon,
-                    fallbackIcon: Icons.lock_outline,
-                    onTap: () => context.pushNamed('changePassword'),
-                  ),
-                  SettingsTile(
-                    label: 'Notification Settings',
-                    iconAssetPath: Assets.settingsNotificationIcon,
-                    fallbackIcon: Icons.notifications_none,
-                    onTap: () => context.pushNamed('notificationSettings'),
-                  ),
-                  SettingsTile(
-                    label: 'Terms and Conditions',
-                    iconAssetPath: Assets.settingsTermsIcon,
-                    fallbackIcon: Icons.description_outlined,
-                    onTap: () => context.pushNamed(
-                      'legalContent',
-                      queryParameters: {'type': 'terms'},
-                    ),
-                  ),
-                  SettingsTile(
-                    label: 'Privacy Policy',
-                    iconAssetPath: Assets.settingsPrivacyIcon,
-                    fallbackIcon: Icons.privacy_tip_outlined,
-                    onTap: () => context.pushNamed(
-                      'legalContent',
-                      queryParameters: {'type': 'privacy'},
-                    ),
-                  ),
-                  SettingsTile(
-                    label: 'Logout',
-                    iconAssetPath: Assets.settingsLogoutIcon,
-                    fallbackIcon: Icons.logout,
-                    onTap: _confirmLogout,
-                    showChevron: false,
-                  ),
-                  SettingsTile(
-                    label: 'About Us',
-                    iconAssetPath: Assets.settingsAboutIcon,
-                    fallbackIcon: Icons.info_outline,
-                    onTap: () => context.pushNamed('aboutUs'),
+                  SizedBox(height: 12.h),
+                  _SettingsGroup(
+                    children: [
+                      SettingsTile(
+                        label: 'Logout',
+                        fallbackIcon: Icons.logout,
+                        onTap: _confirmLogout,
+                        isDestructive: true,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -193,6 +208,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaced1B,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+class _SettingsDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Divider(
+      height: 0.5,
+      thickness: 0.5,
+      color: AppColors.border,
+      indent: 16.w,
+      endIndent: 16.w,
     );
   }
 }

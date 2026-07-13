@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/run_session_model.dart';
 import 'package:saefra_run/core/services/run_service.dart';
-import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
+import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
-import 'package:saefra_run/core/widgets/secondary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
 
 class RunSummaryScreen extends StatefulWidget {
@@ -19,10 +19,25 @@ class RunSummaryScreen extends StatefulWidget {
 }
 
 class _RunSummaryScreenState extends State<RunSummaryScreen> {
+  bool _isSaving = false;
+
+  Future<void> _saveActivity() async {
+    setState(() => _isSaving = true);
+    final ok = await context.read<RunService>().saveActivity();
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Activity saved successfully')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final run = context.watch<RunService>();
     final session = run.session;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -32,117 +47,71 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
             const AppPageHeader(title: 'Run Summary'),
             Expanded(
               child: ListView(
-                padding: EdgeInsets.all(16.w),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                 children: [
-                  Center(
-                    child: Image.asset(
-                      Assets.successMark,
-                      height: 56.h,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.emoji_events,
-                        color: AppColors.primary,
-                        size: 56,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
+                  _SuccessHeader(textTheme: textTheme),
+                  SizedBox(height: 20.h),
+                  _StatsGrid(session: session, textTheme: textTheme),
+                  SizedBox(height: 20.h),
                   Text(
-                    'Great Job!',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleLarge,
+                    'Route Preview',
+                    style: textTheme.titleMedium?.copyWith(fontSize: 16.sp),
                   ),
-                  Text(
-                    'You completed your run!',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  SizedBox(height: 16.h),
-                  Row(
-                    children: [
-                      _Stat(label: 'Distance', value: '${session.distanceKm.toStringAsFixed(2)} km'),
-                      _Stat(label: 'Total Time', value: session.durationLabel),
-                      _Stat(label: 'Pace', value: session.paceLabel),
-                      _Stat(label: 'Kcal', value: '${session.calories}'),
-                    ],
-                  ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 10.h),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(14.r),
-                    child: AppRouteMap(height: 140.h, borderRadius: 14),
+                    borderRadius: BorderRadius.circular(16.r),
+                    child: _RoutePreviewMap(routePath: session.routePath),
                   ),
-                  SizedBox(height: 16.h),
-                  Text('Splits Rate', style: Theme.of(context).textTheme.titleMedium),
-                  SizedBox(height: 8.h),
+                  SizedBox(height: 20.h),
+                  Text(
+                    'Splits Pace',
+                    style: textTheme.titleMedium?.copyWith(fontSize: 16.sp),
+                  ),
+                  SizedBox(height: 10.h),
                   ...session.splits.map(
-                    (split) => Padding(
-                      padding: EdgeInsets.only(bottom: 8.h),
-                      child: Row(
-                        children: [
-                          Text('KM ${split.km}', style: Theme.of(context).textTheme.bodySmall),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4.r),
-                              child: LinearProgressIndicator(
-                                value: split.paceFactor,
-                                color: AppColors.primary,
-                                backgroundColor: AppColors.surfaceLight,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(split.timeLabel, style: Theme.of(context).textTheme.bodySmall),
-                        ],
-                      ),
-                    ),
+                    (split) => _SplitPaceRow(split: split, textTheme: textTheme),
                   ),
-                  SizedBox(height: 16.h),
-                  Text('How did the run feel?', style: Theme.of(context).textTheme.titleMedium),
-                  SizedBox(height: 8.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: RunMood.values.map((mood) {
-                      final selected = run.mood == mood;
-                      return GestureDetector(
-                        onTap: () => run.setMood(mood),
-                        child: Container(
-                          padding: EdgeInsets.all(10.w),
-                          decoration: BoxDecoration(
-                            color: selected ? AppColors.primary.withValues(alpha: 0.15) : AppColors.surface,
-                            borderRadius: BorderRadius.circular(12.r),
-                            border: Border.all(
-                              color: selected ? AppColors.primary : AppColors.border,
-                            ),
-                          ),
-                          child: Text(
-                            _moodEmoji(mood),
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                  SizedBox(height: 20.h),
+                  Text(
+                    'How Did This Run Feel?',
+                    style: textTheme.titleMedium?.copyWith(fontSize: 16.sp),
+                  ),
+                  SizedBox(height: 12.h),
+                  _MoodSelector(
+                    selected: run.mood,
+                    onSelected: run.setMood,
+                    textTheme: textTheme,
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: EdgeInsets.all(16.w),
+              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               child: Column(
                 children: [
                   PrimaryButton(
                     label: 'Save Activity',
-                    onPressed: () async {
-                      await run.saveActivity();
-                      if (context.mounted) context.pushNamed('runRate');
-                    },
+                    isLoading: _isSaving,
+                    onPressed: _saveActivity,
                   ),
-                  SizedBox(height: 8.h),
-                  SecondaryButton(
-                    label: 'Discard Activity',
-                    onPressed: () async {
-                      await run.discardActivity();
-                      if (context.mounted) context.goNamed('dashboard');
-                    },
+                  SizedBox(height: 10.h),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => context.pushNamed('runRate'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.white,
+                        side: const BorderSide(color: AppColors.buttonColor),
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28.r),
+                        ),
+                      ),
+                      child: Text(
+                        'Rate For Route',
+                        style: textTheme.labelLarge?.copyWith(fontSize: 14.sp),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -152,39 +121,283 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
       ),
     );
   }
-
-  String _moodEmoji(RunMood mood) => switch (mood) {
-        RunMood.sore => '😣',
-        RunMood.tired => '😮‍💨',
-        RunMood.okay => '😐',
-        RunMood.good => '🙂',
-        RunMood.great => '🤩',
-      };
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
+class _SuccessHeader extends StatelessWidget {
+  const _SuccessHeader({required this.textTheme});
+
+  final TextTheme textTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 96.w,
+          height: 96.w,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.primary.withValues(alpha: 0.15),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.35),
+                blurRadius: 24.r,
+                spreadRadius: 2.r,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Image.asset(
+              Assets.runSummaryImg,
+              width: 56.w,
+              height: 56.w,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.emoji_events_rounded,
+                color: AppColors.primary,
+                size: 48.sp,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 14.h),
+        Text(
+          'Great Job!',
+          style: textTheme.headlineMedium?.copyWith(
+            fontSize: 24.sp,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: 6.h),
+        Text(
+          'You completed your run.',
+          style: textTheme.bodyMedium?.copyWith(fontSize: 14.sp),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatsGrid extends StatelessWidget {
+  const _StatsGrid({required this.session, required this.textTheme});
+
+  final RunSessionModel session;
+  final TextTheme textTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppColors.borderColor),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _StatCell(
+                label: 'Distance',
+                value: '${session.distanceKm.toStringAsFixed(2)} km',
+                textTheme: textTheme,
+              ),
+              _StatCell(
+                label: 'Total Time',
+                value: session.durationLabel,
+                textTheme: textTheme,
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            children: [
+              _StatCell(
+                label: 'Avg. Pace',
+                value: session.paceDisplayLabel,
+                textTheme: textTheme,
+              ),
+              _StatCell(
+                label: 'Steps',
+                value: '${session.steps}',
+                textTheme: textTheme,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCell extends StatelessWidget {
+  const _StatCell({
+    required this.label,
+    required this.value,
+    required this.textTheme,
+  });
 
   final String label;
   final String value;
+  final TextTheme textTheme;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        margin: EdgeInsets.only(right: 6.w),
-        padding: EdgeInsets.symmetric(vertical: 12.h),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        child: Column(
-          children: [
-            Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 11.sp)),
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: textTheme.bodySmall?.copyWith(fontSize: 12.sp),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            value,
+            style: textTheme.titleMedium?.copyWith(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _RoutePreviewMap extends StatelessWidget {
+  const _RoutePreviewMap({required this.routePath});
+
+  final List<LatLng> routePath;
+
+  @override
+  Widget build(BuildContext context) {
+    if (routePath.length > 1) {
+      return AppRouteMap(
+        height: 150.h,
+        borderRadius: 16,
+        polylinePoints: routePath,
+        showLocationMarker: false,
+      );
+    }
+    return AppRouteMap(height: 150.h, borderRadius: 16);
+  }
+}
+
+class _SplitPaceRow extends StatelessWidget {
+  const _SplitPaceRow({required this.split, required this.textTheme});
+
+  final RunSplitModel split;
+  final TextTheme textTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10.h),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 36.w,
+            child: Text(
+              'km ${split.km}',
+              style: textTheme.bodySmall?.copyWith(fontSize: 12.sp),
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4.r),
+              child: LinearProgressIndicator(
+                value: split.paceFactor.clamp(0.1, 1.0),
+                minHeight: 6.h,
+                color: AppColors.white,
+                backgroundColor: AppColors.surfaceLight,
+              ),
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Text(
+            split.timeLabel,
+            style: textTheme.bodySmall?.copyWith(
+              fontSize: 12.sp,
+              color: AppColors.success,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoodSelector extends StatelessWidget {
+  const _MoodSelector({
+    required this.selected,
+    required this.onSelected,
+    required this.textTheme,
+  });
+
+  final RunMood? selected;
+  final ValueChanged<RunMood> onSelected;
+  final TextTheme textTheme;
+
+  static const _options = [
+    _MoodOption(RunMood.great, 'Great', '😄', Color(0xFF22C55E)),
+    _MoodOption(RunMood.good, 'Good', '🙂', Color(0xFF3B82F6)),
+    _MoodOption(RunMood.okay, 'Okay', '😐', Color(0xFFA855F7)),
+    _MoodOption(RunMood.tough, 'Tough', '😓', Color(0xFFF97316)),
+    _MoodOption(RunMood.exhausted, 'Exhausted', '😫', Color(0xFFEF4444)),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: _options.map((option) {
+        final isSelected = selected == option.mood;
+        return GestureDetector(
+          onTap: () => onSelected(option.mood),
+          child: Column(
+            children: [
+              Container(
+                width: 52.w,
+                height: 52.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected
+                      ? option.color.withValues(alpha: 0.2)
+                      : AppColors.surface,
+                  border: Border.all(
+                    color: isSelected ? option.color : AppColors.border,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  option.emoji,
+                  style: TextStyle(fontSize: 22.sp),
+                ),
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                option.label,
+                style: textTheme.bodySmall?.copyWith(
+                  fontSize: 10.sp,
+                  color: isSelected ? AppColors.white : AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _MoodOption {
+  const _MoodOption(this.mood, this.label, this.emoji, this.color);
+
+  final RunMood mood;
+  final String label;
+  final String emoji;
+  final Color color;
 }

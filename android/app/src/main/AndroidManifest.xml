@@ -40,7 +40,6 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAtLnXq456QbBjbgUXVRr1_C9__mpw-9AQ"/>
 
-
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

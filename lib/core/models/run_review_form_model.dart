@@ -1,60 +1,74 @@
-enum RunCompanion { noOne, myPet, friend }
+enum RouteFeel { openWellTraveled, balanced, quietSecluded }
 
-enum RunSurface { asphalt, trail, grass, track }
+enum RouteSurfaceType { mostlyPaved, mixedSurfaces, mostlyUnpaved }
 
-enum RunWeather { sunny, cloudy, rainy, snowy }
+enum SidewalkAvailability { yes, someSections, no }
 
 class RunReviewFormModel {
-  final RunCompanion companion;
-  final List<String> environmentTags;
-  final String accuracyRating;
-  final String runMode;
-  final String feedback;
+  final RouteFeel routeFeel;
+  final RouteSurfaceType surfaceType;
+  final SidewalkAvailability sidewalks;
+  final int starRating;
+  final String reviewText;
   final List<String> imagePaths;
-  final RunSurface? surface;
-  final RunWeather? weather;
 
   const RunReviewFormModel({
-    this.companion = RunCompanion.noOne,
-    this.environmentTags = const [],
-    this.accuracyRating = 'yes',
-    this.runMode = 'felt_good',
-    this.feedback = '',
+    this.routeFeel = RouteFeel.balanced,
+    this.surfaceType = RouteSurfaceType.mixedSurfaces,
+    this.sidewalks = SidewalkAvailability.someSections,
+    this.starRating = 0,
+    this.reviewText = '',
     this.imagePaths = const [],
-    this.surface,
-    this.weather,
   });
 
   RunReviewFormModel copyWith({
-    RunCompanion? companion,
-    List<String>? environmentTags,
-    String? accuracyRating,
-    String? runMode,
-    String? feedback,
+    RouteFeel? routeFeel,
+    RouteSurfaceType? surfaceType,
+    SidewalkAvailability? sidewalks,
+    int? starRating,
+    String? reviewText,
     List<String>? imagePaths,
-    RunSurface? surface,
-    RunWeather? weather,
   }) {
     return RunReviewFormModel(
-      companion: companion ?? this.companion,
-      environmentTags: environmentTags ?? this.environmentTags,
-      accuracyRating: accuracyRating ?? this.accuracyRating,
-      runMode: runMode ?? this.runMode,
-      feedback: feedback ?? this.feedback,
+      routeFeel: routeFeel ?? this.routeFeel,
+      surfaceType: surfaceType ?? this.surfaceType,
+      sidewalks: sidewalks ?? this.sidewalks,
+      starRating: starRating ?? this.starRating,
+      reviewText: reviewText ?? this.reviewText,
       imagePaths: imagePaths ?? this.imagePaths,
-      surface: surface ?? this.surface,
-      weather: weather ?? this.weather,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'who_with': companion.name,
-        'environment_tags': environmentTags,
-        'accuracy_rating': accuracyRating,
-        'run_mode': runMode,
-        'feedback': feedback,
+        'route_feel': routeFeel.name,
+        'surface_type': surfaceType.name,
+        'sidewalks': sidewalks.name,
+        'star_rating': starRating,
+        'review_text': reviewText,
         'image_paths': imagePaths,
-        if (surface != null) 'surface': surface!.name,
-        if (weather != null) 'weather': weather!.name,
+      };
+}
+
+extension RouteFeelLabel on RouteFeel {
+  String get label => switch (this) {
+        RouteFeel.openWellTraveled => 'Open and well-traveled',
+        RouteFeel.balanced => 'Balanced',
+        RouteFeel.quietSecluded => 'Quiet and secluded',
+      };
+}
+
+extension RouteSurfaceTypeLabel on RouteSurfaceType {
+  String get label => switch (this) {
+        RouteSurfaceType.mostlyPaved => 'Mostly paved',
+        RouteSurfaceType.mixedSurfaces => 'Mixed surfaces',
+        RouteSurfaceType.mostlyUnpaved => 'Mostly unpaved',
+      };
+}
+
+extension SidewalkAvailabilityLabel on SidewalkAvailability {
+  String get label => switch (this) {
+        SidewalkAvailability.yes => 'Yes',
+        SidewalkAvailability.someSections => 'Some sections',
+        SidewalkAvailability.no => 'No',
       };
 }

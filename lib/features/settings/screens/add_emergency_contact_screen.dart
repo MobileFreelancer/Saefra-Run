@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/contact_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
+import 'package:saefra_run/core/utils/app_validators.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
@@ -20,8 +21,10 @@ class AddEmergencyContactScreen extends StatefulWidget {
 }
 
 class _AddEmergencyContactScreenState extends State<AddEmergencyContactScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _phone = TextEditingController();
+  String? _apiError;
 
   @override
   void dispose() {
@@ -101,12 +104,9 @@ class _AddEmergencyContactScreenState extends State<AddEmergencyContactScreen> {
   }
 
   Future<void> _save() async {
-    if (_name.text.trim().isEmpty || _phone.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
-      );
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _apiError = null);
 
     final settings = context.read<SettingsService>();
     final ok = await settings.addContact(_name.text.trim(), _phone.text.trim());
@@ -134,9 +134,9 @@ class _AddEmergencyContactScreenState extends State<AddEmergencyContactScreen> {
       );
       if (mounted) context.pop();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(settings.error ?? 'Failed to add contact')),
-      );
+      setState(() {
+        _apiError = settings.error ?? 'Failed to add contact';
+      });
     }
   }
 
@@ -185,15 +185,39 @@ class _AddEmergencyContactScreenState extends State<AddEmergencyContactScreen> {
                     ),
                   ],
                   SizedBox(height: 24.h),
-                  Text('Name', style: textTheme.bodySmall),
-                  SizedBox(height: 6.h),
-                  AppTextField(controller: _name),
-                  SizedBox(height: 16.h),
-                  Text('Phone Number', style: textTheme.bodySmall),
-                  SizedBox(height: 6.h),
-                  AppTextField(
-                    controller: _phone,
-                    keyboardType: TextInputType.phone,
+                  Form(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Name', style: textTheme.bodySmall),
+                        SizedBox(height: 6.h),
+                        AppTextField(
+                          controller: _name,
+                          validator: (value) =>
+                              AppValidators.required(value, 'Name'),
+                        ),
+                        SizedBox(height: 16.h),
+                        Text('Phone Number', style: textTheme.bodySmall),
+                        SizedBox(height: 6.h),
+                        AppTextField(
+                          controller: _phone,
+                          keyboardType: TextInputType.phone,
+                          validator: AppValidators.phone,
+                        ),
+                        if (_apiError != null) ...[
+                          SizedBox(height: 12.h),
+                          Text(
+                            _apiError!,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: AppColors.error,
+                              fontSize: 12.sp,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ],
               ),
