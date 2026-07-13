@@ -28,7 +28,7 @@ class AppBottomNav extends StatelessWidget {
               onTap: () => context.goNamed('dashboard'),
             ),
             _NavItem(
-              assetPath: Assets.bottomBarFireIcon,
+              assetPath: Assets.bottomBarCommunityIcon,
               fallback: Icons.local_fire_department_outlined,
               isSelected: activeIndex == 1,
               onTap: () => context.goNamed('community'),
@@ -58,13 +58,13 @@ class AppBottomNav extends StatelessWidget {
               ),
             ),
             _NavItem(
-              assetPath: Assets.bottomBarLevelIcon,
+              assetPath: Assets.bottomBarActivityIcon,
               fallback: Icons.bar_chart,
               isSelected: activeIndex == 2,
               onTap: () => context.goNamed('activity'),
             ),
             _NavItem(
-              assetPath: Assets.bottomBarProfileIcon,
+              assetPath: Assets.bottomBarSettingIcon,
               fallback: Icons.person_outline,
               isSelected: activeIndex == 3,
               onTap: () => context.goNamed('settings'),

@@ -49,6 +49,9 @@ class Assets {
   static const String bottomBarHomeIcon= '${mainImageUrl}bottom_bar_home_icon.png';
   static const String bottomBarLevelIcon= '${mainImageUrl}bottom_bar_level_icon.png';
   static const String bottomBarProfileIcon= '${mainImageUrl}bottom_bar_profile_icon.png';
+  static const String bottomBarCommunityIcon= '${mainImageUrl}bottom_bar_community_icon.png';
+  static const String bottomBarActivityIcon= '${mainImageUrl}bottom_bar_activity_icon.png';
+  static const String bottomBarSettingIcon= '${mainImageUrl}bottom_bar_setting_icon.png';
   static const String homeFilterIcon= '${mainImageUrl}home_filter_icon.png';
   static const String homeNearbyIcon= '${mainImageUrl}home_nearby_icon.png';
   static const String homeNotificationIcon= '${mainImageUrl}home_notification_icon.png';
