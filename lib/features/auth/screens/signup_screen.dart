@@ -28,8 +28,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordController = TextEditingController();
   final _conformPasswordController = TextEditingController();
 
-  bool _obscurePassword = true;
-  bool _agreedToTerms = false;
 
   @override
   void dispose() {

@@ -338,18 +338,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               Text(
                                 'Hello, $greetingName',
-                                style: const TextStyle(
+                                style:   Theme.of(context)
+                                    .textTheme
+                                    .displayLarge
+                                    ?.copyWith(
+                                  fontSize: 16.sp,
                                   color: AppColors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
-                                'Welcome to app 💪',
-                                style: TextStyle(
-                                  color: AppColors.textMuted,
-                                  fontSize: 11,
+                                Text(
+                                'Welcome to app 💪🏼',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                  fontSize: 12.sp,
+                                  color: AppColors.welcomeColor,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
