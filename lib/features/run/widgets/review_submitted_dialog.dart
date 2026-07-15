@@ -7,17 +7,17 @@ import 'package:saefra_run/generated/assets.dart';
 class ReviewSubmittedDialog extends StatelessWidget {
   const ReviewSubmittedDialog({
     super.key,
-    required this.onBackHome,
+    required this.onDone,
   });
 
-  final VoidCallback onBackHome;
+  final VoidCallback onDone;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
     return Dialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.surfaced1B,
       insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
       child: Padding(
@@ -27,7 +27,7 @@ class ReviewSubmittedDialog extends StatelessWidget {
           children: [
             Image.asset(
               Assets.reviewSubmittedDialogImg,
-              height: 96.h,
+              height: 110.h,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => Icon(
                 Icons.thumb_up_alt_rounded,
@@ -46,7 +46,7 @@ class ReviewSubmittedDialog extends StatelessWidget {
             ),
             SizedBox(height: 10.h),
             Text(
-              'Thank you for your feedback! It helps improve running experiences for the community.',
+              'Your review has been submitted successfully and will help improve future running experiences for the community.',
               textAlign: TextAlign.center,
               style: textTheme.bodyMedium?.copyWith(
                 fontSize: 14.sp,
@@ -55,9 +55,12 @@ class ReviewSubmittedDialog extends StatelessWidget {
               ),
             ),
             SizedBox(height: 24.h),
-            PrimaryButton(
-              label: 'Back to Home',
-              onPressed: onBackHome,
+            SizedBox(
+              width: double.infinity,
+              child: PrimaryButton(
+                label: 'Done',
+                onPressed: onDone,
+              ),
             ),
           ],
         ),

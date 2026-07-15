@@ -20,17 +20,35 @@ class RunSummaryScreen extends StatefulWidget {
 
 class _RunSummaryScreenState extends State<RunSummaryScreen> {
   bool _isSaving = false;
+  String? _saveError;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final run = context.read<RunService>();
+      if (run.mood == null) {
+        run.setMood(RunMood.great);
+      }
+    });
+  }
 
   Future<void> _saveActivity() async {
-    setState(() => _isSaving = true);
+    setState(() {
+      _isSaving = true;
+      _saveError = null;
+    });
+
     final ok = await context.read<RunService>().saveActivity();
     if (!mounted) return;
+
     setState(() => _isSaving = false);
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Activity saved successfully')),
-      );
+    if (!ok) {
+      setState(() => _saveError = 'Failed to save activity. Please try again.');
+      return;
     }
+
+    context.goNamed('dashboard');
   }
 
   @override
@@ -55,7 +73,10 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
                   SizedBox(height: 20.h),
                   Text(
                     'Route Preview',
-                    style: textTheme.titleMedium?.copyWith(fontSize: 16.sp),
+                    style: textTheme.titleMedium?.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   SizedBox(height: 10.h),
                   ClipRRect(
@@ -65,20 +86,24 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
                   SizedBox(height: 20.h),
                   Text(
                     'Splits Pace',
-                    style: textTheme.titleMedium?.copyWith(fontSize: 16.sp),
+                    style: textTheme.titleMedium?.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   SizedBox(height: 10.h),
-                  ...session.splits.map(
-                    (split) => _SplitPaceRow(split: split, textTheme: textTheme),
-                  ),
+                  _SplitsCard(splits: session.splits, textTheme: textTheme),
                   SizedBox(height: 20.h),
                   Text(
                     'How Did This Run Feel?',
-                    style: textTheme.titleMedium?.copyWith(fontSize: 16.sp),
+                    style: textTheme.titleMedium?.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   SizedBox(height: 12.h),
                   _MoodSelector(
-                    selected: run.mood,
+                    selected: run.mood ?? RunMood.great,
                     onSelected: run.setMood,
                     textTheme: textTheme,
                   ),
@@ -89,10 +114,23 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
               padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               child: Column(
                 children: [
-                  PrimaryButton(
-                    label: 'Save Activity',
-                    isLoading: _isSaving,
-                    onPressed: _saveActivity,
+                  if (_saveError != null) ...[
+                    Text(
+                      _saveError!,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.error,
+                        fontSize: 12.sp,
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: PrimaryButton(
+                      label: 'Save Activity',
+                      isLoading: _isSaving,
+                      onPressed: _saveActivity,
+                    ),
                   ),
                   SizedBox(height: 10.h),
                   SizedBox(
@@ -101,7 +139,8 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
                       onPressed: () => context.pushNamed('runRate'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.white,
-                        side: const BorderSide(color: AppColors.buttonColor),
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.17),
+                        side: const BorderSide(color: AppColors.white),
                         padding: EdgeInsets.symmetric(vertical: 14.h),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(28.r),
@@ -132,46 +171,32 @@ class _SuccessHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: 96.w,
-          height: 96.w,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.primary.withValues(alpha: 0.15),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.35),
-                blurRadius: 24.r,
-                spreadRadius: 2.r,
-              ),
-            ],
-          ),
-          child: Center(
-            child: Image.asset(
-              Assets.runSummaryImg,
-              width: 56.w,
-              height: 56.w,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Icon(
-                Icons.emoji_events_rounded,
-                color: AppColors.primary,
-                size: 48.sp,
-              ),
-            ),
+        Image.asset(
+          Assets.runSummaryImg,
+          width: 150.w,
+          height: 150.w,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.emoji_events_rounded,
+            color: AppColors.primary,
+            size: 72.sp,
           ),
         ),
-        SizedBox(height: 14.h),
+        SizedBox(height: 12.h),
         Text(
           'Great Job!',
           style: textTheme.headlineMedium?.copyWith(
-            fontSize: 24.sp,
+            fontSize: 26.sp,
             fontWeight: FontWeight.w700,
           ),
         ),
-        SizedBox(height: 6.h),
+        SizedBox(height: 2.h),
         Text(
           'You completed your run.',
-          style: textTheme.bodyMedium?.copyWith(fontSize: 14.sp),
+          style: textTheme.bodyMedium?.copyWith(
+            fontSize: 14.sp,
+            color: AppColors.textMuted,
+          ),
         ),
       ],
     );
@@ -186,11 +211,19 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final paceParts = _splitPace(session.paceDisplayLabel);
+
     return Container(
-      padding: EdgeInsets.all(14.w),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 16.h),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaced1B,
         borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.orangeShadow.withValues(alpha: 0.15),
+            blurRadius: 20
+          )
+        ],
         border: Border.all(color: AppColors.borderColor),
       ),
       child: Column(
@@ -199,7 +232,8 @@ class _StatsGrid extends StatelessWidget {
             children: [
               _StatCell(
                 label: 'Distance',
-                value: '${session.distanceKm.toStringAsFixed(2)} km',
+                value: session.distanceKm.toStringAsFixed(2),
+                unit: ' km',
                 textTheme: textTheme,
               ),
               _StatCell(
@@ -209,12 +243,13 @@ class _StatsGrid extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 14.h),
           Row(
             children: [
               _StatCell(
                 label: 'Avg. Pace',
-                value: session.paceDisplayLabel,
+                value: paceParts.$1,
+                unit: paceParts.$2,
                 textTheme: textTheme,
               ),
               _StatCell(
@@ -228,6 +263,12 @@ class _StatsGrid extends StatelessWidget {
       ),
     );
   }
+
+  (String, String) _splitPace(String pace) {
+    final index = pace.indexOf(' /km');
+    if (index == -1) return (pace, '');
+    return (pace.substring(0, index), pace.substring(index));
+  }
 }
 
 class _StatCell extends StatelessWidget {
@@ -235,10 +276,12 @@ class _StatCell extends StatelessWidget {
     required this.label,
     required this.value,
     required this.textTheme,
+    this.unit,
   });
 
   final String label;
   final String value;
+  final String? unit;
   final TextTheme textTheme;
 
   @override
@@ -249,14 +292,31 @@ class _StatCell extends StatelessWidget {
         children: [
           Text(
             label,
-            style: textTheme.bodySmall?.copyWith(fontSize: 12.sp),
+            style: textTheme.bodySmall?.copyWith(
+              fontSize: 12.sp,
+              color: AppColors.textMuted,
+            ),
           ),
           SizedBox(height: 4.h),
-          Text(
-            value,
-            style: textTheme.titleMedium?.copyWith(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w700,
+          RichText(
+            text: TextSpan(
+              style: textTheme.titleMedium?.copyWith(
+                fontSize: 20.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+              children: [
+                TextSpan(text: value),
+                if (unit != null)
+                  TextSpan(
+                    text: unit,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -277,10 +337,46 @@ class _RoutePreviewMap extends StatelessWidget {
         height: 150.h,
         borderRadius: 16,
         polylinePoints: routePath,
-        showLocationMarker: false,
+        showLocationMarker: true,
       );
     }
     return AppRouteMap(height: 150.h, borderRadius: 16);
+  }
+}
+
+class _SplitsCard extends StatelessWidget {
+  const _SplitsCard({
+    required this.splits,
+    required this.textTheme,
+  });
+
+  final List<RunSplitModel> splits;
+  final TextTheme textTheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: AppColors.surfaced1B,
+        boxShadow: [
+          BoxShadow(
+              color: AppColors.orangeShadow.withValues(alpha: 0.15),
+              blurRadius: 20,
+          ),
+        ],
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppColors.borderColor),
+      ),
+      child: Column(
+        children: splits.map((split) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: split == splits.last ? 0 : 10.h),
+            child: _SplitPaceRow(split: split, textTheme: textTheme),
+          );
+        }).toList(),
+      ),
+    );
   }
 }
 
@@ -292,39 +388,39 @@ class _SplitPaceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 10.h),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 36.w,
-            child: Text(
-              'km ${split.km}',
-              style: textTheme.bodySmall?.copyWith(fontSize: 12.sp),
-            ),
-          ),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4.r),
-              child: LinearProgressIndicator(
-                value: split.paceFactor.clamp(0.1, 1.0),
-                minHeight: 6.h,
-                color: AppColors.white,
-                backgroundColor: AppColors.surfaceLight,
-              ),
-            ),
-          ),
-          SizedBox(width: 10.w),
-          Text(
-            split.timeLabel,
+    return Row(
+      children: [
+        SizedBox(
+          width: 42.w,
+          child: Text(
+            'Km ${split.km}',
             style: textTheme.bodySmall?.copyWith(
               fontSize: 12.sp,
-              color: AppColors.success,
-              fontWeight: FontWeight.w600,
+              color: AppColors.textThird,
             ),
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4.r),
+            child: LinearProgressIndicator(
+              value: split.paceFactor.clamp(0.1, 1.0),
+              minHeight: 6.h,
+              color: AppColors.white,
+              backgroundColor: AppColors.surfaceLight,
+            ),
+          ),
+        ),
+        SizedBox(width: 10.w),
+        Text(
+          split.timeLabel,
+          style: textTheme.bodySmall?.copyWith(
+            fontSize: 12.sp,
+            color: AppColors.success,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -336,7 +432,7 @@ class _MoodSelector extends StatelessWidget {
     required this.textTheme,
   });
 
-  final RunMood? selected;
+  final RunMood selected;
   final ValueChanged<RunMood> onSelected;
   final TextTheme textTheme;
 
@@ -345,7 +441,7 @@ class _MoodSelector extends StatelessWidget {
     _MoodOption(RunMood.good, 'Good', '🙂', Color(0xFF3B82F6)),
     _MoodOption(RunMood.okay, 'Okay', '😐', Color(0xFFA855F7)),
     _MoodOption(RunMood.tough, 'Tough', '😓', Color(0xFFF97316)),
-    _MoodOption(RunMood.exhausted, 'Exhausted', '😫', Color(0xFFEF4444)),
+    _MoodOption(RunMood.exhausted, 'Exhausted', '😫', Color(0xFFEAB308)),
   ];
 
   @override
@@ -359,12 +455,12 @@ class _MoodSelector extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                width: 52.w,
-                height: 52.w,
+                width: 54.w,
+                height: 54.w,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isSelected
-                      ? option.color.withValues(alpha: 0.2)
+                      ? option.color.withValues(alpha: 0.22)
                       : AppColors.surface,
                   border: Border.all(
                     color: isSelected ? option.color : AppColors.border,
@@ -374,7 +470,7 @@ class _MoodSelector extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   option.emoji,
-                  style: TextStyle(fontSize: 22.sp),
+                  style: TextStyle(fontSize: 24.sp),
                 ),
               ),
               SizedBox(height: 6.h),
@@ -382,7 +478,8 @@ class _MoodSelector extends StatelessWidget {
                 option.label,
                 style: textTheme.bodySmall?.copyWith(
                   fontSize: 10.sp,
-                  color: isSelected ? AppColors.white : AppColors.textMuted,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected ? option.color : AppColors.textMuted,
                 ),
               ),
             ],

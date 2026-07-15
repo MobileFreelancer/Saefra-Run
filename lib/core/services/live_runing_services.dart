@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:saefra_run/core/config/api_config.dart';
 
 class RunningProvider extends ChangeNotifier {
   final Completer<GoogleMapController> _mapController = Completer();
@@ -26,8 +27,8 @@ class RunningProvider extends ChangeNotifier {
   StreamSubscription<Position>? _locationSubscription;
   Timer? _runningTimer;
 
-  // IMPORTANT: API KEY Verification Pipeline
-  final PolylinePoints _polylinePoints = PolylinePoints(apiKey: "AIzaSyCjGfmMNHQ0Nqu1htZOmBA7lG8n2GU3Gfw");
+  PolylinePoints get _polylinePoints =>
+      PolylinePoints(apiKey: ApiConfig.googleDirectionsApiKey);
 
   bool _isLoadingRoute = false;
   bool get isLoadingRoute => _isLoadingRoute;

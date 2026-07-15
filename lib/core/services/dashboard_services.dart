@@ -470,7 +470,9 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/services/api_service.dart';
+import 'package:saefra_run/core/utils/map_style_service.dart';
 
 enum DashboardMapStyle {
   darkBase('Dark base'),
@@ -497,7 +499,7 @@ class DashboardServices extends ChangeNotifier {
   // State variables for Location Autocomplete Search
   List<dynamic> _placePredictions = [];
   bool _isSearching = false;
-  final String _googleApiKey = "YOUR_GOOGLE_MAPS_API_KEY_HERE";
+  final String _googleApiKey = ApiConfig.googlePlacesApiKey;
 
   // Dynamic Route Integration State
   Map<String, dynamic>? _recommendedRoute;
@@ -506,6 +508,7 @@ class DashboardServices extends ChangeNotifier {
   bool _isRouteLoading = false;
   String? _errorMessage;
   DashboardMapStyle _mapStyle = DashboardMapStyle.darkBase;
+  MapTheme _mapTheme = MapTheme.light;
 
   final ApiService _apiService = ApiService();
 
@@ -527,6 +530,7 @@ class DashboardServices extends ChangeNotifier {
   bool get isRouteLoading => _isRouteLoading;
   String? get errorMessage => _errorMessage;
   DashboardMapStyle get mapStyle => _mapStyle;
+  MapTheme get mapTheme => _mapTheme;
 
   void setBottomIndex(int index) {
     _currentBottomIndex = index;
@@ -538,8 +542,27 @@ class DashboardServices extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setMapTheme(MapTheme theme) async {
+    _mapTheme = theme;
+    notifyListeners();
+    if (_mapController != null) {
+      await MapStyleService.applyStyle(
+        controller: _mapController!,
+        theme: theme,
+      );
+    }
+  }
+
+  Future<void> applyMapStyle(GoogleMapController controller) async {
+    await MapStyleService.applyStyle(
+      controller: controller,
+      theme: _mapTheme,
+    );
+  }
+
   void setMapController(GoogleMapController controller) {
     _mapController = controller;
+    applyMapStyle(controller);
     if (_latitude != null && _longitude != null) {
       _animateToCurrentLocation();
     }
@@ -575,7 +598,7 @@ class DashboardServices extends ChangeNotifier {
       destLng: originLng,
     );
 
-    if (_googleApiKey == "YOUR_GOOGLE_MAPS_API_KEY_HERE" || _googleApiKey.isEmpty) {
+    if (_googleApiKey.isEmpty) {
       await Future.delayed(const Duration(milliseconds: 300));
       _useMockSearch(query);
       _isSearching = false;
@@ -630,6 +653,20 @@ class DashboardServices extends ChangeNotifier {
       },
     ];
     _placePredictions = allMock.where((element) => (element['description'] as String).toLowerCase().contains(query.toLowerCase())).toList();
+  }
+
+  Future<void> focusOnLocation(double lat, double lng) async {
+    _latitude = lat;
+    _longitude = lng;
+    _routePolylinePoints = [];
+    _recommendedRoute = null;
+    notifyListeners();
+
+    if (_mapController != null) {
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 15),
+      );
+    }
   }
 
   Future<void> selectPrediction(String placeId) async {

@@ -38,7 +38,7 @@ class SettingsTile extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         child: Row(
           children: [
-            if (iconAssetPath != null)
+           /* if (iconAssetPath != null)
               Padding(
                 padding: EdgeInsets.only(right: 14.w),
                 child: AppAssetIcon(
@@ -56,7 +56,7 @@ class SettingsTile extends StatelessWidget {
                   size: 22.sp,
                   color: labelColor,
                 ),
-              ),
+              ),*/
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

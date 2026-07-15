@@ -98,15 +98,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           //       width: 5,
                           //     ),
                           // },
-                          onMapCreated: (controller)async{
+                          onMapCreated: (controller) async {
                             context.read<DashboardServices>().setMapController(
                               controller,
                             );
                             services.setMapController(controller);
-                            await MapStyleService.applyStyle(
-                              controller: controller,
-                              theme: MapTheme.light,
-                            );
                           },
                         );
                       },
@@ -258,29 +254,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ],
                           const SizedBox(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Recent Routes',
+                          RecentRoutesSectionHeader(
+                            trailing: TextButton(
+                              onPressed: () => context.pushNamed('search'),
+                              child: const Text(
+                                'View All',
                                 style: TextStyle(
-                                  color: AppColors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textMuted,
+                                  fontSize: 12,
+                                  decoration: TextDecoration.underline,
                                 ),
                               ),
-                              TextButton(
-                                onPressed: () => context.pushNamed('search'),
-                                child: const Text(
-                                  'View All',
-                                  style: TextStyle(
-                                    color: AppColors.textMuted,
-                                    fontSize: 12,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                           const SizedBox(height: 6),
                           if (services.isRouteLoading) ...[
@@ -299,31 +284,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               separatorBuilder: (context, index) => const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final route = services.recentRoutes[index];
-                                final distance =
-                                    route['distance_km'] ?? route['distance'] ?? 0.0;
-                                final duration = route['estimated_time'] ??
-                                    route['estimated_time_minutes'] ??
-                                    route['duration'] ??
-                                    0;
-                                final tag = route['tag'] ?? 'NA';
-                                final title = route['route_name'] ?? 'Route';
-                                final dateStr = route['date'];
 
-                                String dateLabel = 'Recent';
-                                if (dateStr != null) {
-                                  try {
-                                    final parsed = DateTime.parse(dateStr);
-                                    dateLabel = '${parsed.day}/${parsed.month}/${parsed.year}';
-                                  } catch (_) {}
-                                }
-
-                                return RecentRouteTile(
-                                  title: title,
-                                  subtitle: '$dateLabel • $distance km • $duration',
-                                  tag: tag == 'Na' || tag == 'NA' ? 'Route' : tag,
-                                  thumbnailAssetPath: route['route_image']?.isNotEmpty == true
-                                      ? route['route_image']
-                                      : Assets.background,
+                                return RecentRouteTile.fromRawMap(
+                                  Map<String, dynamic>.from(route as Map),
                                   onTap: () {
                                     final id =
                                         '${route['route_id'] ?? route['id'] ?? index + 1}';
@@ -499,14 +462,7 @@ class _SearchRouteFieldState extends State<SearchRouteField> {
           ),
           GestureDetector(
               onTap: (){
-                if (services.mapController == null) {
-                  AppToast.error('Map is not ready yet.');
-                  return;
-                }
-                showMapStyleBottomSheet(
-                  context,
-                  services.mapController!,
-                );
+                showMapStyleBottomSheet(context);
               },
               child: Image.asset(Assets.filter, scale: 2.5)
           )

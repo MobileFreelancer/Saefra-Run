@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/utils/polyline_decoder.dart';
 
 class LoopRouteResult {
@@ -60,7 +61,7 @@ class LoopRouteResult {
 }
 
 class RouteService {
-  static String apiKey = "AIzaSyCbIzUN3ij3FCD-zBBshUZdEgBXDCcYsj8"; // Replace with your safe Key management setup
+  String get apiKey => ApiConfig.googleRoutesApiKey;
 
   Future<LoopRouteResult?> createLoopRoute({
     required LatLng currentLocation,

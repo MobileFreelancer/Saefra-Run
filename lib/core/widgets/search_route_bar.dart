@@ -22,6 +22,8 @@ class SearchRouteBar extends StatelessWidget {
     this.onChanged,
     this.onSearchTap,
     this.onFilterTap,
+    this.onClear,
+    this.showClearButton = false,
     this.showFilter = true,
     this.filterStyle = SearchFilterStyle.inside,
   });
@@ -33,6 +35,8 @@ class SearchRouteBar extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final VoidCallback? onSearchTap;
   final VoidCallback? onFilterTap;
+  final VoidCallback? onClear;
+  final bool showClearButton;
   final bool showFilter;
   final SearchFilterStyle filterStyle;
 
@@ -101,6 +105,44 @@ class SearchRouteBar extends StatelessWidget {
     VoidCallback openFilter,
   ) {
     final showInsideFilter = showFilter && filterStyle == SearchFilterStyle.inside;
+    final hasText = controller?.text.isNotEmpty ?? false;
+
+    Widget? suffix;
+    if (showClearButton && hasText) {
+      suffix = GestureDetector(
+        onTap: () {
+          controller?.clear();
+          onClear?.call();
+          onChanged?.call('');
+        },
+        behavior: HitTestBehavior.opaque,
+        child: const Padding(
+          padding: EdgeInsets.all(12),
+          child: Icon(Icons.close, color: AppColors.textMuted, size: 18),
+        ),
+      );
+    } else if (showInsideFilter) {
+      suffix = GestureDetector(
+        onTap: openFilter,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Image.asset(
+            Assets.filter,
+            scale: 2.5,
+            errorBuilder: (_, __, ___) => Image.asset(
+              Assets.homeFilterIcon,
+              width: 20,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.tune,
+                color: AppColors.textMuted,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Container(
       height: 41.h,
@@ -140,30 +182,9 @@ class SearchRouteBar extends StatelessWidget {
             ),
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 52),
-          suffixIcon: showInsideFilter
-              ? GestureDetector(
-                  onTap: openFilter,
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Image.asset(
-                      Assets.filter,
-                      scale: 2.5,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        Assets.homeFilterIcon,
-                        width: 20,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.tune,
-                          color: AppColors.textMuted,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-              : null,
+          suffixIcon: suffix,
           suffixIconConstraints:
-              showInsideFilter ? BoxConstraints(minWidth: 50.w) : null,
+              suffix != null ? BoxConstraints(minWidth: 50.w) : null,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8.r),
             borderSide: const BorderSide(width: 1.2, color: Color(0xFF131315)),

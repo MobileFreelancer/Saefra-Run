@@ -115,6 +115,9 @@ class AppRouteMap extends StatelessWidget {
                   ),
                 }
               : {},
+          onMapCreated: (controller) {
+            context.read<DashboardServices>().applyMapStyle(controller);
+          },
         );
 
         final clipped = ClipRRect(

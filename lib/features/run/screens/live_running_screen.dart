@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
+import 'package:saefra_run/core/services/dashboard_services.dart';
 import 'package:saefra_run/core/services/run_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
@@ -112,6 +113,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
               if (!trackingProvider.mapController.isCompleted) {
                 trackingProvider.mapController.complete(controller);
               }
+              context.read<DashboardServices>().applyMapStyle(controller);
             },
             polylines: Set<Polyline>.of(trackingProvider.polylines.values),
             markers: Set<Marker>.of(trackingProvider.markers.values),

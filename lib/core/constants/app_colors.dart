@@ -14,6 +14,7 @@ class AppColors {
   static const Color surfaceLight = Color(0xFF2A2A2A);
   static const Color surfaced = Color(0xFF131315);
   static const Color surfaced1B = Color(0xFF1B1B1B);
+  static const Color surfaced2C = Color(0xFF2C2C2C);
   static const Color borderColor = Color(0xFF222222);
   static const Color borderColorB0 = Color(0xFFF0F0F0);
   static const Color border = Color(0xFF3A3A3A);

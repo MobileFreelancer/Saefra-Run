@@ -223,6 +223,12 @@ class _SettingsGroup extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaced1B,
         borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+              color: AppColors.orangeShadow.withValues(alpha: 0.15),
+              blurRadius: 20
+          )
+        ],
         border: Border.all(color: AppColors.border),
       ),
       child: Column(children: children),

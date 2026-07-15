@@ -93,6 +93,7 @@ class Assets {
   static const String IIcon = '${mainImageUrl}i_icon.png';
   static const String passwordChangeSuccessDialogImg = '${mainImageUrl}password_change_succes_dialog_img.png';
   static const String logoutDialogImg = '${mainImageUrl}logout_dialog_img.png';
+  static const String noLocationFoundImg = '${mainImageUrl}no_location_found.png';
 
   static const String darkMapImage = '${mainImageUrl}dark_map.png';
   static const String lightMapImage = '${mainImageUrl}loght_map.png';
