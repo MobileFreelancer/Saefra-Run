@@ -20,6 +20,10 @@ enum DashboardMapStyle {
 class DashboardServices extends ChangeNotifier {
   double? _latitude;
   double? _longitude;
+
+  double? _destinationPositionLatitude;
+  double? _destinationPositionLongitude;
+
   bool _isLoading = false;
   int _currentBottomIndex = 0;
   GoogleMapController? _mapController;
@@ -48,6 +52,11 @@ class DashboardServices extends ChangeNotifier {
 
   double? get latitude => _latitude;
   double? get longitude => _longitude;
+
+  double? get destinationPositionLatitude => _destinationPositionLatitude;
+  double? get destinationPositionLongitude => _destinationPositionLongitude;
+
+
   bool get isLoading => _isLoading;
   
 
@@ -190,8 +199,9 @@ class DashboardServices extends ChangeNotifier {
   }
 
   Future<void> focusOnLocation(double lat, double lng) async {
-    _latitude = lat;
-    _longitude = lng;
+    _destinationPositionLatitude = lat;
+    _destinationPositionLongitude = lng;
+
     _routePolylinePoints = [];
     _recommendedRoute = null;
     notifyListeners();

@@ -148,6 +148,7 @@ class RouteSearchService extends ChangeNotifier {
   }
 
   Future<LatLng?> resolvePlace(PlacePrediction prediction) {
+
     return _places.resolvePlace(prediction);
   }
 

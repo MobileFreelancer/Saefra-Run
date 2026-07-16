@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:saefra_run/core/data/app_mock_data.dart';
 import 'package:saefra_run/core/models/generate_route_filters.dart';
@@ -7,6 +11,8 @@ import 'package:saefra_run/core/models/save_route_payload.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/route_service.dart';
 import 'package:saefra_run/core/utils/polyline_decoder.dart';
+
+import '../config/api_config.dart';
 
 class GenerateRouteService extends ChangeNotifier {
   GenerateRouteService();
@@ -25,6 +31,15 @@ class GenerateRouteService extends ChangeNotifier {
   List<LatLng> get previewPolylinePoints => _previewPolylinePoints;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+
+  Completer<GoogleMapController> googleMapController = Completer();
+
+  Set<Marker> markers = {};
+  Set<Polyline> polyline = {};
+
+  List<LatLng> polylineCoordinates = [];
+  PolylinePoints polylinePoints = PolylinePoints(apiKey: ApiConfig.googleDirectionsApiKey);
 
   void setDistance(double km) {
     _filters = _filters.copyWith(distanceKm: km);
@@ -106,5 +121,47 @@ class GenerateRouteService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+
+
+  Future<void> getPolyline({
+    required LatLng originPosition,
+    required LatLng destinationPosition,
+  }) async {
+    polylineCoordinates.clear();
+
+    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+      request: PolylineRequest(
+        origin: PointLatLng(
+          originPosition.latitude,
+          originPosition.longitude,
+        ),
+        destination: PointLatLng(
+          destinationPosition.latitude,
+          destinationPosition.longitude,
+        ),
+        mode: TravelMode.driving,
+      ),
+    );
+
+    if (result.points.isNotEmpty) {
+      for (PointLatLng point in result.points) {
+        polylineCoordinates.add(
+          LatLng(point.latitude, point.longitude),
+        );
+      }
+    }
+    polyline.clear();
+
+    polyline.add(
+      Polyline(
+        polylineId: const PolylineId('polyline'),
+        color: Colors.red,
+        width: 5,
+        points: polylineCoordinates,
+      ),
+    );
+     notifyListeners();
   }
 }

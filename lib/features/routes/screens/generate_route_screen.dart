@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -31,6 +33,8 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
       latitude: dashboard.latitude,
       longitude: dashboard.longitude,
     );
+    log("=========================");
+    log("lat--${dashboard.latitude}---long--${dashboard.longitude}");
     if (!mounted || route == null) {
       if (mounted && service.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -41,6 +45,29 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
     }
     context.pushNamed('routeDetail', pathParameters: {'id': route.id});
   }
+
+  @override
+  void initState() {
+    final dashboard = context.read<DashboardServices>();
+    final service = context.read<GenerateRouteService>();
+
+    service.markers.add(
+        Marker(markerId: const MarkerId('origin'),
+            position: LatLng(dashboard.latitude!, dashboard.longitude!),
+            icon: BitmapDescriptor.defaultMarker
+        )
+    );
+
+    service.markers.add(
+        Marker(markerId: const MarkerId('destination'),
+            position: LatLng(dashboard.destinationPositionLatitude!, dashboard.destinationPositionLongitude!),
+            icon: BitmapDescriptor.defaultMarkerWithHue(90)
+        )
+    );
+    service.getPolyline(originPosition: LatLng(dashboard.latitude!, dashboard.longitude!), destinationPosition: LatLng(dashboard.destinationPositionLatitude!, dashboard.destinationPositionLongitude!));
+    super.initState();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -66,22 +93,46 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
             const AppPageHeader(title: 'Generate Route'),
             Expanded(
               child: ListView(
+                shrinkWrap: true,
                 padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
                 children: [
                   SizedBox(height: 8.h),
                   Text('Create My Route', style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
                   Text("Define your path. We'll ensure it's safe and optimized for your performance goals.", style: TextStyle(color:  textMuted, fontSize: 10.sp, fontWeight: FontWeight.bold)),
                   SizedBox(height: 12.h),
-                  _MapPreviewCard(
-                    polylinePoints: service.previewPolylinePoints,
-                    onReset: () {
-                      setState(() => _isKm = true);
-                      service.setDistance(5);
-                      service.setDifficulty(RouteDifficulty.moderate);
-                      service.setShape(RouteShape.loop);
-                      service.setLighting(RouteLighting.wellLit);
-                    },
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20.r),
+                    child: SizedBox(
+                      width: 300.w,
+                      height: 180.h,
+                      child: GoogleMap(
+                        initialCameraPosition: const CameraPosition(
+                          target: LatLng(21.205194905801783, 72.77568113625402),
+                          zoom: 15,
+                        ),
+                        myLocationEnabled: true,
+                        tiltGesturesEnabled: true,
+                        compassEnabled: true,
+                        scrollGesturesEnabled: true,
+                        zoomGesturesEnabled: true,
+                        onMapCreated: (GoogleMapController controller) {
+                          service.googleMapController.complete(controller);
+                        },
+                        markers: service.markers,
+                        polylines: service.polyline,
+                      ),
+                    ),
                   ),
+                  // _MapPreviewCard(
+                  //   polylinePoints: service.previewPolylinePoints,
+                  //   onReset: () {
+                  //     setState(() => _isKm = true);
+                  //     service.setDistance(5);
+                  //     service.setDifficulty(RouteDifficulty.moderate);
+                  //     service.setShape(RouteShape.loop);
+                  //     service.setLighting(RouteLighting.wellLit);
+                  //   },
+                  // ),
                   Text('Route Setup', style: textTheme.titleMedium),
                   SizedBox(height: 12.h),
 
