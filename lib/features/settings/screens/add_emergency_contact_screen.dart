@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/contact_service.dart';
@@ -21,16 +24,66 @@ class AddEmergencyContactScreen extends StatefulWidget {
 }
 
 class _AddEmergencyContactScreenState extends State<AddEmergencyContactScreen> {
+  static const _maxImageBytes = 2 * 1024 * 1024;
+  static const _allowedExtensions = {'jpg', 'jpeg', 'png', 'gif'};
+
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _phone = TextEditingController();
+  final _imagePicker = ImagePicker();
+
   String? _apiError;
+  String? _imagePath;
+  String? _imageError;
 
   @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    setState(() {
+      _imageError = null;
+      _apiError = null;
+    });
+
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
+    if (!mounted || picked == null) return;
+
+    final extension = picked.path.split('.').last.toLowerCase();
+    if (!_allowedExtensions.contains(extension)) {
+      setState(() {
+        _imageError = 'Image must be JPG, JPEG, PNG, or GIF.';
+        _imagePath = null;
+      });
+      return;
+    }
+
+    final size = await File(picked.path).length();
+    if (size > _maxImageBytes) {
+      setState(() {
+        _imageError = 'Image must be 2 MB or smaller.';
+        _imagePath = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _imagePath = picked.path;
+      _imageError = null;
+    });
+  }
+
+  void _removeImage() {
+    setState(() {
+      _imagePath = null;
+      _imageError = null;
+    });
   }
 
   Future<void> _importFromContacts() async {
@@ -105,11 +158,16 @@ class _AddEmergencyContactScreenState extends State<AddEmergencyContactScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_imageError != null) return;
 
     setState(() => _apiError = null);
 
     final settings = context.read<SettingsService>();
-    final ok = await settings.addContact(_name.text.trim(), _phone.text.trim());
+    final ok = await settings.addContact(
+      _name.text.trim(),
+      _phone.text.trim(),
+      imagePath: _imagePath,
+    );
     if (!mounted) return;
 
     if (ok) {
@@ -143,6 +201,7 @@ class _AddEmergencyContactScreenState extends State<AddEmergencyContactScreen> {
   @override
   Widget build(BuildContext context) {
     final contactService = context.watch<ContactService>();
+    final settings = context.watch<SettingsService>();
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -156,16 +215,79 @@ class _AddEmergencyContactScreenState extends State<AddEmergencyContactScreen> {
                 padding: EdgeInsets.all(16.w),
                 children: [
                   Center(
-                    child: Image.asset(
-                      Assets.settingsEmergencyIcon,
-                      width: 72.w,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.contact_emergency,
-                        size: 72.sp,
-                        color: AppColors.primary,
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          CircleAvatar(
+                            radius: 44.r,
+                            backgroundColor: AppColors.surface,
+                            backgroundImage: _imagePath != null
+                                ? FileImage(File(_imagePath!))
+                                : null,
+                            child: _imagePath == null
+                                ? Image.asset(
+                                    Assets.settingsEmergencyIcon,
+                                    width: 40.w,
+                                    errorBuilder: (_, __, ___) => Icon(
+                                      Icons.contact_emergency,
+                                      size: 40.sp,
+                                      color: AppColors.primary,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          Container(
+                            width: 30.w,
+                            height: 30.w,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.background,
+                                width: 2,
+                              ),
+                            ),
+                            child: Icon(
+                              _imagePath == null
+                                  ? Icons.add_a_photo_outlined
+                                  : Icons.edit_outlined,
+                              color: AppColors.white,
+                              size: 16.sp,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    'Optional photo (max 2 MB, JPG/PNG/GIF)',
+                    textAlign: TextAlign.center,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  if (_imagePath != null) ...[
+                    SizedBox(height: 8.h),
+                    Center(
+                      child: TextButton(
+                        onPressed: _removeImage,
+                        child: const Text('Remove Photo'),
+                      ),
+                    ),
+                  ],
+                  if (_imageError != null) ...[
+                    SizedBox(height: 4.h),
+                    Text(
+                      _imageError!,
+                      textAlign: TextAlign.center,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
                   SizedBox(height: 16.h),
                   SecondaryButton(
                     label: contactService.isLoading
@@ -225,8 +347,8 @@ class _AddEmergencyContactScreenState extends State<AddEmergencyContactScreen> {
             Padding(
               padding: EdgeInsets.all(16.w),
               child: PrimaryButton(
-                label: 'Save Contact',
-                onPressed: _save,
+                label: settings.isLoading ? 'Saving...' : 'Save Contact',
+                onPressed: settings.isLoading ? null : _save,
               ),
             ),
           ],

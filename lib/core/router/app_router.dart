@@ -192,7 +192,16 @@ class AppRouter {
       GoRoute(
         path: '/routes/generate',
         name: 'generateRoute',
-        builder: (context, state) => const GenerateRouteScreen(),
+        builder: (context, state) {
+          final params = state.uri.queryParameters;
+          final destLat = double.tryParse(params['destLat'] ?? '');
+          final destLng = double.tryParse(params['destLng'] ?? '');
+          return GenerateRouteScreen(
+            destLat: destLat,
+            destLng: destLng,
+            destName: params['destName'],
+          );
+        },
       ),
       GoRoute(
         path: '/routes/:id',

@@ -73,9 +73,7 @@ class SettingsService extends ChangeNotifier {
       _emailNotifications =
           _preferences?.emailNotificationsEnabled ?? _emailNotifications;
 
-      final apiContacts = await _api.getEmergencyContacts();
-      final localContacts = await LocalEmergencyContactsStorage.read();
-      _contacts = _mergeContacts(apiContacts, localContacts);
+      await _loadEmergencyContacts();
       await _loadLocalSafetySettings();
     } catch (e) {
       _error = e.toString();
@@ -87,12 +85,9 @@ class SettingsService extends ChangeNotifier {
     }
   }
 
-  List<EmergencyContactModel> _mergeContacts(
-    List<EmergencyContactModel> apiContacts,
-    List<EmergencyContactModel> localContacts,
-  ) {
-    if (apiContacts.isNotEmpty) return apiContacts;
-    return localContacts;
+  Future<void> _loadEmergencyContacts() async {
+    _contacts = await _api.getEmergencyContacts();
+    await LocalEmergencyContactsStorage.write(_contacts);
   }
 
   void _hydrateProfile(UserModel user) {
@@ -269,7 +264,11 @@ class SettingsService extends ChangeNotifier {
     }
   }
 
-  Future<bool> addContact(String name, String phone) async {
+  Future<bool> addContact(
+    String name,
+    String phone, {
+    String? imagePath,
+  }) async {
     final normalizedPhone = phone.trim();
     final normalizedName = name.trim();
     if (normalizedName.isEmpty || normalizedPhone.isEmpty) return false;
@@ -281,39 +280,44 @@ class SettingsService extends ChangeNotifier {
       return false;
     }
 
-    final contact = EmergencyContactModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: normalizedName,
-      phone: normalizedPhone,
-    );
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
 
     try {
       await _api.addEmergencyContact(
         name: normalizedName,
         phone: normalizedPhone,
+        imagePath: imagePath,
       );
+      await _loadEmergencyContacts();
+      _error = null;
+      return true;
     } catch (e) {
-      debugPrint('API addEmergencyContact failed, saving locally: $e');
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-    _contacts = [..._contacts, contact];
-    await LocalEmergencyContactsStorage.write(_contacts);
-    _error = null;
-    notifyListeners();
-    return true;
   }
 
   Future<bool> removeContact(String id) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
     try {
       await _api.removeEmergencyContact(id);
+      await _loadEmergencyContacts();
+      return true;
     } catch (e) {
-      debugPrint('API removeEmergencyContact failed, removing locally: $e');
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-    _contacts = _contacts.where((c) => c.id != id).toList();
-    await LocalEmergencyContactsStorage.write(_contacts);
-    notifyListeners();
-    return true;
   }
 
   Future<bool> changePassword({

@@ -28,6 +28,7 @@ class LocalEmergencyContactsStorage {
               id: '${item['id'] ?? ''}',
               name: item['name'] as String? ?? '',
               phone: item['phone'] as String? ?? '',
+              imageUrl: item['image'] as String? ?? item['image_url'] as String?,
             ),
           )
           .where((c) => c.name.isNotEmpty && c.phone.isNotEmpty)

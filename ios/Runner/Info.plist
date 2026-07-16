@@ -10,6 +10,8 @@
     <string>This app would like to send you notifications.</string>
     <key>NSContactsUsageDescription</key>
     <string>Saefra Run needs access to your contacts so you can add emergency contacts quickly.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Saefra Run needs access to your photo library so you can add a photo for emergency contacts.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

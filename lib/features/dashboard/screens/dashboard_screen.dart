@@ -190,13 +190,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   const SizedBox(height: 12),
                                   TextButton(
                                     onPressed: () {
-                                      final double originLat = services.latitude ?? 21.2158;
-                                      final double originLng = services.longitude ?? 72.8372;
-                                      services.fetchSafeRoute(
-                                        originLat: originLat,
-                                        originLng: originLng,
-                                        destLat: 21.2035,
-                                        destLng: 72.7997,
+                                      if (services.latitude == null ||
+                                          services.longitude == null) {
+                                        AppToast.info(
+                                          'Current location is required.',
+                                        );
+                                        return;
+                                      }
+
+                                      if (services.hasSelectedDestination) {
+                                        services.fetchSafeRoute(
+                                          originLat: services.latitude!,
+                                          originLng: services.longitude!,
+                                          destLat:
+                                              services.destinationPositionLatitude!,
+                                          destLng:
+                                              services.destinationPositionLongitude!,
+                                        );
+                                        return;
+                                      }
+
+                                      AppToast.info(
+                                        'Search and select a destination first.',
                                       );
                                     },
                                     child: const Text('Retry', style: TextStyle(color: AppColors.primary)),

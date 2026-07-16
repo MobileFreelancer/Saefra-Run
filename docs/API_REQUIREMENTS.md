@@ -156,9 +156,9 @@ Toggle mock data locally with `USE_MOCK_API=true` in `.env` — no backend neede
 
 | Method | Path | Body |
 |--------|------|------|
-| GET | `/api/emergency-contacts` | — |
-| POST | `/api/emergency-contacts` | `name`, `phone` |
-| DELETE | `/api/emergency-contacts/{id}` | — |
+| GET | `/api/v1/get-emergency-contacts` | — |
+| POST | `/api/v1/add-emergency-contacts` | `name` (required), `phone` (required), `image` (optional, max 2MB, jpg/jpeg/png/gif) |
+| DELETE | `/api/v1/delete-emergency-contacts/{id}` | `id` (query param) |
 
 ---
 

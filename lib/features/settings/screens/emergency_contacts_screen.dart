@@ -6,7 +6,9 @@ import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/contact_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
+import 'package:saefra_run/core/widgets/emergency_contact_avatar.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
+import 'package:saefra_run/core/widgets/secondary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
 
 class EmergencyContactsScreen extends StatefulWidget {
@@ -115,7 +117,14 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await context.read<SettingsService>().removeContact(id);
+      final settings = context.read<SettingsService>();
+      final ok = await settings.removeContact(id);
+      if (!mounted) return;
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(settings.error ?? 'Failed to remove contact')),
+        );
+      }
     }
   }
 
@@ -129,6 +138,13 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         child: Column(
           children: [
             const AppPageHeader(title: 'Emergency Contacts'),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
+              child: SecondaryButton(
+                label: 'Add Contact Manually',
+                onPressed: () => context.pushNamed('addEmergencyContact'),
+              ),
+            ),
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
               child: PrimaryButton(
@@ -196,6 +212,11 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                               ),
                               child: Row(
                                 children: [
+                                  EmergencyContactAvatar(
+                                    contact: contact,
+                                    radius: 22,
+                                  ),
+                                  SizedBox(width: 12.w),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:

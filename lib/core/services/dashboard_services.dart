@@ -24,6 +24,7 @@ class DashboardServices extends ChangeNotifier {
 
   double? _destinationPositionLatitude;
   double? _destinationPositionLongitude;
+  String? _destinationName;
 
   bool _isLoading = false;
   int _currentBottomIndex = 0;
@@ -56,6 +57,10 @@ class DashboardServices extends ChangeNotifier {
 
   double? get destinationPositionLatitude => _destinationPositionLatitude;
   double? get destinationPositionLongitude => _destinationPositionLongitude;
+  String? get destinationName => _destinationName;
+  bool get hasSelectedDestination =>
+      _destinationPositionLatitude != null &&
+      _destinationPositionLongitude != null;
 
 
   bool get isLoading => _isLoading;
@@ -131,15 +136,6 @@ class DashboardServices extends ChangeNotifier {
     }
     _isSearching = true;
     notifyListeners();
-    final double originLat = _latitude ?? 21.2158;
-    final double originLng = _longitude ?? 72.8372;
-
-    await fetchSafeRoute(
-      originLat: originLat,
-      originLng: originLng,
-      destLat: originLat,
-      destLng: originLng,
-    );
 
     if (_googleApiKey.isEmpty) {
       _placePredictions = [];
@@ -191,30 +187,50 @@ class DashboardServices extends ChangeNotifier {
     }
 
     if (lat != null && lng != null) {
-      _destinationPositionLatitude = lat;
-      _destinationPositionLongitude = lng;
-      _routePolylinePoints = [];
-      _recommendedRoute = null;
-      notifyListeners();
-      if (_mapController != null) {
-        _mapController!.animateCamera(
-          CameraUpdate.newLatLngZoom(LatLng(lat, lng), 15.0),
-        );
-      }
+      await focusOnLocation(lat, lng);
     }
   }
 
-  Future<void> focusOnLocation(double lat, double lng) async {
-    _destinationPositionLatitude = lat;
-    _destinationPositionLongitude = lng;
+  void clearDestination() {
+    _destinationPositionLatitude = null;
+    _destinationPositionLongitude = null;
+    _destinationName = null;
     _routePolylinePoints = [];
     _recommendedRoute = null;
     notifyListeners();
+  }
+
+  Future<void> focusOnLocation(
+    double lat,
+    double lng, {
+    String? name,
+  }) async {
+    _destinationPositionLatitude = lat;
+    _destinationPositionLongitude = lng;
+    _destinationName = name;
+    notifyListeners();
+
+    if (_latitude != null && _longitude != null) {
+      await fetchSafeRoute(
+        originLat: _latitude!,
+        originLng: _longitude!,
+        destLat: lat,
+        destLng: lng,
+      );
+    } else {
+      _routePolylinePoints = [];
+      _recommendedRoute = null;
+      notifyListeners();
+    }
 
     if (_mapController != null) {
-      await _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 15),
-      );
+      if (_routePolylinePoints.length > 1) {
+        _fitMapToPoints(_routePolylinePoints);
+      } else {
+        await _mapController!.animateCamera(
+          CameraUpdate.newLatLngZoom(LatLng(lat, lng), 15),
+        );
+      }
     }
   }
 
@@ -250,7 +266,7 @@ class DashboardServices extends ChangeNotifier {
           _recentRoutes = list;
         }
 
-        if (_recommendedRoute != null) {
+        if (_recommendedRoute != null && hasSelectedDestination) {
           _routePolylinePoints =
               PolylineDecoder.fromRouteJson(_recommendedRoute!);
           if (_routePolylinePoints.length > 1) {
@@ -370,12 +386,6 @@ class DashboardServices extends ChangeNotifier {
       _longitude = pos.longitude;
 
       await _animateToCurrentLocation();
-      await fetchSafeRoute(
-        originLat: _latitude!,
-        originLng: _longitude!,
-        destLat: _latitude!,
-        destLng: _longitude!,
-      );
       notifyListeners();
     } catch (e) {
       debugPrint('getCurrentLocation failed: $e');
@@ -383,6 +393,30 @@ class DashboardServices extends ChangeNotifier {
       _isLoading = false;
       _locationPermissionResolved = true;
       notifyListeners();
+    }
+  }
+
+  Future<void> refreshCurrentLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      _latitude = pos.latitude;
+      _longitude = pos.longitude;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('refreshCurrentLocation failed: $e');
     }
   }
 

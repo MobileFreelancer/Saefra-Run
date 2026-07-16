@@ -7,6 +7,7 @@ import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/models/save_route_payload.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/route_service.dart';
+import 'package:saefra_run/core/utils/location_route_utils.dart';
 import 'package:saefra_run/core/utils/polyline_decoder.dart';
 
 class GenerateRouteService extends ChangeNotifier {
@@ -24,6 +25,9 @@ class GenerateRouteService extends ChangeNotifier {
   Timer? _previewDebounce;
   double? _previewLatitude;
   double? _previewLongitude;
+  double? _destinationLatitude;
+  double? _destinationLongitude;
+  String? _destinationName;
 
   GenerateRouteFilters get filters => _filters;
   RouteModel? get generatedRoute => _generatedRoute;
@@ -31,6 +35,11 @@ class GenerateRouteService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isPreviewLoading => _isPreviewLoading;
   String? get error => _error;
+  bool get hasDestination =>
+      _destinationLatitude != null && _destinationLongitude != null;
+  double? get destinationLatitude => _destinationLatitude;
+  double? get destinationLongitude => _destinationLongitude;
+  String? get destinationName => _destinationName;
 
   void setDistance(double km) {
     _filters = _filters.copyWith(distanceKm: km);
@@ -67,7 +76,71 @@ class GenerateRouteService extends ChangeNotifier {
   void bindLocation({required double? latitude, required double? longitude}) {
     _previewLatitude = latitude;
     _previewLongitude = longitude;
-    updatePreview(latitude: latitude, longitude: longitude);
+  }
+
+  void bindDestination({
+    required double? latitude,
+    required double? longitude,
+    String? name,
+  }) {
+    _destinationLatitude = latitude;
+    _destinationLongitude = longitude;
+    _destinationName = name;
+  }
+
+  Future<void> syncRouteContext({
+    required double? originLatitude,
+    required double? originLongitude,
+    double? destinationLatitude,
+    double? destinationLongitude,
+    String? destinationName,
+  }) async {
+    bindLocation(latitude: originLatitude, longitude: originLongitude);
+    bindDestination(
+      latitude: destinationLatitude,
+      longitude: destinationLongitude,
+      name: destinationName,
+    );
+    await updatePreview(
+      latitude: originLatitude,
+      longitude: originLongitude,
+    );
+  }
+
+  void clearDestination() {
+    _destinationLatitude = null;
+    _destinationLongitude = null;
+    _destinationName = null;
+    _schedulePreview();
+  }
+
+  Future<LoopRouteResult?> _buildPreviewRoute(LatLng origin) async {
+    if (hasDestination) {
+      return _routeService.createRouteToDestination(
+        origin: origin,
+        destination: LatLng(_destinationLatitude!, _destinationLongitude!),
+        difficulty: _filters.difficulty.apiValue,
+        lighting: _filters.lighting.apiValue,
+        routeName: _destinationName,
+      );
+    }
+
+    if (_filters.shape == RouteShape.loop) {
+      return _routeService.createLoopRoute(
+        currentLocation: origin,
+        distanceKm: _filters.distanceKm,
+        difficulty: _filters.difficulty.apiValue,
+        routeType: 'loop',
+        lighting: _filters.lighting.apiValue,
+      );
+    }
+
+    return _routeService.createOneWayRoute(
+      origin: origin,
+      distanceKm: _filters.distanceKm,
+      difficulty: _filters.difficulty.apiValue,
+      lighting: _filters.lighting.apiValue,
+    );
   }
 
   void _schedulePreview() {
@@ -86,6 +159,9 @@ class GenerateRouteService extends ChangeNotifier {
   }) async {
     if (latitude == null || longitude == null) {
       _previewPolylinePoints = [];
+      _error = hasDestination
+          ? 'Waiting for your current location. Enable GPS and try again.'
+          : null;
       notifyListeners();
       return;
     }
@@ -96,27 +172,42 @@ class GenerateRouteService extends ChangeNotifier {
 
     try {
       final origin = LatLng(latitude, longitude);
-      final result = _filters.shape == RouteShape.loop
-          ? await _routeService.createLoopRoute(
-              currentLocation: origin,
-              distanceKm: _filters.distanceKm,
-              difficulty: _filters.difficulty.apiValue,
-              routeType: 'loop',
-              lighting: _filters.lighting.apiValue,
-            )
-          : await _routeService.createOneWayRoute(
-              origin: origin,
-              distanceKm: _filters.distanceKm,
-              difficulty: _filters.difficulty.apiValue,
-              lighting: _filters.lighting.apiValue,
-            );
+      if (hasDestination) {
+        final destination = LatLng(_destinationLatitude!, _destinationLongitude!);
+        final validationError = LocationRouteUtils.routeValidationError(
+          origin: origin,
+          destination: destination,
+          destinationName: _destinationName,
+        );
+        if (validationError != null) {
+          _previewPolylinePoints = [];
+          _error = validationError;
+          return;
+        }
+      }
 
-      _previewPolylinePoints = result == null
-          ? []
-          : PolylineDecoder.decode(result.encodedPolyline);
+      final result = await _buildPreviewRoute(origin);
+
+      if (result == null) {
+        _previewPolylinePoints = [];
+        _error = hasDestination
+            ? 'Could not draw a route to the selected destination. Check your current location and try again.'
+            : 'Could not preview this route. Try adjusting distance or route type.';
+      } else {
+        _previewPolylinePoints = PolylineDecoder.decode(result.encodedPolyline);
+        if (_previewPolylinePoints.length <= 1) {
+          _previewPolylinePoints = [];
+          _error = hasDestination
+              ? 'No walkable route found to the selected destination.'
+              : 'No route preview available for these settings.';
+        } else {
+          _error = null;
+        }
+      }
     } catch (e) {
       debugPrint('GenerateRouteService.updatePreview failed: $e');
       _previewPolylinePoints = [];
+      _error = 'Route preview failed. Please try again.';
     } finally {
       _isPreviewLoading = false;
       notifyListeners();
@@ -133,27 +224,26 @@ class GenerateRouteService extends ChangeNotifier {
       return null;
     }
 
+    if (hasDestination) {
+      final validationError = LocationRouteUtils.routeValidationError(
+        origin: LatLng(latitude, longitude),
+        destination: LatLng(_destinationLatitude!, _destinationLongitude!),
+        destinationName: _destinationName,
+      );
+      if (validationError != null) {
+        _error = validationError;
+        notifyListeners();
+        return null;
+      }
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
       final origin = LatLng(latitude, longitude);
-
-      final loopResult = _filters.shape == RouteShape.loop
-          ? await _routeService.createLoopRoute(
-              currentLocation: origin,
-              distanceKm: _filters.distanceKm,
-              difficulty: _filters.difficulty.apiValue,
-              routeType: 'loop',
-              lighting: _filters.lighting.apiValue,
-            )
-          : await _routeService.createOneWayRoute(
-              origin: origin,
-              distanceKm: _filters.distanceKm,
-              difficulty: _filters.difficulty.apiValue,
-              lighting: _filters.lighting.apiValue,
-            );
+      final loopResult = await _buildPreviewRoute(origin);
 
       if (loopResult == null) {
         _error = 'Could not generate a route. Please try again.';

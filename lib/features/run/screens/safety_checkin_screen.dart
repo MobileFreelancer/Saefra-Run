@@ -8,6 +8,7 @@ import 'package:saefra_run/core/services/contact_service.dart';
 import 'package:saefra_run/core/services/safety_checkin_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
+import 'package:saefra_run/core/widgets/emergency_contact_avatar.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 
 class SafetyCheckInScreen extends StatefulWidget {
@@ -309,13 +310,10 @@ class _ContactCheckRow extends StatelessWidget {
       padding: EdgeInsets.only(bottom: 8.h),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 18.r,
-            backgroundColor: AppColors.surfaceLight,
-            child: Text(
-              contact.name[0],
-              style: textTheme.labelLarge,
-            ),
+          EmergencyContactAvatar(
+            contact: contact,
+            radius: 18,
+            fontSize: textTheme.labelLarge?.fontSize,
           ),
           SizedBox(width: 10.w),
           Expanded(

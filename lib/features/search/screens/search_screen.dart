@@ -92,12 +92,34 @@ class _SearchScreenState extends State<SearchScreen> {
     final dashboard = context.read<DashboardServices>();
     final latLng = await search.resolvePlace(place);
 
-    if (!mounted || latLng == null) return;
-
-    await dashboard.focusOnLocation(latLng.latitude, latLng.longitude);
     if (!mounted) return;
 
-    context.pushNamed('generateRoute');
+    if (latLng == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not resolve this place. Please try another location.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    await dashboard.focusOnLocation(
+      latLng.latitude,
+      latLng.longitude,
+      name: place.description,
+    );
+    if (!mounted) return;
+
+    context.pushNamed(
+      'generateRoute',
+      queryParameters: {
+        'destLat': '${latLng.latitude}',
+        'destLng': '${latLng.longitude}',
+        'destName': place.description,
+      },
+    );
   }
 
   @override

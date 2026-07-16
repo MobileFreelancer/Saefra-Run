@@ -54,6 +54,15 @@ class ApiResponseParser {
     }
 
     final errors = data['errors'];
+    if (errors is List && errors.isNotEmpty) {
+      final first = errors.first;
+      if (first is Map) {
+        final nested = first['message'] ?? first['errors'];
+        if (nested is String && nested.trim().isNotEmpty) {
+          return nested.trim();
+        }
+      }
+    }
     if (errors is Map) {
       final parts = <String>[];
       for (final entry in errors.entries) {

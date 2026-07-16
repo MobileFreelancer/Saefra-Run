@@ -9,6 +9,7 @@ import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/services/contact_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
+import 'package:saefra_run/core/widgets/emergency_contact_avatar.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
 
@@ -87,7 +88,12 @@ class _SafetySettingsScreenState extends State<SafetySettingsScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await context.read<SettingsService>().removeContact(id);
+      final settings = context.read<SettingsService>();
+      final ok = await settings.removeContact(id);
+      if (!mounted) return;
+      if (!ok) {
+        setState(() => _contactError = settings.error ?? 'Failed to remove contact');
+      }
     }
   }
 
@@ -389,10 +395,6 @@ class _EmergencyContactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial = contact.name.trim().isNotEmpty
-        ? contact.name.trim()[0].toUpperCase()
-        : '?';
-
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       decoration: BoxDecoration(
@@ -401,16 +403,10 @@ class _EmergencyContactTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 22.r,
-            backgroundColor: AppColors.surfaceLight,
-            child: Text(
-              initial,
-              style: textTheme.titleMedium?.copyWith(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          EmergencyContactAvatar(
+            contact: contact,
+            radius: 22,
+            fontSize: 16.sp,
           ),
           SizedBox(width: 12.w),
           Expanded(

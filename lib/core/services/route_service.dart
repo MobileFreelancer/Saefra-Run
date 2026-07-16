@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/utils/polyline_decoder.dart';
+import 'package:flutter/foundation.dart';
 
 class LoopRouteResult {
   final String routeName;
@@ -106,6 +107,125 @@ class RouteService {
       lighting: lighting,
       routeName: routeName,
     );
+  }
+
+  Future<LoopRouteResult?> createRouteToDestination({
+    required LatLng origin,
+    required LatLng destination,
+    String travelMode = 'WALK',
+    String difficulty = 'medium',
+    String lighting = 'Well-lit',
+    String? routeName,
+  }) async {
+    final routesResult = await _computeRoute(
+      origin: origin,
+      destination: destination,
+      travelMode: travelMode,
+      difficulty: difficulty,
+      routeType: 'one_way',
+      lighting: lighting,
+      routeName: routeName,
+    );
+    if (routesResult != null) return routesResult;
+
+    return _computeRouteViaDirections(
+      origin: origin,
+      destination: destination,
+      travelMode: travelMode,
+      difficulty: difficulty,
+      routeType: 'one_way',
+      lighting: lighting,
+      routeName: routeName,
+    );
+  }
+
+  Future<LoopRouteResult?> _computeRouteViaDirections({
+    required LatLng origin,
+    required LatLng destination,
+    String travelMode = 'WALK',
+    String difficulty = 'medium',
+    String routeType = 'one_way',
+    String lighting = 'Well-lit',
+    String? routeName,
+  }) async {
+    final mode = travelMode.toLowerCase() == 'walk' ? 'walking' : 'driving';
+    final uri = Uri.parse(
+      'https://maps.googleapis.com/maps/api/directions/json',
+    ).replace(
+      queryParameters: {
+        'origin': '${origin.latitude},${origin.longitude}',
+        'destination': '${destination.latitude},${destination.longitude}',
+        'mode': mode,
+        'key': ApiConfig.googleDirectionsApiKey,
+      },
+    );
+
+    try {
+      final response = await http.get(uri);
+      if (response.statusCode != 200) {
+        debugPrint('Directions API HTTP ${response.statusCode}: ${response.body}');
+        return null;
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (data['status'] != 'OK') {
+        debugPrint('Directions API status ${data['status']}: ${data['error_message']}');
+        return null;
+      }
+
+      final routes = data['routes'] as List<dynamic>? ?? [];
+      if (routes.isEmpty) return null;
+
+      final route = routes.first as Map<String, dynamic>;
+      final legs = route['legs'] as List<dynamic>? ?? [];
+      if (legs.isEmpty) return null;
+
+      final leg = legs.first as Map<String, dynamic>;
+      final distanceMeters = (leg['distance']?['value'] as num?)?.toInt() ?? 0;
+      final durationSeconds =
+          (leg['duration']?['value'] as num?)?.toInt() ?? 0;
+      final encodedPolyline =
+          route['overview_polyline']?['points'] as String? ?? '';
+
+      if (encodedPolyline.isEmpty) return null;
+
+      final decodedPoints = PolylineDecoder.decode(encodedPolyline);
+      final coordinatesList = decodedPoints
+          .map(
+            (point) => {
+              'latitude': point.latitude,
+              'longitude': point.longitude,
+            },
+          )
+          .toList();
+
+      final calculatedKm =
+          double.parse((distanceMeters / 1000).toStringAsFixed(2));
+      final hoursTotal = durationSeconds / 3600;
+      final speed = hoursTotal > 0
+          ? double.parse((calculatedKm / hoursTotal).toStringAsFixed(1))
+          : 0.0;
+
+      return LoopRouteResult(
+        routeName: routeName ?? 'Route to destination',
+        distanceMeters: distanceMeters,
+        distanceKm: calculatedKm,
+        duration: '${durationSeconds}s',
+        formattedDuration: formatDuration(durationSeconds),
+        travelMode: travelMode,
+        difficulty: difficulty,
+        routeType: routeType,
+        lighting: lighting,
+        estimatedCalories: (calculatedKm * 65).round(),
+        estimatedSteps: (distanceMeters / 0.76).round(),
+        averageSpeedKmh: speed,
+        encodedPolyline: encodedPolyline,
+        coordinates: coordinatesList,
+      );
+    } catch (e) {
+      debugPrint('Directions API exception: $e');
+      return null;
+    }
   }
 
   Future<LoopRouteResult?> _computeRoute({
@@ -216,10 +336,10 @@ class RouteService {
           );
         }
       } else {
-        print('API Error: ${response.body}');
+        debugPrint('Routes API HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      print('Exception: $e');
+      debugPrint('Routes API exception: $e');
     }
     return null;
   }

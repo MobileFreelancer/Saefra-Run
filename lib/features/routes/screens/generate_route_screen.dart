@@ -9,6 +9,7 @@ import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/generate_route_filters.dart';
 import 'package:saefra_run/core/services/dashboard_services.dart';
 import 'package:saefra_run/core/services/generate_route_service.dart';
+import 'package:saefra_run/core/utils/location_route_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
@@ -16,7 +17,16 @@ import 'package:saefra_run/core/widgets/primary_button.dart';
 import '../../../generated/assets.dart';
 
 class GenerateRouteScreen extends StatefulWidget {
-  const GenerateRouteScreen({super.key});
+  const GenerateRouteScreen({
+    super.key,
+    this.destLat,
+    this.destLng,
+    this.destName,
+  });
+
+  final double? destLat;
+  final double? destLng;
+  final String? destName;
 
   @override
   State<GenerateRouteScreen> createState() => _GenerateRouteScreenState();
@@ -25,6 +35,68 @@ class GenerateRouteScreen extends StatefulWidget {
 class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
   // Local state variable to manage dynamic unit toggling
   bool _isKm = true;
+  bool _routeContextSynced = false;
+
+  LatLng? get _destination {
+    final service = context.read<GenerateRouteService>();
+    if (service.hasDestination) {
+      return LatLng(service.destinationLatitude!, service.destinationLongitude!);
+    }
+    final dashboard = context.read<DashboardServices>();
+    if (dashboard.hasSelectedDestination) {
+      return LatLng(
+        dashboard.destinationPositionLatitude!,
+        dashboard.destinationPositionLongitude!,
+      );
+    }
+    if (widget.destLat != null && widget.destLng != null) {
+      return LatLng(widget.destLat!, widget.destLng!);
+    }
+    return null;
+  }
+
+  Future<void> _syncRouteContext({bool force = false}) async {
+    if (!mounted) return;
+    if (_routeContextSynced && !force) return;
+
+    final dashboard = context.read<DashboardServices>();
+    final service = context.read<GenerateRouteService>();
+
+    await dashboard.refreshCurrentLocation();
+
+    final destinationLat =
+        widget.destLat ?? dashboard.destinationPositionLatitude;
+    final destinationLng =
+        widget.destLng ?? dashboard.destinationPositionLongitude;
+    final destinationName = widget.destName ?? dashboard.destinationName;
+
+    if (destinationLat != null &&
+        destinationLng != null &&
+        !dashboard.hasSelectedDestination) {
+      await dashboard.focusOnLocation(
+        destinationLat,
+        destinationLng,
+        name: destinationName,
+      );
+    }
+
+    await service.syncRouteContext(
+      originLatitude: dashboard.latitude,
+      originLongitude: dashboard.longitude,
+      destinationLatitude: destinationLat,
+      destinationLongitude: destinationLng,
+      destinationName: destinationName,
+    );
+
+    _routeContextSynced = true;
+  }
+
+  void _onDashboardUpdate() {
+    if (!mounted) return;
+    final dashboard = context.read<DashboardServices>();
+    if (dashboard.latitude == null || dashboard.longitude == null) return;
+    _syncRouteContext(force: true);
+  }
 
   Future<void> _generate() async {
     final service = context.read<GenerateRouteService>();
@@ -50,19 +122,30 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final dashboard = context.read<DashboardServices>();
-      context.read<GenerateRouteService>().bindLocation(
-            latitude: dashboard.latitude,
-            longitude: dashboard.longitude,
-          );
+      _syncRouteContext(force: true);
+      context.read<DashboardServices>().addListener(_onDashboardUpdate);
     });
+  }
+
+  @override
+  void dispose() {
+    context.read<DashboardServices>().removeListener(_onDashboardUpdate);
+    super.dispose();
   }
 
 
   @override
   Widget build(BuildContext context) {
     final service = context.watch<GenerateRouteService>();
+    final dashboard = context.watch<DashboardServices>();
     final filters = service.filters;
+    final destination = _destination;
+    final origin = dashboard.latitude != null && dashboard.longitude != null
+        ? LatLng(dashboard.latitude!, dashboard.longitude!)
+        : null;
+    final preferDestinationCamera = destination != null &&
+        (origin == null ||
+            !LocationRouteUtils.isPlausibleRoute(origin, destination));
     final textTheme = Theme.of(context).textTheme;
 
     // Derived theme elements using AppColors parameters
@@ -105,11 +188,40 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                                 service.previewPolylinePoints.length > 1
                                     ? service.previewPolylinePoints
                                     : null,
+                            origin: origin,
+                            destination: destination,
+                            preferDestinationCamera: preferDestinationCamera,
                           ),
                           if (service.isPreviewLoading)
                             const Center(
                               child: CircularProgressIndicator(
                                 color: AppColors.primary,
+                              ),
+                            ),
+                          if (!service.isPreviewLoading &&
+                              service.error != null &&
+                              destination != null)
+                            Positioned(
+                              left: 12.w,
+                              right: 12.w,
+                              bottom: 12.h,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 10.w,
+                                  vertical: 8.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.72),
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                                child: Text(
+                                  service.error!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppColors.white,
+                                    fontSize: 11.sp,
+                                  ),
+                                ),
                               ),
                             ),
                         ],

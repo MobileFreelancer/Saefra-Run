@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -534,28 +536,89 @@ class ApiService {
 
   // ─── Settings / emergency contacts ──────────────────────────────────────────
 
-  Future<List<EmergencyContactModel>> getEmergencyContacts() async {
-    final response = await _dio.get(_path('/emergency-contacts'));
-    final map = _map(response);
-    final payload = ApiResponseParser.payload(map);
-    final list = payload['contacts'] as List<dynamic>? ?? [];
-    return list
-        .map((e) => EmergencyContactModel.fromJson(
+  List<EmergencyContactModel> _parseEmergencyContactsList(dynamic raw) {
+    if (raw is List) {
+      return raw
+          .map(
+            (e) => EmergencyContactModel.fromJson(
               Map<String, dynamic>.from(e as Map),
-            ))
-        .toList();
+            ),
+          )
+          .toList();
+    }
+    if (raw is Map) {
+      final map = Map<String, dynamic>.from(raw);
+      for (final key in ['contacts', 'emergency_contacts', 'data']) {
+        final value = map[key];
+        if (value is List) {
+          return _parseEmergencyContactsList(value);
+        }
+      }
+      if (map.containsKey('id') || map.containsKey('contact_id')) {
+        return [EmergencyContactModel.fromJson(map)];
+      }
+    }
+    return [];
   }
 
-  Future<void> addEmergencyContact({
+  Future<List<EmergencyContactModel>> getEmergencyContacts() async {
+    try {
+      final response = await _dio.get(_path('/get-emergency-contacts'));
+      final map = _map(response);
+      final payload = ApiResponseParser.payload(map);
+      final list = payload['contacts'] ??
+          payload['emergency_contacts'] ??
+          (map['data'] is List ? map['data'] : null);
+      return _parseEmergencyContactsList(list ?? payload);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<EmergencyContactModel> addEmergencyContact({
     required String name,
     required String phone,
+    String? imagePath,
   }) async {
     try {
+      final fields = <String, dynamic>{
+        'name': name,
+        'phone': phone,
+      };
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        final file = File(imagePath);
+        if (await file.exists()) {
+          final fileName = imagePath.split('/').last;
+          fields['image'] = await MultipartFile.fromFile(
+            imagePath,
+            filename: fileName,
+          );
+        }
+      }
+
       final response = await _dio.post(
-        _path('/emergency-contacts'),
-        data: _form({'name': name, 'phone': phone}),
+        _path('/add-emergency-contacts'),
+        data: FormData.fromMap(fields),
       );
-      _map(response);
+      final map = _map(response);
+      final payload = ApiResponseParser.payload(map);
+      final contactJson = payload['contact'] ??
+          payload['emergency_contact'] ??
+          (payload.containsKey('id') || payload.containsKey('contact_id')
+              ? payload
+              : null);
+      if (contactJson is Map) {
+        return EmergencyContactModel.fromJson(
+          Map<String, dynamic>.from(contactJson),
+        );
+      }
+      return EmergencyContactModel(
+        id: '${payload['id'] ?? ''}',
+        name: name,
+        phone: phone,
+        imageUrl: payload['image'] as String?,
+      );
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -563,7 +626,10 @@ class ApiService {
 
   Future<void> removeEmergencyContact(String id) async {
     try {
-      final response = await _dio.delete(_path('/emergency-contacts/$id'));
+      final response = await _dio.delete(
+        _path('/delete-emergency-contacts/$id'),
+        queryParameters: {'id': id},
+      );
       _map(response);
     } on DioException catch (e) {
       throw _handleDioError(e);
