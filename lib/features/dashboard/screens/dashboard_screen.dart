@@ -65,39 +65,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: Consumer<DashboardServices>(
-                      builder: (context, services, child) {
-                        final mapTarget =
-                            (services.latitude != null &&
-                                services.longitude != null)
-                            ? LatLng(services.latitude!, services.longitude!)
-                            : DashboardScreen._initialPosition.target;
-
-                        return GoogleMap(
-                          initialCameraPosition: CameraPosition(
-                            target: mapTarget,
-                            zoom: DashboardScreen._initialPosition.zoom,
-                          ),
-                          myLocationEnabled: true,
-                          myLocationButtonEnabled: false,
-                          zoomControlsEnabled: false,
-                          // polylines: {
-                          //   if (services.routePolylinePoints.isNotEmpty)
-                          //     Polyline(
-                          //       polylineId: const PolylineId('safe_route_polyline'),
-                          //       points: services.routePolylinePoints,
-                          //       color: AppColors.primary,
-                          //       width: 5,
-                          //     ),
-                          // },
-                          onMapCreated: (controller) async {
-                            context.read<DashboardServices>().setMapController(
-                              controller,
-                            );
-                            services.setMapController(controller);
-                          },
-                        );
-                      },
+                    child: DashboardMap(
+                      initialTarget: DashboardScreen._initialPosition.target,
+                      initialZoom: DashboardScreen._initialPosition.zoom,
                     ),
                   ),
 

@@ -5,10 +5,41 @@ class ApiResponseParser {
     if (statusCode == null || statusCode < 200 || statusCode >= 300) {
       return false;
     }
-    if (data is Map<String, dynamic> && data.containsKey('success')) {
-      return data['success'] == true;
+    if (data is! Map) return true;
+
+    final map = asMap(data);
+
+    if (map.containsKey('success')) {
+      final success = map['success'];
+      if (success is bool) return success;
+      if (success is num) return success != 0;
+      if (success is String) {
+        final normalized = success.toLowerCase();
+        return normalized == 'true' || normalized == '1';
+      }
+      return false;
     }
+
+    if (map.containsKey('status')) {
+      final status = map['status']?.toString().toLowerCase();
+      if (status == 'fail' || status == 'failed' || status == 'error') {
+        return false;
+      }
+      if (status == 'success' || status == 'ok') {
+        return true;
+      }
+    }
+
     return true;
+  }
+
+  static Map<String, dynamic> payload(dynamic data) {
+    final map = asMap(data);
+    final inner = map['data'];
+    if (inner is Map) {
+      return asMap(inner);
+    }
+    return map;
   }
 
   static String parseErrorMessage(

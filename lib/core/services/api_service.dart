@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:saefra_run/core/config/api_config.dart';
-import 'package:saefra_run/core/data/app_mock_data.dart';
 import 'package:saefra_run/core/models/activity_model.dart';
 import 'package:saefra_run/core/models/auth_response_model.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
@@ -218,38 +217,6 @@ class ApiService {
     return ApiResponseParser.asMap(response.data);
   }
 
-  Future<void> _mockDelay() => Future<void>.delayed(const Duration(milliseconds: 800));
-
-  /// Uses mock data when [ApiConfig.useMockApi] is true, or when the backend
-  /// endpoint is missing (404) or broken (500) so the UI can run on static data.
-  Future<T> _apiOrMock<T>(
-    Future<T> Function() apiCall,
-    Future<T> Function() mockCall,
-  ) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return mockCall();
-    }
-    try {
-      return await apiCall();
-    } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      if (code == 404 || code == 500) {
-        return mockCall();
-      }
-      throw _handleDioError(e);
-    }
-  }
-
-  Map<String, dynamic> _mockSafeRouteResponse() => {
-        'success': true,
-        'message': 'Safest route generated successfully.',
-        'route': {
-          'recommended_routes': AppMockData.recommendedRouteJson,
-          'recent_routes': AppMockData.recentRoutesJson,
-        },
-      };
-
   // ─── Auth ───────────────────────────────────────────────────────────────────
 
   Future<AuthResponseModel> login({
@@ -257,14 +224,6 @@ class ApiService {
     required String password,
   }) async {
     AppLoader.show();
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return AuthResponseModel(
-        accessToken: 'mock_token',
-        user: UserModel(id: '1', email: email),
-      );
-    }
-
     try {
       final response = await _dio.post(
         _path('/auth/login'),
@@ -288,14 +247,6 @@ class ApiService {
     required String runPreference,
   }) async {
     AppLoader.show();
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return AuthResponseModel(
-        accessToken: 'mock_token',
-        user: UserModel(id: '1', email: email),
-      );
-    }
-
     try {
       final response = await _dio.post(
         _path('/auth/register'),
@@ -340,11 +291,6 @@ class ApiService {
 
   Future<String> forgotPassword({required String email}) async {
     AppLoader.show();
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return 'OTP sent successfully.';
-    }
-
     try {
       final response = await _dio.post(
         _path('/auth/forgot-password'),
@@ -359,18 +305,11 @@ class ApiService {
     }
   }
 
-
-
   Future<void> verifyOtp({
     required String email,
     required String otp,
   }) async {
     AppLoader.show();
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
-
     try {
       final response = await _dio.post(
         _path('/auth/varify-otp'),
@@ -387,22 +326,12 @@ class ApiService {
     }
   }
 
-
-
   Future<void> resetPassword({
     required String email,
     required String password,
     required String passwordConfirmation,
   }) async {
     AppLoader.show();
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      if (password != passwordConfirmation) {
-        throw const ApiException('Passwords do not match.', 422);
-      }
-      return;
-    }
-
     try {
       final response = await _dio.post(
         _path('/auth/reset-password'),
@@ -424,10 +353,6 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
     try {
       final response = await _dio.post(
         _path('/auth/logout'),
@@ -445,19 +370,11 @@ class ApiService {
   // ─── Profile ────────────────────────────────────────────────────────────────
 
   Future<UserModel> getCurrentUser() async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      final userId = await _storage.read(key: ApiConfig.storageKeyUserId);
-      if (userId == null) {
-        throw const ApiException('Not authenticated.', 401);
-      }
-      return UserModel(id: userId);
-    }
-
     try {
       final response = await _dio.get(_path('/profile'));
       final map = _map(response);
-      return UserModel.fromJson(ApiResponseParser.asMap(map['user']));
+      final payload = ApiResponseParser.payload(map);
+      return UserModel.fromJson(ApiResponseParser.asMap(payload['user']));
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -468,14 +385,15 @@ class ApiService {
     required String birthdate,
   }) async {
     try {
-      final parsed = DateTime.parse(birthdate); // if it's yyyy-MM-dd
+      final parsed = DateTime.parse(birthdate);
       final formatted = DateFormat('M-d-yyyy').format(parsed);
       final response = await _dio.post(
         _path('/profile'),
         data: _form({'gender': gender, 'birthdate': formatted}),
       );
       final map = _map(response);
-      return UserModel.fromJson(ApiResponseParser.asMap(map['user']));
+      final payload = ApiResponseParser.payload(map);
+      return UserModel.fromJson(ApiResponseParser.asMap(payload['user']));
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -492,24 +410,12 @@ class ApiService {
   // ─── Preferences ────────────────────────────────────────────────────────────
 
   Future<UserPreferencesModel> getPreferences() async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      final userId = await _storage.read(key: ApiConfig.storageKeyUserId);
-      return UserPreferencesModel(
-        id: '1',
-        userId: userId ?? '1',
-        shareLiveLocation: true,
-        emergencyAlertsEnabled: true,
-        pushNotificationsEnabled: true,
-        emailNotificationsEnabled: false,
-      );
-    }
-
     try {
       final response = await _dio.get(_path('/preferences'));
       final map = _map(response);
+      final payload = ApiResponseParser.payload(map);
       return UserPreferencesModel.fromJson(
-        ApiResponseParser.asMap(map['preferences']),
+        ApiResponseParser.asMap(payload['preferences']),
       );
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -536,11 +442,6 @@ class ApiService {
 
 
   Future<void> syncOnboardingForLoggedInUser(OnboardingModel onboarding) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
-
     await updateProfileFromOnboarding(onboarding);
     await updatePreferences(
       visitReason: ApiFieldMapper.visitReasonToApi(onboarding.goal),
@@ -553,196 +454,102 @@ class ApiService {
     required double originLng,
     required double destLat,
     required double destLng,
-  }) {
-    return _apiOrMock(
-      () async {
-        final payload = {
-          'origin': {
-            'location': {
-              'latLng': {
-                'latitude': originLat,
-                'longitude': originLng,
-              }
-            }
-          },
-          'destination': {
-            'location': {
-              'latLng': {
-                'latitude': destLat,
-                'longitude': destLng,
-              }
-            }
-          },
-          'travelMode': 'WALK',
-          'computeAlternativeRoutes': true,
-          'languageCode': 'en-US',
-          'units': 'METRIC',
-        };
-
-        final response = await _dio.post(
-          _path('/routes/generate-safe-route'),
-          options: Options(
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Goog-FieldMask':
-                  'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs,routes.travelAdvisory,routes.routeLabels',
-            },
-          ),
-          data: json.encode(payload),
-        );
-        return _map(response);
+  }) async {
+    final payload = {
+      'origin': {
+        'location': {
+          'latLng': {
+            'latitude': originLat,
+            'longitude': originLng,
+          }
+        }
       },
-      () async => _mockSafeRouteResponse(),
+      'destination': {
+        'location': {
+          'latLng': {
+            'latitude': destLat,
+            'longitude': destLng,
+          }
+        }
+      },
+      'travelMode': 'WALK',
+      'computeAlternativeRoutes': true,
+      'languageCode': 'en-US',
+      'units': 'METRIC',
+    };
+
+    final response = await _dio.post(
+      _path('/routes/generate-safe-route'),
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-FieldMask':
+              'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs,routes.travelAdvisory,routes.routeLabels',
+        },
+      ),
+      data: json.encode(payload),
     );
+    return _map(response);
   }
 
   // ─── Routes ─────────────────────────────────────────────────────────────────
 
   Future<List<RouteModel>> searchRoutes(String query) async {
     if (query.trim().length < 2) return [];
-    if (query.toLowerCase().contains('xyz')) return [];
 
-    return _apiOrMock(
-      () async {
-        final response = await _dio.get(
-          _path('/routes/search'),
-          queryParameters: {'q': query},
-        );
-        final map = _map(response);
-        final list = map['routes'] as List<dynamic>? ?? [];
-        return list
-            .map((e) => RouteModel.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      },
-      () async => AppMockData.searchRoutes,
+    final response = await _dio.get(
+      _path('/routes/search'),
+      queryParameters: {'q': query},
     );
+    final map = _map(response);
+    final list = map['routes'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => RouteModel.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   Future<RouteModel> getRouteDetail(String routeId) async {
-    return _apiOrMock(
-      () async {
-        final response = await _dio.get(_path('/routes/$routeId'));
-        final map = _map(response);
-        return RouteModel.fromJson(
-          Map<String, dynamic>.from((map['route'] ?? map) as Map),
-        );
-      },
-      () async => AppMockData.routeDetail(routeId),
+    final response = await _dio.get(_path('/routes/$routeId'));
+    final map = _map(response);
+    final payload = ApiResponseParser.payload(map);
+    return RouteModel.fromJson(
+      Map<String, dynamic>.from((payload['route'] ?? payload) as Map),
     );
   }
 
   Future<RouteModel> saveRoute(Map<String, dynamic> body) async {
-    return _apiOrMock(
-      () async {
-        final response = await _dio.post(
-          _path('/routes'),
-          data: body,
-          options: Options(
-            headers: {'Content-Type': 'application/json'},
-          ),
-        );
-        final map = _map(response);
-        return RouteModel.fromJson(
-          Map<String, dynamic>.from((map['route'] ?? map) as Map),
-        );
-      },
-      () async => RouteModel.fromJson({
-        'id': 'mock_saved',
-        'route_name': body['routeName'] ?? 'Saved Route',
-        'distance_km': body['distanceKm'],
-        'estimated_time': body['formattedDuration'],
-        'route_encoded_polyline': body['encodedPolyline'],
-        'difficulty': body['difficulty'],
-        'route_type': body['routeType'],
-        'lighting': body['lighting'],
-        'travel_mode': body['travelMode'],
-        'estimated_calories': body['estimatedCalories'],
-        'estimated_steps': body['estimatedSteps'],
-        'avg_speed_kmh': body['averageSpeedKmh'],
-        'safepoints': 17,
-        'safety_score': 80,
-        'is_secure': true,
-        'start_latitude': body['start_latitude'],
-        'start_longitude': body['start_longitude'],
-        'end_latitude': body['end_latitude'],
-        'end_longitude': body['end_longitude'],
-      }),
+    final response = await _dio.post(
+      _path('/routes'),
+      data: body,
+      options: Options(
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
+    final map = _map(response);
+    final payload = ApiResponseParser.payload(map);
+    return RouteModel.fromJson(
+      Map<String, dynamic>.from((payload['route'] ?? payload) as Map),
     );
   }
 
-  List<RouteModel> _mockRouteList() => [
-        RouteModel(
-          id: '1',
-          name: 'Lakeside Perimeter',
-          distanceKm: 3.2,
-          durationMinutes: 24,
-          tag: 'Popular',
-          runnerCount: 12,
-        ),
-        RouteModel(
-          id: '2',
-          name: 'North Loop Patrol',
-          distanceKm: 2.3,
-          durationMinutes: 18,
-          safePoints: 14,
-          runnerCount: 23,
-          saefraScore: 94,
-          locationLabel: 'Central Park, NY',
-          visibilityLabel: 'High Visibility Route',
-        ),
-        RouteModel(
-          id: '3',
-          name: 'River Trail Loop',
-          distanceKm: 5.0,
-          durationMinutes: 35,
-          tag: 'Scenic',
-          runnerCount: 8,
-        ),
-      ];
-
-  RouteModel _mockRouteDetail(String id) => RouteModel(
-        id: id,
-        name: 'North Loop Patrol',
-        distanceKm: 2.3,
-        durationMinutes: 18,
-        runnerCount: 23,
-        safePoints: 14,
-        saefraScore: 94,
-        safetyScore: '94%',
-        locationLabel: 'Central Park, NY',
-        visibilityLabel: 'High Visibility Route',
-        trafficLevel: 'Low',
-        lightingLevel: 'High',
-        communityRating: 4.8,
-        isSecure: true,
-      );
-
-  // ─── Settings / emergency contacts (API-ready stubs) ────────────────────────
+  // ─── Settings / emergency contacts ──────────────────────────────────────────
 
   Future<List<EmergencyContactModel>> getEmergencyContacts() async {
-    return _apiOrMock(
-      () async {
-        final response = await _dio.get(_path('/emergency-contacts'));
-        final map = _map(response);
-        final list = map['contacts'] as List<dynamic>? ?? [];
-        return list
-            .map((e) => EmergencyContactModel.fromJson(
-                  Map<String, dynamic>.from(e as Map),
-                ))
-            .toList();
-      },
-      () async => <EmergencyContactModel>[],
-    );
+    final response = await _dio.get(_path('/emergency-contacts'));
+    final map = _map(response);
+    final payload = ApiResponseParser.payload(map);
+    final list = payload['contacts'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => EmergencyContactModel.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ))
+        .toList();
   }
 
   Future<void> addEmergencyContact({
     required String name,
     required String phone,
   }) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
     try {
       final response = await _dio.post(
         _path('/emergency-contacts'),
@@ -755,10 +562,6 @@ class ApiService {
   }
 
   Future<void> removeEmergencyContact(String id) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
     try {
       final response = await _dio.delete(_path('/emergency-contacts/$id'));
       _map(response);
@@ -772,10 +575,6 @@ class ApiService {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
     try {
       final response = await _dio.post(
         _path('/auth/change-password'),
@@ -793,109 +592,46 @@ class ApiService {
 
   // ─── Community ──────────────────────────────────────────────────────────────
 
-  List<CommunityRouteModel> _mockCommunityRoutes() => const [
-        CommunityRouteModel(
-          id: 'c1',
-          name: 'Sunset Loop',
-          location: 'Central Park, NY',
-          distanceKm: 5.02,
-          durationMinutes: 42,
-          rating: 4.8,
-          likeCount: 128,
-          commentCount: 24,
-          difficultyTag: 'Beginner',
-          tags: ['Hill', 'Forest', 'Nature'],
-          elevationGainM: 154,
-          description:
-              'A scenic loop through tree-lined paths with excellent lighting and steady foot traffic.',
-        ),
-        CommunityRouteModel(
-          id: 'c2',
-          name: 'Lakeside Perimeter',
-          location: 'Hudson River',
-          distanceKm: 3.2,
-          durationMinutes: 24,
-          rating: 4.6,
-          likeCount: 86,
-          commentCount: 11,
-          difficultyTag: 'Easy',
-          tags: ['Waterfront', 'Flat'],
-          elevationGainM: 42,
-        ),
-        CommunityRouteModel(
-          id: 'c3',
-          name: 'North Loop Patrol',
-          location: 'Brooklyn Bridge',
-          distanceKm: 2.3,
-          durationMinutes: 18,
-          rating: 4.9,
-          likeCount: 210,
-          commentCount: 45,
-          difficultyTag: 'Moderate',
-          tags: ['Urban', 'Well-lit'],
-          elevationGainM: 88,
-        ),
-      ];
-
   Future<List<CommunityRouteModel>> getPopularRoutes() async {
-    return _apiOrMock(
-      () async {
-        final response = await _dio.get(_path('/community/routes/popular'));
-        final map = _map(response);
-        final list = map['routes'] as List<dynamic>? ?? [];
-        return list
-            .map((e) =>
-                CommunityRouteModel.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      },
-      () async => AppMockData.communityRoutes,
-    );
+    final response = await _dio.get(_path('/community/routes/popular'));
+    final map = _map(response);
+    final payload = ApiResponseParser.payload(map);
+    final list = payload['routes'] as List<dynamic>? ?? [];
+    return list
+        .map((e) =>
+            CommunityRouteModel.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   Future<List<CommunityRouteModel>> getTopRatedRoutes() async {
-    return _apiOrMock(
-      () async {
-        final response = await _dio.get(_path('/community/routes/top-rated'));
-        final map = _map(response);
-        final list = map['routes'] as List<dynamic>? ?? [];
-        return list
-            .map((e) =>
-                CommunityRouteModel.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      },
-      () async => AppMockData.communityRoutes.reversed.toList(),
-    );
+    final response = await _dio.get(_path('/community/routes/top-rated'));
+    final map = _map(response);
+    final payload = ApiResponseParser.payload(map);
+    final list = payload['routes'] as List<dynamic>? ?? [];
+    return list
+        .map((e) =>
+            CommunityRouteModel.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   Future<CommunityRouteModel> getCommunityRouteDetail(String routeId) async {
-    return _apiOrMock(
-      () async {
-        final response = await _dio.get(_path('/community/routes/$routeId'));
-        final map = _map(response);
-        return CommunityRouteModel.fromJson(
-          Map<String, dynamic>.from((map['route'] ?? map) as Map),
-        );
-      },
-      () async => AppMockData.communityRoutes.firstWhere(
-        (r) => r.id == routeId,
-        orElse: () => AppMockData.communityRoutes.first,
-      ),
+    final response = await _dio.get(_path('/community/routes/$routeId'));
+    final map = _map(response);
+    final payload = ApiResponseParser.payload(map);
+    return CommunityRouteModel.fromJson(
+      Map<String, dynamic>.from((payload['route'] ?? payload) as Map),
     );
   }
 
   Future<List<ReviewModel>> getRouteReviews(String routeId) async {
-    return _apiOrMock(
-      () async {
-        final response =
-            await _dio.get(_path('/community/routes/$routeId/reviews'));
-        final map = _map(response);
-        final list = map['reviews'] as List<dynamic>? ?? [];
-        return list
-            .map((e) => ReviewModel.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      },
-      () async => AppMockData.routeReviews,
-    );
+    final response =
+        await _dio.get(_path('/community/routes/$routeId/reviews'));
+    final map = _map(response);
+    final payload = ApiResponseParser.payload(map);
+    final list = payload['reviews'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => ReviewModel.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   Future<void> submitRouteReview({
@@ -903,10 +639,6 @@ class ApiService {
     required double rating,
     required String comment,
   }) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
     try {
       await _dio.post(
         _path('/community/routes/$routeId/reviews'),
@@ -920,46 +652,34 @@ class ApiService {
   // ─── Activity ───────────────────────────────────────────────────────────────
 
   Future<ActivitySummaryModel> getActivitySummary(ActivityPeriod period) async {
-    return _apiOrMock(
-      () async {
-        final response = await _dio.get(
-          _path('/activity/summary'),
-          queryParameters: {'period': period.name},
-        );
-        final map = _map(response);
-        return ActivitySummaryModel.fromJson(
-          Map<String, dynamic>.from((map['summary'] ?? map) as Map),
-        );
-      },
-      () async => AppMockData.activitySummary(period),
+    final response = await _dio.get(
+      _path('/activity/summary'),
+      queryParameters: {'period': period.name},
+    );
+    final map = _map(response);
+    final payload = ApiResponseParser.payload(map);
+    return ActivitySummaryModel.fromJson(
+      Map<String, dynamic>.from((payload['summary'] ?? payload) as Map),
     );
   }
 
   Future<List<RecentActivityModel>> getRecentActivities() async {
-    return _apiOrMock(
-      () async {
-        final response = await _dio.get(_path('/activity/recent'));
-        final map = _map(response);
-        final list = map['activities'] as List<dynamic>? ?? [];
-        return list
-            .map((e) =>
-                RecentActivityModel.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      },
-      () async => AppMockData.recentActivities,
-    );
+    final response = await _dio.get(_path('/activity/recent'));
+    final map = _map(response);
+    final payload = ApiResponseParser.payload(map);
+    final list = payload['activities'] as List<dynamic>? ?? [];
+    return list
+        .map((e) =>
+            RecentActivityModel.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   Future<LifetimeStatsModel> getLifetimeStats() async {
-    return _apiOrMock(
-      () async {
-        final response = await _dio.get(_path('/activity/lifetime'));
-        final map = _map(response);
-        return LifetimeStatsModel.fromJson(
-          Map<String, dynamic>.from((map['lifetime'] ?? map) as Map),
-        );
-      },
-      () async => AppMockData.lifetimeStats,
+    final response = await _dio.get(_path('/activity/lifetime'));
+    final map = _map(response);
+    final payload = ApiResponseParser.payload(map);
+    return LifetimeStatsModel.fromJson(
+      Map<String, dynamic>.from((payload['lifetime'] ?? payload) as Map),
     );
   }
 
@@ -970,10 +690,6 @@ class ApiService {
     required double latitude,
     required double longitude,
   }) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
     try {
       await _dio.post(
         _path('/sos/activate'),
@@ -989,10 +705,6 @@ class ApiService {
   }
 
   Future<void> submitRunSummary(Map<String, dynamic> payload) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
     try {
       await _dio.post(_path('/runs/summary'), data: _form(payload));
     } on DioException catch (e) {
@@ -1004,10 +716,6 @@ class ApiService {
     required String runId,
     required RunReviewFormModel form,
   }) async {
-    if (ApiConfig.useMockApi) {
-      await _mockDelay();
-      return;
-    }
     try {
       await _dio.post(
         _path('/runs/$runId/review'),
@@ -1017,5 +725,4 @@ class ApiService {
       throw _handleDioError(e);
     }
   }
-
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:saefra_run/core/data/app_mock_data.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
@@ -31,9 +30,9 @@ class CommunityService extends ChangeNotifier {
       _popularRoutes = await _api.getPopularRoutes();
       _topRatedRoutes = await _api.getTopRatedRoutes();
     } catch (e) {
-      _popularRoutes = AppMockData.communityRoutes;
-      _topRatedRoutes = AppMockData.communityRoutes.reversed.toList();
-      _error = null;
+      _popularRoutes = [];
+      _topRatedRoutes = [];
+      _error = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -42,17 +41,15 @@ class CommunityService extends ChangeNotifier {
 
   Future<void> loadRouteDetail(String routeId) async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
     try {
       _selectedRoute = await _api.getCommunityRouteDetail(routeId);
       _reviews = await _api.getRouteReviews(routeId);
     } catch (e) {
-      _selectedRoute = AppMockData.communityRoutes.firstWhere(
-        (r) => r.id == routeId,
-        orElse: () => AppMockData.communityRoutes.first,
-      );
-      _reviews = AppMockData.routeReviews;
-      _error = null;
+      _selectedRoute = null;
+      _reviews = [];
+      _error = e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -79,5 +76,26 @@ class CommunityService extends ChangeNotifier {
       return r;
     }).toList();
     notifyListeners();
+  }
+
+  Future<bool> submitReview({
+    required String routeId,
+    required double rating,
+    required String comment,
+  }) async {
+    try {
+      await _api.submitRouteReview(
+        routeId: routeId,
+        rating: rating,
+        comment: comment,
+      );
+      _reviews = await _api.getRouteReviews(routeId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
 }

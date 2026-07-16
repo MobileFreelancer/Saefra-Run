@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/community_service.dart';
+import 'package:saefra_run/core/services/live_runing_services.dart';
+import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
@@ -24,13 +26,40 @@ class _CommunityRouteDetailScreenState extends State<CommunityRouteDetailScreen>
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CommunityService>().loadRouteDetail(widget.routeId);
+      context.read<RouteDetailService>().load(widget.routeId);
     });
+  }
+
+  void _startRoute() {
+    final routeModel = context.read<RouteDetailService>().route;
+    final start = routeModel?.startPoint;
+    final end = routeModel?.endPoint;
+
+    if (start != null && end != null) {
+      final points = routeModel!.polylinePoints;
+      context.read<RunningProvider>().selectDestination(
+            startPoint: start,
+            endPoint: end,
+            routePolyline: points.length > 1 ? points : null,
+          );
+    }
+
+    final community = context.read<CommunityService>().selectedRoute;
+    context.pushNamed(
+      'liveRunning',
+      queryParameters: {
+        'routeId': widget.routeId,
+        'routeName': community?.name ?? routeModel?.name ?? 'Route',
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final community = context.watch<CommunityService>();
+    final routeDetail = context.watch<RouteDetailService>();
     final route = community.selectedRoute;
+    final polylinePoints = routeDetail.route?.polylinePoints ?? const [];
 
     if (community.isLoading && route == null) {
       return const Scaffold(
@@ -94,23 +123,11 @@ class _CommunityRouteDetailScreenState extends State<CommunityRouteDetailScreen>
                     child: SizedBox(
                       height: 200.h,
                       width: double.infinity,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          const AppRouteMap(height: 200, borderRadius: 16),
-                          Positioned(
-                            top: 12.h,
-                            right: 12.w,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface.withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(8.r),
-                              ),
-                              child: const Text('3D View'),
-                            ),
-                          ),
-                        ],
+                      child: AppRouteMap(
+                        height: 200,
+                        borderRadius: 16,
+                        polylinePoints:
+                            polylinePoints.length > 1 ? polylinePoints : null,
                       ),
                     ),
                   ),
@@ -167,10 +184,7 @@ class _CommunityRouteDetailScreenState extends State<CommunityRouteDetailScreen>
               padding: EdgeInsets.all(16.w),
               child: PrimaryButton(
                 label: 'Start This Route',
-                onPressed: () => context.pushNamed(
-                  'liveRunning',
-                  queryParameters: {'routeId': route.id, 'routeName': route.name},
-                ),
+                onPressed: _startRoute,
               ),
             ),
           ],

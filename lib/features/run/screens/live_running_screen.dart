@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/dashboard_services.dart';
 import 'package:saefra_run/core/services/run_service.dart';
+import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
@@ -28,12 +29,32 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<RunService>().startRun(
             routeId: widget.routeId,
             routeName: widget.routeName,
           );
-      context.read<RunningProvider>().initTracking();
+
+      final tracking = context.read<RunningProvider>();
+      if (widget.routeId != null && tracking.destinationPosition == null) {
+        final detail = context.read<RouteDetailService>();
+        await detail.load(widget.routeId!);
+        final route = detail.route;
+        final start = route?.startPoint;
+        final end = route?.endPoint;
+        if (start != null && end != null) {
+          final points = route!.polylinePoints;
+          tracking.selectDestination(
+            startPoint: start,
+            endPoint: end,
+            routePolyline: points.length > 1 ? points : null,
+          );
+        }
+      }
+
+      if (mounted) {
+        tracking.initTracking();
+      }
     });
   }
 

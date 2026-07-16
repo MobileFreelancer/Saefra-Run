@@ -48,24 +48,14 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
 
   @override
   void initState() {
-    final dashboard = context.read<DashboardServices>();
-    final service = context.read<GenerateRouteService>();
-
-    service.markers.add(
-        Marker(markerId: const MarkerId('origin'),
-            position: LatLng(dashboard.latitude!, dashboard.longitude!),
-            icon: BitmapDescriptor.defaultMarker
-        )
-    );
-
-    service.markers.add(
-        Marker(markerId: const MarkerId('destination'),
-            position: LatLng(dashboard.destinationPositionLatitude!, dashboard.destinationPositionLongitude!),
-            icon: BitmapDescriptor.defaultMarkerWithHue(90)
-        )
-    );
-    service.getPolyline(originPosition: LatLng(dashboard.latitude!, dashboard.longitude!), destinationPosition: LatLng(dashboard.destinationPositionLatitude!, dashboard.destinationPositionLongitude!));
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final dashboard = context.read<DashboardServices>();
+      context.read<GenerateRouteService>().bindLocation(
+            latitude: dashboard.latitude,
+            longitude: dashboard.longitude,
+          );
+    });
   }
 
 
@@ -103,36 +93,29 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20.r),
                     child: SizedBox(
-                      width: 300.w,
+                      width: double.infinity,
                       height: 180.h,
-                      child: GoogleMap(
-                        initialCameraPosition: const CameraPosition(
-                          target: LatLng(21.205194905801783, 72.77568113625402),
-                          zoom: 15,
-                        ),
-                        myLocationEnabled: true,
-                        tiltGesturesEnabled: true,
-                        compassEnabled: true,
-                        scrollGesturesEnabled: true,
-                        zoomGesturesEnabled: true,
-                        onMapCreated: (GoogleMapController controller) {
-                          service.googleMapController.complete(controller);
-                        },
-                        markers: service.markers,
-                        polylines: service.polyline,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          AppRouteMap(
+                            height: 180.h,
+                            borderRadius: 20,
+                            polylinePoints:
+                                service.previewPolylinePoints.length > 1
+                                    ? service.previewPolylinePoints
+                                    : null,
+                          ),
+                          if (service.isPreviewLoading)
+                            const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
-                  // _MapPreviewCard(
-                  //   polylinePoints: service.previewPolylinePoints,
-                  //   onReset: () {
-                  //     setState(() => _isKm = true);
-                  //     service.setDistance(5);
-                  //     service.setDifficulty(RouteDifficulty.moderate);
-                  //     service.setShape(RouteShape.loop);
-                  //     service.setLighting(RouteLighting.wellLit);
-                  //   },
-                  // ),
                   Text('Route Setup', style: textTheme.titleMedium),
                   SizedBox(height: 12.h),
 

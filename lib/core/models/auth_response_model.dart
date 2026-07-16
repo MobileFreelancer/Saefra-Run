@@ -13,7 +13,7 @@ class AuthResponseModel {
   });
 
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
-    final data = ApiResponseParser.asMap(json);
+    final data = ApiResponseParser.payload(json);
     final userJson = ApiResponseParser.asMap(data['user']);
 
     return AuthResponseModel(

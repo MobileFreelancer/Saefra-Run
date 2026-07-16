@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:saefra_run/core/data/app_mock_data.dart';
 import 'package:saefra_run/core/models/place_prediction_model.dart';
 import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
@@ -47,17 +46,23 @@ class RouteSearchService extends ChangeNotifier {
     if (!force && _status == RouteSearchStatus.loadingRecent) return;
 
     _status = RouteSearchStatus.loadingRecent;
+    _error = null;
     notifyListeners();
 
-    final lat = latitude ?? AppMockData.defaultMapTarget.latitude;
-    final lng = longitude ?? AppMockData.defaultMapTarget.longitude;
+    if (latitude == null || longitude == null) {
+      _recentRoutes = [];
+      _error = 'Location is required to load recent routes.';
+      _status = RouteSearchStatus.idle;
+      notifyListeners();
+      return;
+    }
 
     try {
       final result = await _api.generateSafeRoute(
-        originLat: lat,
-        originLng: lng,
-        destLat: lat,
-        destLng: lng,
+        originLat: latitude,
+        originLng: longitude,
+        destLat: latitude,
+        destLng: longitude,
       );
 
       final routeData = result['route'] as Map<String, dynamic>?;
@@ -69,14 +74,9 @@ class RouteSearchService extends ChangeNotifier {
             ),
           )
           .toList();
-    } catch (_) {
-      _recentRoutes = AppMockData.recentRoutesJson
-          .map(
-            (item) => RouteModel.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .toList();
+    } catch (e) {
+      _recentRoutes = [];
+      _error = e.toString();
     }
 
     if (_query.trim().isEmpty) {
@@ -94,8 +94,6 @@ class RouteSearchService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Search only from filtered recent routes + Google Places API.
-  /// There is no backend `/routes/search` endpoint.
   Future<void> search(
     String? queryOverride, {
     double? latitude,
@@ -148,7 +146,6 @@ class RouteSearchService extends ChangeNotifier {
   }
 
   Future<LatLng?> resolvePlace(PlacePrediction prediction) {
-
     return _places.resolvePlace(prediction);
   }
 

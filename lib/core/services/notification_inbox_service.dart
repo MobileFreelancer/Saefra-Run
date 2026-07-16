@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:saefra_run/core/data/app_mock_data.dart';
 import 'package:saefra_run/core/models/notification_model.dart';
 
 class NotificationInboxService extends ChangeNotifier {
-  List<AppNotificationModel> _items = AppMockData.notifications;
+  List<AppNotificationModel> _items = [];
 
   List<AppNotificationModel> get items => _items;
   bool get isEmpty => _items.isEmpty;

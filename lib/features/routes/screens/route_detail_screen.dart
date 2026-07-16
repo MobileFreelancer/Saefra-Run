@@ -118,9 +118,13 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                                   );
                                   return;
                                 }
+                                final routePoints = route.polylinePoints;
                                 context.read<RunningProvider>().selectDestination(
                                   startPoint: start,
                                   endPoint: end,
+                                  routePolyline: routePoints.length > 1
+                                      ? routePoints
+                                      : null,
                                 );
                                 context.pushNamed(
                                   'safetyCheckIn',
@@ -196,7 +200,7 @@ class _RouteMapCard extends StatelessWidget {
           AppRouteMap(
             height: 220.h,
             borderRadius: 20,
-            polylinePoints: route.polylinePoints.isNotEmpty
+            polylinePoints: route.polylinePoints.length > 1
                 ? route.polylinePoints
                 : null,
           ),

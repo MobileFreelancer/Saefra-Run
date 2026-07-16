@@ -265,16 +265,3 @@ class RouteService {
     return parts.join(' ');
   }
 }
-
-void fetchAndShowRouteData() async {
-  RouteService service = RouteService();
-  LoopRouteResult? result = await service.createLoopRoute(
-    currentLocation: const LatLng(21.205195, 72.775681),
-    distanceKm: 7.0,
-    travelMode: "WALK",
-  );
-  if (result != null) {
-    String jsonOutput = const JsonEncoder.withIndent('  ').convert(result.toJson());
-    print(jsonOutput);
-  }
-}

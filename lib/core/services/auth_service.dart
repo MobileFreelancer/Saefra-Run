@@ -26,7 +26,8 @@ class AuthService extends ChangeNotifier {
   String? _pendingSignupPassword;
 
   UserModel? get currentUser => _currentUser;
-  bool get isLoggedIn => _currentUser != null;
+  bool get isLoggedIn =>
+      _currentUser != null && _currentUser!.id.trim().isNotEmpty;
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get pendingResetIdentifier => _pendingResetEmail;
@@ -107,6 +108,13 @@ class AuthService extends ChangeNotifier {
         email: identifier.trim(),
         password: password,
       );
+
+      if (response.accessToken.trim().isEmpty ||
+          response.user.id.trim().isEmpty) {
+        _setError('Invalid credentials.');
+        return false;
+      }
+
       await _persistSession(response);
       await _storage.write(
         key: ApiConfig.storageKeyUserEmail,

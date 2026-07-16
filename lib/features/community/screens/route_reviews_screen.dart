@@ -19,6 +19,7 @@ class RouteReviewsScreen extends StatefulWidget {
 class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
   final _comment = TextEditingController();
   double _rating = 5;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -133,13 +134,35 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
             Padding(
               padding: EdgeInsets.all(16.w),
               child: PrimaryButton(
-                label: 'Submit Review',
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Review saved (mock)')),
-                  );
-                  context.pop();
-                },
+                label: _isSubmitting ? 'Submitting...' : 'Submit Review',
+                onPressed: _isSubmitting
+                    ? null
+                    : () async {
+                        setState(() => _isSubmitting = true);
+                        final ok = await context
+                            .read<CommunityService>()
+                            .submitReview(
+                              routeId: widget.routeId,
+                              rating: _rating,
+                              comment: _comment.text.trim(),
+                            );
+                        if (!mounted) return;
+                        setState(() => _isSubmitting = false);
+                        if (!ok) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                community.error ?? 'Failed to submit review.',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Review submitted.')),
+                        );
+                        context.pop();
+                      },
               ),
             ),
           ],

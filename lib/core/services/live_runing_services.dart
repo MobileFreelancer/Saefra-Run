@@ -97,7 +97,11 @@ class RunningProvider extends ChangeNotifier {
     }
   }
 
-  void selectDestination({required LatLng startPoint, required LatLng endPoint}) {
+  void selectDestination({
+    required LatLng startPoint,
+    required LatLng endPoint,
+    List<LatLng>? routePolyline,
+  }) {
     try {
       if (_isTracking) return;
 
@@ -115,7 +119,17 @@ class RunningProvider extends ChangeNotifier {
       _updateMarker(endPoint, "destination_location", BitmapDescriptor.hueRed);
 
       _adjustCameraToFitRoute();
-      _getStandardRoute();
+
+      if (routePolyline != null && routePolyline.length > 1) {
+        _runningPathCoordinates
+          ..clear()
+          ..addAll(routePolyline);
+        _drawRunningPolyline(const Color(0xFFE91E63));
+        _calculateRemainingDistance();
+        notifyListeners();
+      } else {
+        _getStandardRoute();
+      }
     } catch (e) {
       debugPrint("❌ Error selecting destination: $e");
     }

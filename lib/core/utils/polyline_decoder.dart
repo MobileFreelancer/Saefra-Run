@@ -39,4 +39,40 @@ class PolylineDecoder {
 
     return points;
   }
+
+  static List<LatLng> fromRouteJson(Map<String, dynamic> json) {
+    for (final key in [
+      'route_encoded_polyline',
+      'encoded_polyline',
+      'route_coordinates',
+    ]) {
+      final value = json[key];
+      if (value is String && value.isNotEmpty) {
+        final points = decode(value);
+        if (points.length > 1) return points;
+      }
+    }
+
+    final start = _pointFromJson(json, 'start');
+    final end = _pointFromJson(json, 'end');
+    if (start != null && end != null) {
+      return [start, end];
+    }
+
+    return [];
+  }
+
+  static LatLng? _pointFromJson(Map<String, dynamic> json, String prefix) {
+    final lat = _toDouble(json['${prefix}_latitude']);
+    final lng = _toDouble(json['${prefix}_longitude']);
+    if (lat == null || lng == null) return null;
+    return LatLng(lat, lng);
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
 }
