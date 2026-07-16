@@ -56,7 +56,8 @@ class ApiFieldMapper {
     if (date == null) return '';
     final dd = date.day.toString().padLeft(2, '0');
     final mm = date.month.toString().padLeft(2, '0');
-    return '$mm-$dd-${date.year}';
+    return "${date.year}-$mm-$dd";
+   // return '$mm-$dd-${date.year}';
   }
 
   static Map<String, dynamic> registerFormFromOnboarding({

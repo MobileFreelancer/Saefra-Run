@@ -13,6 +13,6 @@ import GoogleMaps
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    GMSServices.provideAPIKey("AIzaSyD1YxnMp4EZggUkhb_pRbT2NV946lOmhZU")
+    GMSServices.provideAPIKey("AIzaSyB9RL4Fqf5X6eE6mjGfznc8xcNXKjTdA4M")
   }
 }

@@ -42,38 +42,38 @@ class ApiConfig {
   /// ngrok free tier requires this header to avoid HTML warning pages.
   static const String ngrokSkipBrowserWarning = 'Ngrok-Skip-Browser-Warning';
 
-  static bool get isDevelopment =>
-      currentEnvironment == Environment.development;
+  static bool get isDevelopment => currentEnvironment == Environment.development;
   static bool get isProduction => currentEnvironment == Environment.production;
 
   /// Search place key — Places API + Places API (New).
   static String get googlePlacesApiKey => _envKey(
         'GOOGLE_PLACES_API_KEY',
-        fallback: 'AIzaSyDRiidRKyuh4Z56SHZMNAa6wIx4fo46drQ',
+        fallback: 'AIzaSyAwoHdma8dZmKOK3kr3EoaEo3DQE1Mob7g',
       );
 
   /// Routes API key — route generation (computeRoutes).
   static String get googleRoutesApiKey => _envKey(
         'GOOGLE_ROUTES_API_KEY',
-        fallback: 'AIzaSyCbIzUN3ij3FCD-zBBshUZdEgBXDCcYsj8',
+        fallback: 'AIzaSyCRXmM_Ug8WIFuDCFXDAYelmdTGtlgX_8k',
       );
 
   /// Directions API key — polylines / turn-by-turn paths.
   static String get googleDirectionsApiKey => _envKey(
         'GOOGLE_DIRECTIONS_API_KEY',
-        fallback: 'AIzaSyCjGfmMNHQ0Nqu1htZOmBA7lG8n2GU3Gfw',
+        fallback: 'AIzaSyAgFJHr846mDvzFhjro6u1_Nx_lU5DvPdg',
       );
 
   /// Android key (Firebase) — Maps SDK on Android.
   static String get googleMapsAndroidApiKey => _envKey(
         'GOOGLE_MAPS_ANDROID_API_KEY',
-        fallback: 'AIzaSyCOdeF2vgHQKTS7IKDD3056q-lUC91BoGQ',
+        fallback: 'AIzaSyDeFsri4CcOWEozdu9HcPhebQuVqjHDSSQ',
+
       );
 
   /// iOS key (Firebase) — Maps SDK on iOS.
   static String get googleMapsIosApiKey => _envKey(
         'GOOGLE_MAPS_IOS_API_KEY',
-        fallback: 'AIzaSyD1YxnMp4EZggUkhb_pRbT2NV946lOmhZU',
+        fallback: 'AIzaSyB9RL4Fqf5X6eE6mjGfznc8xcNXKjTdA4M',
       );
 
   /// Generic maps key fallback (Dart-side map helpers).

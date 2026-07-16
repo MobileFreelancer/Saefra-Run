@@ -119,9 +119,9 @@ class ApiService {
   }
 
   String _path(String segment) {
-    if (segment.startsWith('/api/')) return segment;
-    if (segment.startsWith('/')) return '/api$segment';
-    return '/api/$segment';
+    if (segment.startsWith('/api/v1/')) return segment;
+    if (segment.startsWith('/')) return '/api/v1/$segment';
+    return '/api/v1/$segment';
   }
 
   FormData _form(Map<String, dynamic> fields) {

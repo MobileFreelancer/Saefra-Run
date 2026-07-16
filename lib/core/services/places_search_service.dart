@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -7,97 +8,132 @@ import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/place_prediction_model.dart';
 
 class PlacesSearchService {
-  static const _autocompleteUrl =
+  static const String _autocompleteUrl =
       'https://maps.googleapis.com/maps/api/place/autocomplete/json';
-  static const _detailsUrl =
+
+  static const String _detailsUrl =
       'https://maps.googleapis.com/maps/api/place/details/json';
 
   String get _apiKey => ApiConfig.googlePlacesApiKey;
 
-  bool get _hasApiKey =>
-      _apiKey.isNotEmpty && _apiKey != 'YOUR_GOOGLE_MAPS_API_KEY_HERE';
-
   Future<List<PlacePrediction>> search(
-    String query, {
-    double? latitude,
-    double? longitude,
-  }) async {
+      String query, {
+        double? latitude,
+        double? longitude,
+      }) async {
     final trimmed = query.trim();
-    if (trimmed.length < 2) return [];
 
-    if (!_hasApiKey) {
-      debugPrint('PlacesSearchService: no API key configured');
+    if (trimmed.length < 2) {
       return [];
     }
 
-    final locationBias = latitude != null && longitude != null
-        ? '&location=$latitude,$longitude&radius=50000'
-        : '';
+    final Map<String, String> queryParameters = {
+      'input': trimmed,
+      'key': _apiKey,
+    };
 
-    final url =
-        '$_autocompleteUrl?input=${Uri.encodeComponent(trimmed)}$locationBias&key=$_apiKey';
+    if (latitude != null && longitude != null) {
+      queryParameters['location'] = '$latitude,$longitude';
+      queryParameters['radius'] = '50000';
+    }
+
+    final uri = Uri.parse(
+      _autocompleteUrl,
+    ).replace(queryParameters: queryParameters);
+
+    log("Request URL: $uri");
 
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(uri);
+
+      debugPrint("HTTP Status Code: ${response.statusCode}");
+      debugPrint("Response Body:");
+      debugPrint(response.body);
+
       if (response.statusCode != 200) {
-        debugPrint('Places autocomplete HTTP ${response.statusCode}');
         return [];
       }
 
-      final data = json.decode(response.body) as Map<String, dynamic>;
-      final status = data['status'] as String? ?? 'UNKNOWN';
+      final Map<String, dynamic> data = jsonDecode(response.body);
 
-      if (status != 'OK' && status != 'ZERO_RESULTS') {
-        debugPrint(
-          'Places autocomplete status: $status — ${data['error_message'] ?? ''}',
-        );
+      final String status = data["status"] ?? "";
+
+      if (status == "REQUEST_DENIED") {
+        debugPrint("=====================================");
+        debugPrint("GOOGLE REQUEST DENIED");
+        debugPrint(data["error_message"]);
+        debugPrint("=====================================");
         return [];
       }
 
-      final predictions = data['predictions'] as List<dynamic>? ?? [];
+      if (status == "ZERO_RESULTS") {
+        return [];
+      }
+
+      if (status != "OK") {
+        debugPrint("Places Status: $status");
+        return [];
+      }
+
+      final List predictions = data["predictions"] ?? [];
+
       return predictions
           .map(
-            (item) => PlacePrediction.fromGoogleJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .where((place) => place.placeId.isNotEmpty)
+            (e) => PlacePrediction.fromGoogleJson(
+          Map<String, dynamic>.from(e),
+        ),
+      )
           .toList();
-    } catch (e) {
-      debugPrint('PlacesSearchService.search failed: $e');
+    } catch (e, s) {
+      debugPrint("Search Exception: $e");
+      debugPrint(s.toString());
       return [];
     }
   }
 
   Future<LatLng?> resolvePlace(PlacePrediction prediction) async {
-    if (prediction.lat != null && prediction.lng != null) {
-      return LatLng(prediction.lat!, prediction.lng!);
+    if (prediction.placeId.isEmpty) {
+      return null;
     }
 
-    if (!_hasApiKey || prediction.placeId.isEmpty) return null;
+    final uri = Uri.parse(
+      _detailsUrl,
+    ).replace(queryParameters: {
+      "place_id": prediction.placeId,
+      "fields": "geometry",
+      "key": _apiKey,
+    });
 
-    final url =
-        '$_detailsUrl?place_id=${Uri.encodeComponent(prediction.placeId)}&fields=geometry&key=$_apiKey';
+    log("Details URL: $uri");
 
     try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) return null;
+      final response = await http.get(uri);
 
-      final data = json.decode(response.body) as Map<String, dynamic>;
-      if (data['status'] != 'OK') return null;
+      debugPrint("Details Status Code: ${response.statusCode}");
+      debugPrint("Details Response:");
+      debugPrint(response.body);
 
-      final location =
-          (data['result'] as Map<String, dynamic>?)?['geometry']
-              as Map<String, dynamic>?;
-      final latLng = location?['location'] as Map<String, dynamic>?;
-      if (latLng == null) return null;
+      if (response.statusCode != 200) {
+        return null;
+      }
+
+      final Map<String, dynamic> data = jsonDecode(response.body);
+
+      if (data["status"] != "OK") {
+        debugPrint("Details Status: ${data["status"]}");
+        debugPrint("Error: ${data["error_message"]}");
+        return null;
+      }
+
+      final location = data["result"]["geometry"]["location"];
 
       return LatLng(
-        (latLng['lat'] as num).toDouble(),
-        (latLng['lng'] as num).toDouble(),
+        (location["lat"] as num).toDouble(),
+        (location["lng"] as num).toDouble(),
       );
-    } catch (e) {
-      debugPrint('PlacesSearchService.resolvePlace failed: $e');
+    } catch (e, s) {
+      debugPrint("Resolve Exception: $e");
+      debugPrint(s.toString());
       return null;
     }
   }

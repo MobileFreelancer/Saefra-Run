@@ -22,7 +22,7 @@ class DashboardScreen extends StatefulWidget {
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(21.205194905801783, 72.77568113625402),
-    zoom: 15,
+    zoom: 16,
   );
 
   @override
@@ -38,14 +38,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final services = context.read<DashboardServices>();
       await services.getCurrentLocation();
-      if (!mounted) return;
-      await services.fetchSafeRoute(
-        originLat: 21.205194905801783,
-        originLng: 72.77568113625402,
-        destLat: 21.205194905801783,
-        destLng: 72.77568113625402,
-      );
-      services.getCurrentLocation();
       //fetchAndShowRouteData();
     });
   }
