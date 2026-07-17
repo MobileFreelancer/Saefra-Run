@@ -38,6 +38,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
   bool _isKm = true;
   bool _routeContextSynced = false;
   Timer? _locationDebounce;
+  DashboardServices? _dashboard;
 
   LatLng? get _destination {
     final service = context.read<GenerateRouteService>();
@@ -125,15 +126,16 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _dashboard = context.read<DashboardServices>();
       _syncRouteContext(force: true);
-      context.read<DashboardServices>().addListener(_onDashboardUpdate);
+      _dashboard?.addListener(_onDashboardUpdate);
     });
   }
 
   @override
   void dispose() {
     _locationDebounce?.cancel();
-    context.read<DashboardServices>().removeListener(_onDashboardUpdate);
+    _dashboard?.removeListener(_onDashboardUpdate);
     super.dispose();
   }
 

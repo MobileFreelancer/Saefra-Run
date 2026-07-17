@@ -7,7 +7,6 @@ import 'package:saefra_run/core/models/activity_model.dart';
 import 'package:saefra_run/core/services/activity_service.dart';
 import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
 import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
-import 'package:saefra_run/core/widgets/segment_selector.dart';
 import 'package:saefra_run/generated/assets.dart';
 
 class ActivityScreen extends StatefulWidget {
@@ -26,110 +25,89 @@ class _ActivityScreenState extends State<ActivityScreen> {
     });
   }
 
+  TextStyle _body(BuildContext context, {Color? color, FontWeight? weight}) {
+    return Theme.of(context).textTheme.bodyMedium!.copyWith(
+          color: color ?? AppColors.white,
+          fontWeight: weight,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final activity = context.watch<ActivityService>();
-    final summary = activity.summary;
     final lifetime = activity.lifetime;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
-        child: activity.isLoading && summary == null
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+        child: activity.isLoading && activity.recentRuns.isEmpty
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              )
             : ListView(
-                padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
+                padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
                 children: [
-                  Text('Activity', style: Theme.of(context).textTheme.titleLarge),
-                  SizedBox(height: 16.h),
-                  SegmentSelector<ActivityPeriod>(
-                    options: ActivityPeriod.values,
-                    selected: activity.period,
-                    onChanged: activity.setPeriod,
-                    labelBuilder: (p) => switch (p) {
-                      ActivityPeriod.weekly => 'Weekly',
-                      ActivityPeriod.monthly => 'Monthly',
-                      ActivityPeriod.yearly => 'Yearly',
-                    },
+                  Center(
+                    child: Text(
+                      'Activity',
+                      style: _body(context, weight: FontWeight.w700),
+                    ),
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 20.h),
+                  _SectionHeader(
+                    title: 'Recent Runs',
+                    onViewAll: () {},
+                    bodyStyle: _body(context),
+                  ),
+                  SizedBox(height: 12.h),
+                  ...activity.recentRuns.map(
+                    (run) => Padding(
+                      padding: EdgeInsets.only(bottom: 12.h),
+                      child: _RecentRunCard(
+                        run: run,
+                        bodyStyle: _body(context),
+                        onTap: () => context.pushNamed('runSummary'),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    'Lifetime Performance',
+                    style: _body(context, weight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 12.h),
+                  _TotalDistanceCard(
+                    distanceKm: lifetime?.totalDistanceKm ?? 0,
+                    bodyStyle: _body(context),
+                  ),
+                  SizedBox(height: 12.h),
                   Row(
                     children: [
-                      _StatCard(
-                        label: 'Distance',
-                        value: '${summary?.totalDistanceKm.toStringAsFixed(1) ?? 0} km',
+                      Expanded(
+                        child: _LifetimeMetricCard(
+                          icon: Icons.access_time_filled,
+                          label: 'Total Time',
+                          value: lifetime?.formattedTotalTime ?? '--',
+                          bodyStyle: _body(context),
+                        ),
                       ),
-                      SizedBox(width: 8.w),
-                      _StatCard(
-                        label: 'Time',
-                        value: '${summary?.totalMinutes ?? 0} min',
-                      ),
-                      SizedBox(width: 8.w),
-                      _StatCard(
-                        label: 'Calories',
-                        value: '${summary?.totalCalories ?? 0}',
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: _LifetimeMetricCard(
+                          icon: Icons.directions_run,
+                          label: 'Steps',
+                          value: _formatSteps(lifetime?.totalSteps ?? 0),
+                          bodyStyle: _body(context),
+                        ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 24.h),
-                  Text('Recent Runs', style: Theme.of(context).textTheme.titleMedium),
-                  SizedBox(height: 10.h),
-                  ...activity.recentRuns.map(
-                    (run) => Padding(
-                      padding: EdgeInsets.only(bottom: 10.h),
-                      child: _RecentRunTile(run: run),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  Text('Lifetime Performance', style: Theme.of(context).textTheme.titleMedium),
-                  SizedBox(height: 10.h),
-                  Container(
-                    padding: EdgeInsets.all(16.w),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16.r),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${lifetime?.totalDistanceKm.toStringAsFixed(1) ?? 0} km total',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          '${lifetime?.totalHours ?? 0} hrs • ${lifetime?.totalCalories ?? 0} kcal',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        SizedBox(height: 12.h),
-                        Text(
-                          'Avg pace ${lifetime?.avgPaceMinPerKm.toStringAsFixed(1) ?? 0} min/km',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        SizedBox(height: 10.h),
-                        Row(
-                          children: (lifetime?.paceTrend ?? [])
-                              .map(
-                                (v) => Expanded(
-                                  child: Padding(
-                                    padding: EdgeInsets.only(right: 4.w),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(4.r),
-                                      child: LinearProgressIndicator(
-                                        value: v,
-                                        minHeight: 40.h * v,
-                                        backgroundColor: AppColors.surfaceLight,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                    ),
+                  SizedBox(height: 12.h),
+                  _AveragePaceCard(
+                    pace: lifetime?.formattedPace ?? '--',
+                    trend: lifetime?.paceTrend ?? const [],
+                    bodyStyle: _body(context),
                   ),
                 ],
               ),
@@ -137,28 +115,178 @@ class _ActivityScreenState extends State<ActivityScreen> {
       bottomNavigationBar: const AppBottomNav(activeIndex: 2),
     );
   }
+
+  String _formatSteps(int steps) {
+    final text = steps.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      if (i > 0 && (text.length - i) % 3 == 0) buffer.write(',');
+      buffer.write(text[i]);
+    }
+    return buffer.toString();
+  }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.label, required this.value});
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.onViewAll,
+    required this.bodyStyle,
+  });
 
-  final String label;
-  final String value;
+  final String title;
+  final VoidCallback onViewAll;
+  final TextStyle bodyStyle;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: bodyStyle.copyWith(fontWeight: FontWeight.w700)),
+        GestureDetector(
+          onTap: onViewAll,
+          child: Text(
+            'View All',
+            style: bodyStyle.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecentRunCard extends StatelessWidget {
+  const _RecentRunCard({
+    required this.run,
+    required this.bodyStyle,
+    required this.onTap,
+  });
+
+  final RecentActivityModel run;
+  final TextStyle bodyStyle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 10.w),
+        padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14.r),
+          color: AppColors.surfaced1B,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
         ),
         child: Column(
           children: [
-            Text(value, style: Theme.of(context).textTheme.titleMedium),
-            SizedBox(height: 4.h),
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12.r),
+                  child: SizedBox(
+                    width: 72.w,
+                    height: 72.w,
+                    child: AssetOrFallback(
+                      assetPath: run.mapImageAsset ?? Assets.background,
+                      fallback: Container(
+                        color: AppColors.surfaced2C,
+                        child: const Icon(Icons.map, color: AppColors.primary),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              run.name,
+                              style: bodyStyle.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          _DifficultyBadge(
+                            label: run.difficulty ?? 'Easy',
+                            bodyStyle: bodyStyle,
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 6.h),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 14.sp,
+                            color: AppColors.primary,
+                          ),
+                          SizedBox(width: 4.w),
+                          Expanded(
+                            child: Text(
+                              run.location ?? 'Unknown location',
+                              style: bodyStyle.copyWith(
+                                color: AppColors.textMuted,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        run.dateLabel,
+                        style: bodyStyle.copyWith(color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              children: [
+                Expanded(
+                  child: _RunStatTile(
+                    icon: Icons.route,
+                    label: 'Distance',
+                    value: '${run.distanceKm.toStringAsFixed(2)} km',
+                    bodyStyle: bodyStyle,
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: _RunStatTile(
+                    icon: Icons.schedule,
+                    label: 'Est. Time',
+                    value: '${run.durationMinutes} min',
+                    bodyStyle: bodyStyle,
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: _RunStatTile(
+                    icon: Icons.shield_outlined,
+                    label: 'Safety',
+                    value: '${run.safetyScore ?? 0}/100',
+                    valueColor: AppColors.success,
+                    bodyStyle: bodyStyle,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -166,49 +294,238 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _RecentRunTile extends StatelessWidget {
-  const _RecentRunTile({required this.run});
+class _DifficultyBadge extends StatelessWidget {
+  const _DifficultyBadge({required this.label, required this.bodyStyle});
 
-  final RecentActivityModel run;
+  final String label;
+  final TextStyle bodyStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final isHard = label.toLowerCase() == 'hard';
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: isHard
+            ? AppColors.primary.withValues(alpha: 0.18)
+            : AppColors.success.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Text(
+        label,
+        style: bodyStyle.copyWith(
+          fontSize: 10.sp,
+          color: isHard ? AppColors.primary : AppColors.success,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _RunStatTile extends StatelessWidget {
+  const _RunStatTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.bodyStyle,
+    this.valueColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final TextStyle bodyStyle;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14.r),
+        color: AppColors.surfaced,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: AppColors.primary, size: 16.sp),
+          SizedBox(height: 4.h),
+          Text(
+            label,
+            style: bodyStyle.copyWith(
+              color: AppColors.textMuted,
+              fontSize: 10.sp,
+            ),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            value,
+            style: bodyStyle.copyWith(
+              fontWeight: FontWeight.w700,
+              color: valueColor ?? AppColors.white,
+              fontSize: 11.sp,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TotalDistanceCard extends StatelessWidget {
+  const _TotalDistanceCard({
+    required this.distanceKm,
+    required this.bodyStyle,
+  });
+
+  final double distanceKm;
+  final TextStyle bodyStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: AppColors.surfaced1B,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10.r),
-            child: SizedBox(
-              width: 48.w,
-              height: 48.w,
-              child: AssetOrFallback(
-                assetPath: run.mapImageAsset ?? Assets.background,
-                fallback: const Icon(Icons.map, color: AppColors.primary),
-              ),
+          Container(
+            width: 52.w,
+            height: 52.w,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
             ),
+            child: Icon(Icons.route, color: AppColors.primary, size: 24.sp),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 14.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(run.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 13.sp)),
-                Text(run.dateLabel, style: Theme.of(context).textTheme.bodySmall),
                 Text(
-                  '${run.distanceKm} km • ${run.durationMinutes} min • ${run.paceLabel}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  'Total Distance',
+                  style: bodyStyle.copyWith(color: AppColors.textMuted),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  '${distanceKm.toStringAsFixed(1)} km',
+                  style: bodyStyle.copyWith(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 24.sp,
+                  ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            onPressed: () => context.pushNamed('runSummary'),
-            icon: const Icon(Icons.chevron_right, color: AppColors.textMuted),
+        ],
+      ),
+    );
+  }
+}
+
+class _LifetimeMetricCard extends StatelessWidget {
+  const _LifetimeMetricCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.bodyStyle,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final TextStyle bodyStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: AppColors.surfaced1B,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.primary, size: 20.sp),
+          SizedBox(height: 10.h),
+          Text(label, style: bodyStyle.copyWith(color: AppColors.textMuted)),
+          SizedBox(height: 4.h),
+          Text(
+            value,
+            style: bodyStyle.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AveragePaceCard extends StatelessWidget {
+  const _AveragePaceCard({
+    required this.pace,
+    required this.trend,
+    required this.bodyStyle,
+  });
+
+  final String pace;
+  final List<double> trend;
+  final TextStyle bodyStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: AppColors.surfaced1B,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Average Pace',
+                  style: bodyStyle.copyWith(color: AppColors.textMuted),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  pace,
+                  style: bodyStyle.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 48.h,
+            width: 120.w,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: (trend.isEmpty ? [0.4, 0.7, 0.5, 0.8, 0.6] : trend)
+                  .map(
+                    (v) => Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(right: 4.w),
+                        child: Container(
+                          height: 48.h * v,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
           ),
         ],
       ),

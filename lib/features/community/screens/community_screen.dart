@@ -26,36 +26,54 @@ class _CommunityScreenState extends State<CommunityScreen> {
     });
   }
 
+  TextStyle _body(BuildContext context, {Color? color, FontWeight? weight}) {
+    return Theme.of(context).textTheme.bodyMedium!.copyWith(
+          color: color ?? AppColors.white,
+          fontWeight: weight,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final community = context.watch<CommunityService>();
+    final bodyStyle = _body(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
         child: community.isLoading && community.popularRoutes.isEmpty
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              )
             : ListView(
-                padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
+                padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
                 children: [
-                  Text(
-                    'Community',
-                    style: Theme.of(context).textTheme.titleLarge,
+                  Center(
+                    child: Text(
+                      'Community',
+                      style: bodyStyle.copyWith(fontWeight: FontWeight.w700),
+                    ),
                   ),
-                  SizedBox(height: 14.h),
-                  const SearchRouteBar(readOnly: true),
+                  SizedBox(height: 16.h),
+                  const SearchRouteBar(
+                    readOnly: true,
+                    hintText: 'Search routes, people or places...',
+                    filterStyle: SearchFilterStyle.outside,
+                  ),
                   SizedBox(height: 24.h),
                   _SectionHeader(
                     title: 'Popular Routes',
                     onViewAll: () => context.pushNamed('search'),
+                    bodyStyle: bodyStyle,
                   ),
-                  SizedBox(height: 10.h),
+                  SizedBox(height: 12.h),
                   ...community.popularRoutes.map(
                     (route) => Padding(
                       padding: EdgeInsets.only(bottom: 12.h),
                       child: CommunityRouteCard(
                         route: route,
+                        bodyStyle: bodyStyle,
                         onTap: () => context.pushNamed(
                           'communityRouteDetail',
                           pathParameters: {'id': route.id},
@@ -64,17 +82,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 12.h),
+                  SizedBox(height: 8.h),
                   _SectionHeader(
-                    title: 'Top Rated Routes',
+                    title: 'Recent Routes',
                     onViewAll: () => context.pushNamed('search'),
+                    bodyStyle: bodyStyle,
                   ),
-                  SizedBox(height: 10.h),
+                  SizedBox(height: 12.h),
                   ...community.topRatedRoutes.map(
                     (route) => Padding(
                       padding: EdgeInsets.only(bottom: 12.h),
                       child: CommunityRouteCard(
                         route: route,
+                        bodyStyle: bodyStyle,
                         onTap: () => context.pushNamed(
                           'communityRouteDetail',
                           pathParameters: {'id': route.id},
@@ -92,24 +112,30 @@ class _CommunityScreenState extends State<CommunityScreen> {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.onViewAll});
+  const _SectionHeader({
+    required this.title,
+    required this.onViewAll,
+    required this.bodyStyle,
+  });
 
   final String title;
   final VoidCallback onViewAll;
+  final TextStyle bodyStyle;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: Theme.of(context).textTheme.titleMedium),
-        TextButton(
-          onPressed: onViewAll,
+        Text(title, style: bodyStyle.copyWith(fontWeight: FontWeight.w700)),
+        GestureDetector(
+          onTap: onViewAll,
           child: Text(
             'View All',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  decoration: TextDecoration.underline,
-                ),
+            style: bodyStyle.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -121,85 +147,174 @@ class CommunityRouteCard extends StatelessWidget {
   const CommunityRouteCard({
     super.key,
     required this.route,
+    required this.bodyStyle,
     required this.onTap,
     this.onLike,
   });
 
   final CommunityRouteModel route;
+  final TextStyle bodyStyle;
   final VoidCallback onTap;
   final VoidCallback? onLike;
 
   @override
   Widget build(BuildContext context) {
+    final difficulty = route.difficultyTag ?? 'Easy';
+    final isHard = difficulty.toLowerCase() == 'hard';
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.surfaced1B,
           borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: AppColors.white.withValues(alpha: 0.04)),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12.r),
-              child: SizedBox(
-                width: 72.w,
-                height: 72.w,
-                child: AssetOrFallback(
-                  assetPath: route.imageAsset ?? Assets.background,
-                  fallback: Container(
-                    color: const Color(0xFF1E2A20),
-                    child: const Icon(Icons.route, color: AppColors.success),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12.r),
+                  child: SizedBox(
+                    width: 72.w,
+                    height: 72.w,
+                    child: AssetOrFallback(
+                      assetPath: route.imageAsset ?? Assets.background,
+                      fallback: Container(
+                        color: AppColors.surfaced2C,
+                        child: const Icon(Icons.route, color: AppColors.primary),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(route.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14.sp)),
-                  SizedBox(height: 4.h),
-                  Text(
-                    '${route.location} • ${route.distanceKm.toStringAsFixed(1)} km',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  SizedBox(height: 6.h),
-                  Row(
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 14),
-                      SizedBox(width: 4.w),
-                      Text(
-                        route.rating.toStringAsFixed(1),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: onLike,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.favorite_border, size: 16, color: AppColors.textMuted),
-                            SizedBox(width: 4.w),
-                            Text('${route.likeCount}', style: Theme.of(context).textTheme.bodySmall),
-                          ],
-                        ),
-                      ),
-                      SizedBox(width: 12.w),
                       Row(
                         children: [
-                          const Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.textMuted),
+                          Flexible(
+                            child: Text(
+                              route.name,
+                              style: bodyStyle.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8.w,
+                              vertical: 3.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isHard
+                                  ? AppColors.primary.withValues(alpha: 0.18)
+                                  : AppColors.success.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(20.r),
+                            ),
+                            child: Text(
+                              difficulty,
+                              style: bodyStyle.copyWith(
+                                fontSize: 10.sp,
+                                color: isHard
+                                    ? AppColors.primary
+                                    : AppColors.success,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (route.location.isNotEmpty) ...[
+                        SizedBox(height: 6.h),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 14.sp,
+                              color: AppColors.textMuted,
+                            ),
+                            SizedBox(width: 4.w),
+                            Expanded(
+                              child: Text(
+                                route.location,
+                                style: bodyStyle.copyWith(
+                                  color: AppColors.textMuted,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      SizedBox(height: 6.h),
+                      Row(
+                        children: [
+                          Text(
+                            '${route.distanceKm.toStringAsFixed(2)} km',
+                            style: bodyStyle.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Icon(Icons.star, color: Colors.amber, size: 14.sp),
                           SizedBox(width: 4.w),
-                          Text('${route.commentCount}', style: Theme.of(context).textTheme.bodySmall),
+                          Text(
+                            '${route.rating.toStringAsFixed(1)} (${route.reviewCount})',
+                            style: bodyStyle.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                          ),
                         ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: onLike,
+                  child: Row(
+                    children: [
+                      Icon(Icons.favorite, color: AppColors.primary, size: 16.sp),
+                      SizedBox(width: 4.w),
+                      Text('${route.likeCount}', style: bodyStyle),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 16.w),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      color: AppColors.textMuted,
+                      size: 16.sp,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      '${route.commentCount}',
+                      style: bodyStyle.copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.bookmark_border,
+                  color: AppColors.white,
+                  size: 18.sp,
+                ),
+              ],
             ),
           ],
         ),

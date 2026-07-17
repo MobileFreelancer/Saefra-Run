@@ -5,6 +5,7 @@ class CommunityRouteModel {
   final double distanceKm;
   final int durationMinutes;
   final double rating;
+  final int reviewCount;
   final int likeCount;
   final int commentCount;
   final String? imageAsset;
@@ -21,6 +22,7 @@ class CommunityRouteModel {
     this.distanceKm = 0,
     this.durationMinutes = 0,
     this.rating = 0,
+    this.reviewCount = 0,
     this.likeCount = 0,
     this.commentCount = 0,
     this.imageAsset,
@@ -39,6 +41,7 @@ class CommunityRouteModel {
       distanceKm: _toDouble(json['distance_km'] ?? json['distance']),
       durationMinutes: _toInt(json['duration'] ?? json['estimated_duration']),
       rating: _toDouble(json['rating'] ?? json['community_rating']),
+      reviewCount: _toInt(json['review_count'] ?? json['reviews_count']),
       likeCount: _toInt(json['like_count'] ?? json['likes']),
       commentCount: _toInt(json['comment_count'] ?? json['comments']),
       imageAsset: json['image'] as String? ?? json['route_image'] as String?,

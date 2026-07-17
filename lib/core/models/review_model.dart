@@ -5,6 +5,7 @@ class ReviewModel {
   final double rating;
   final String comment;
   final String? timeAgo;
+  final int likeCount;
 
   const ReviewModel({
     required this.id,
@@ -13,6 +14,7 @@ class ReviewModel {
     required this.rating,
     required this.comment,
     this.timeAgo,
+    this.likeCount = 0,
   });
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) {

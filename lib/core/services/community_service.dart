@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:saefra_run/core/mock/feature_mock_data.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
@@ -30,10 +31,10 @@ class CommunityService extends ChangeNotifier {
       _popularRoutes = await _api.getPopularRoutes();
       _topRatedRoutes = await _api.getTopRatedRoutes();
     } catch (e) {
-      _popularRoutes = [];
-      _topRatedRoutes = [];
       _error = e.toString();
+      _applyMockRoutes();
     } finally {
+      if (_popularRoutes.isEmpty) _applyMockRoutes();
       _isLoading = false;
       notifyListeners();
     }
@@ -47,13 +48,23 @@ class CommunityService extends ChangeNotifier {
       _selectedRoute = await _api.getCommunityRouteDetail(routeId);
       _reviews = await _api.getRouteReviews(routeId);
     } catch (e) {
-      _selectedRoute = null;
-      _reviews = [];
       _error = e.toString();
+      _applyMockReviews();
     } finally {
+      if (_selectedRoute == null) _applyMockReviews();
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void _applyMockRoutes() {
+    _popularRoutes = FeatureMockData.popularRoutes;
+    _topRatedRoutes = FeatureMockData.recentRoutes;
+  }
+
+  void _applyMockReviews() {
+    _selectedRoute = FeatureMockData.reviewRoute;
+    _reviews = FeatureMockData.reviews;
   }
 
   void toggleLike(String routeId) {
@@ -66,6 +77,7 @@ class CommunityService extends ChangeNotifier {
           distanceKm: r.distanceKm,
           durationMinutes: r.durationMinutes,
           rating: r.rating,
+          reviewCount: r.reviewCount,
           likeCount: r.likeCount + 1,
           commentCount: r.commentCount,
           imageAsset: r.imageAsset,

@@ -43,6 +43,9 @@ class RecentActivityModel {
   final int durationMinutes;
   final String paceLabel;
   final String? mapImageAsset;
+  final String? difficulty;
+  final String? location;
+  final int? safetyScore;
 
   const RecentActivityModel({
     required this.id,
@@ -52,6 +55,9 @@ class RecentActivityModel {
     this.durationMinutes = 0,
     this.paceLabel = '',
     this.mapImageAsset,
+    this.difficulty,
+    this.location,
+    this.safetyScore,
   });
 
   factory RecentActivityModel.fromJson(Map<String, dynamic> json) {
@@ -70,17 +76,35 @@ class RecentActivityModel {
 class LifetimeStatsModel {
   final double totalDistanceKm;
   final int totalHours;
+  final int totalMinutesRemainder;
   final int totalCalories;
+  final int totalSteps;
   final double avgPaceMinPerKm;
   final List<double> paceTrend;
 
   const LifetimeStatsModel({
     this.totalDistanceKm = 0,
     this.totalHours = 0,
+    this.totalMinutesRemainder = 0,
     this.totalCalories = 0,
+    this.totalSteps = 0,
     this.avgPaceMinPerKm = 0,
     this.paceTrend = const [],
   });
+
+  String get formattedTotalTime {
+    if (totalHours <= 0 && totalMinutesRemainder <= 0) return '0 min';
+    if (totalHours <= 0) return '${totalMinutesRemainder}m';
+    if (totalMinutesRemainder <= 0) return '${totalHours}h';
+    return '${totalHours}h ${totalMinutesRemainder}m';
+  }
+
+  String get formattedPace {
+    if (avgPaceMinPerKm <= 0) return '--';
+    final minutes = avgPaceMinPerKm.floor();
+    final seconds = ((avgPaceMinPerKm - minutes) * 60).round();
+    return "$minutes'${seconds.toString().padLeft(2, '0')}\" /km";
+  }
 
   factory LifetimeStatsModel.fromJson(Map<String, dynamic> json) {
     return LifetimeStatsModel(

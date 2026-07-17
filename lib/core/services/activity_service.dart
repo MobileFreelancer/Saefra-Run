@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:saefra_run/core/mock/feature_mock_data.dart';
 import 'package:saefra_run/core/models/activity_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 
@@ -31,13 +32,23 @@ class ActivityService extends ChangeNotifier {
       _lifetime = await _api.getLifetimeStats();
     } catch (e) {
       _error = e.toString();
-      _summary = null;
-      _recentRuns = [];
-      _lifetime = null;
+      _applyMockData();
     } finally {
+      if (_recentRuns.isEmpty) _applyMockData();
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void _applyMockData() {
+    _recentRuns = FeatureMockData.recentRuns;
+    _lifetime = FeatureMockData.lifetime;
+    _summary ??= const ActivitySummaryModel(
+      totalDistanceKm: 15.06,
+      totalMinutes: 120,
+      totalCalories: 780,
+      avgPaceMinPerKm: 5.57,
+    );
   }
 
   Future<void> setPeriod(ActivityPeriod period) async {
