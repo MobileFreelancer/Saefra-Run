@@ -23,7 +23,19 @@ class LogoutDialog extends StatelessWidget {
       backgroundColor: AppColors.surface,
       insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24.r),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF3B3B3B),
+              Color(0xFF3B3B3B),
+              Color(0xFF282828),
+            ],
+          ),
+        ),
         padding: EdgeInsets.fromLTRB(24.w, 28.h, 24.w, 24.h),
         child: Column(
           mainAxisSize: MainAxisSize.min,

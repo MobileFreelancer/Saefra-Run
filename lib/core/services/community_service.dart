@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:saefra_run/core/mock/feature_mock_data.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
@@ -8,6 +9,8 @@ class CommunityService extends ChangeNotifier {
   CommunityService();
 
   final ApiService _api = ApiService();
+
+  final searchController = TextEditingController();
 
   List<CommunityRouteModel> _popularRoutes = [];
   List<CommunityRouteModel> _topRatedRoutes = [];

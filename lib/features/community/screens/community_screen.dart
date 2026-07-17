@@ -52,16 +52,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   Center(
                     child: Text(
                       'Community',
-                      style: bodyStyle.copyWith(fontWeight: FontWeight.w700),
+                      style: bodyStyle.copyWith(fontWeight: FontWeight.w700,fontSize: 18.sp,),
                     ),
                   ),
-                  SizedBox(height: 16.h),
-                  const SearchRouteBar(
-                    readOnly: true,
-                    hintText: 'Search routes, people or places...',
-                    filterStyle: SearchFilterStyle.outside,
+                  SizedBox(height: 18.h),
+                  SearchRouteBar(
+                    hintText: "Search routes, people or places...",
+                    controller: community.searchController,
+                    autofocus: true,
+                    onChanged: (value){},
                   ),
-                  SizedBox(height: 24.h),
+                  SizedBox(height: 20.h),
                   _SectionHeader(
                     title: 'Popular Routes',
                     onViewAll: () => context.pushNamed('search'),
@@ -127,7 +128,7 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: bodyStyle.copyWith(fontWeight: FontWeight.w700)),
+        Text(title, style: bodyStyle.copyWith(fontWeight: FontWeight.w700,fontSize: 16.sp)),
         GestureDetector(
           onTap: onViewAll,
           child: Text(
@@ -135,6 +136,7 @@ class _SectionHeader extends StatelessWidget {
             style: bodyStyle.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.w600,
+              fontSize: 12.sp
             ),
           ),
         ),
@@ -261,7 +263,7 @@ class CommunityRouteCard extends StatelessWidget {
                           Text(
                             '${route.distanceKm.toStringAsFixed(2)} km',
                             style: bodyStyle.copyWith(
-                              color: AppColors.textMuted,
+                              color: Color(0xFFE5BDBE),
                             ),
                           ),
                           SizedBox(width: 8.w),
@@ -298,7 +300,7 @@ class CommunityRouteCard extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.chat_bubble_outline,
-                      color: AppColors.textMuted,
+                      color: Color(0xFFE5BDBE),
                       size: 16.sp,
                     ),
                     SizedBox(width: 4.w),
@@ -311,7 +313,7 @@ class CommunityRouteCard extends StatelessWidget {
                 const Spacer(),
                 Icon(
                   Icons.bookmark_border,
-                  color: AppColors.white,
+                  color: Color(0xFFE5BDBE),
                   size: 18.sp,
                 ),
               ],

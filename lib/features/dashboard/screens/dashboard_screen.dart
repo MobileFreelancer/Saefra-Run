@@ -9,9 +9,7 @@ import 'package:saefra_run/core/widgets/recommended_route_card.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/models/route_model.dart';
 import '../../../core/services/dashboard_services.dart';
-import '../../../core/services/route_service.dart';
 import '../../../core/utils/app_tost.dart';
-import '../../../core/utils/map_style_service.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/show_bottom_sheet.dart';
 import '../../../generated/assets.dart';
@@ -251,7 +249,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: CircularProgressIndicator(color: AppColors.primary),
                               ),
                             ),
-                          ] else if (services.recentRoutes.isNotEmpty) ...[
+                          ]
+                          else if (services.recentRoutes.isNotEmpty) ...[
                             ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),

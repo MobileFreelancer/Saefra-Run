@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -86,7 +87,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     children: [
                       Expanded(
                         child: _LifetimeMetricCard(
-                          icon: Icons.access_time_filled,
+                          icon: Icons.access_time,
                           label: 'Total Time',
                           value: lifetime?.formattedTotalTime ?? '--',
                           bodyStyle: _body(context),
@@ -95,7 +96,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       SizedBox(width: 12.w),
                       Expanded(
                         child: _LifetimeMetricCard(
-                          icon: Icons.directions_run,
+                          icon: Icons.directions_run_rounded,
                           label: 'Steps',
                           value: _formatSteps(lifetime?.totalSteps ?? 0),
                           bodyStyle: _body(context),
@@ -143,14 +144,15 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: bodyStyle.copyWith(fontWeight: FontWeight.w700)),
+        Text(title, style: bodyStyle.copyWith(fontWeight: FontWeight.w700,fontSize: 16.sp)),
         GestureDetector(
           onTap: onViewAll,
           child: Text(
             'View All',
             style: bodyStyle.copyWith(
               color: AppColors.primary,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
+              fontSize: 13.sp
             ),
           ),
         ),
@@ -227,11 +229,12 @@ class _RecentRunCard extends StatelessWidget {
                       SizedBox(height: 6.h),
                       Row(
                         children: [
-                          Icon(
-                            Icons.location_on,
-                            size: 14.sp,
-                            color: AppColors.primary,
-                          ),
+                          Image.asset(Assets.locations,scale: 3.1),
+                          // Icon(
+                          //   CupertinoIcons.location_solid,
+                          //   size: 14.sp,
+                          //   color: AppColors.primary,
+                          // ),
                           SizedBox(width: 4.w),
                           Expanded(
                             child: Text(
@@ -260,7 +263,7 @@ class _RecentRunCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _RunStatTile(
-                    icon: Icons.route,
+                    icon: Assets.route,
                     label: 'Distance',
                     value: '${run.distanceKm.toStringAsFixed(2)} km',
                     bodyStyle: bodyStyle,
@@ -269,7 +272,7 @@ class _RecentRunCard extends StatelessWidget {
                 SizedBox(width: 8.w),
                 Expanded(
                   child: _RunStatTile(
-                    icon: Icons.schedule,
+                    icon: Assets.time,
                     label: 'Est. Time',
                     value: '${run.durationMinutes} min',
                     bodyStyle: bodyStyle,
@@ -278,7 +281,7 @@ class _RecentRunCard extends StatelessWidget {
                 SizedBox(width: 8.w),
                 Expanded(
                   child: _RunStatTile(
-                    icon: Icons.shield_outlined,
+                    icon: Assets.verifaction,
                     label: 'Safety',
                     value: '${run.safetyScore ?? 0}/100',
                     valueColor: AppColors.success,
@@ -309,7 +312,7 @@ class _DifficultyBadge extends StatelessWidget {
         color: isHard
             ? AppColors.primary.withValues(alpha: 0.18)
             : AppColors.success.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(20.r),
+        borderRadius: BorderRadius.circular(6.r),
       ),
       child: Text(
         label,
@@ -332,7 +335,7 @@ class _RunStatTile extends StatelessWidget {
     this.valueColor,
   });
 
-  final IconData icon;
+  final String icon;
   final String label;
   final String value;
   final TextStyle bodyStyle;
@@ -348,12 +351,13 @@ class _RunStatTile extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(icon, color: AppColors.primary, size: 16.sp),
+          Image.asset(icon,scale: 3.1,),
+          //Icon(icon, color: AppColors.primary, size: 16.sp),
           SizedBox(height: 4.h),
           Text(
             label,
             style: bodyStyle.copyWith(
-              color: AppColors.textMuted,
+              color: Color(0xFFE5BDBE),
               fontSize: 10.sp,
             ),
           ),
@@ -399,7 +403,8 @@ class _TotalDistanceCard extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.route, color: AppColors.primary, size: 24.sp),
+            child:Image.asset(Assets.route,scale: 3.1,),
+            //child: Icon(Icons.route, color: AppColors.primary, size: 24.sp),
           ),
           SizedBox(width: 14.w),
           Expanded(
@@ -480,7 +485,7 @@ class _AveragePaceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: AppColors.surfaced1B,
         borderRadius: BorderRadius.circular(16.r),

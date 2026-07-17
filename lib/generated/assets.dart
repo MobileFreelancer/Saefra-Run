@@ -102,6 +102,10 @@ class Assets {
   static const String seftiIcon = '${mainImageUrl}seftiIcon.png';
   static const String saftyinfoIcon = '${mainImageUrl}saftyinfo.png';
   static const String user = '${mainImageUrl}user.png';
+  static const String route = '${mainImageUrl}route.png';
+  static const String time = '${mainImageUrl}time.png';
+  static const String verifaction = '${mainImageUrl}verifaction.png';
+  static const String locations = '${mainImageUrl}locations.png';
 
 
   static const String saefraRun = '.env';

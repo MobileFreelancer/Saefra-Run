@@ -172,8 +172,8 @@ class _SafetySettingsScreenState extends State<SafetySettingsScreen> {
         child: Column(
           children: [
             const AppPageHeader(title: 'Safety Settings'),
-            if (settings.isLoading && settings.contacts.isEmpty)
-              const LinearProgressIndicator(color: AppColors.primary),
+            // if (settings.isLoading && settings.contacts.isEmpty)
+            //   const LinearProgressIndicator(color: AppColors.primary),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),

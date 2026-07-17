@@ -375,7 +375,6 @@ class ApiService {
     }
   }
 
-  // ─── Profile ────────────────────────────────────────────────────────────────
 
   Future<UserModel> getCurrentUser() async {
     try {
@@ -415,7 +414,7 @@ class ApiService {
     );
   }
 
-  // ─── Preferences ────────────────────────────────────────────────────────────
+
 
   Future<UserPreferencesModel> getPreferences() async {
     try {
