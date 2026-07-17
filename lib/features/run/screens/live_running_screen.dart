@@ -211,7 +211,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                         children: [
                           const Text(
                             'Track Details',
-                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.white),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -236,7 +236,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                             onTap: () {
                               _showSosDialog();
                             },
-                            child: const Text('SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                            child: const Text('SOS', style: TextStyle(color: AppColors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                           ),
                         ),
                       )
@@ -248,7 +248,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                   Text('Running time', style: TextStyle(fontSize: 14, color: Colors.grey[400])),
                   Text(
                     trackingProvider.formattedDuration,
-                    style: const TextStyle(fontSize: 42, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: const TextStyle(fontSize: 42, fontWeight: FontWeight.bold, color: AppColors.white),
                   ),
                   const SizedBox(height: 20),
 
@@ -283,7 +283,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                                 ? null
                                 : () => context.read<RunningProvider>().startRunSession(),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE52344),
+                              backgroundColor:  AppColors.primary,
                               disabledBackgroundColor: Colors.grey[800],
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -297,7 +297,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                           child: OutlinedButton(
                             onPressed: _onPausePressed,
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFFE52344), width: 1.5),
+                              side:  BorderSide(color: AppColors.primary, width: 1.5),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                             ),
@@ -324,9 +324,9 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.flag, color: Colors.white),
+                                Icon(Icons.flag, color: AppColors.white),
                                 const SizedBox(width: 8),
-                                Text("Finish", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                Text("Finish", style: TextStyle(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ),
@@ -651,16 +651,49 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                     )
                   else
                     ...contacts.map(
-                      (c) => ListTile(
-                        leading: EmergencyContactAvatar(
-                          contact: c,
-                          radius: 20,
+                          (c) => Container(
+                        margin: EdgeInsets.only(bottom: 12.h), // Spacing between list items
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaced1F, // Card background color
+                          borderRadius: BorderRadius.circular(16.r),
+                          border: Border.all(
+                            color: AppColors.white.withOpacity(0.1), // Subtle border outline
+                            width: 1.w,
+                          ),
                         ),
-                        title: Text(c.name),
-                        subtitle: Text(c.phone),
-                        trailing: const Icon(
-                          Icons.check_circle,
-                          color: AppColors.success,
+                        child: ListTile(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16.w, ),
+                          leading: EmergencyContactAvatar(
+                            contact: c,
+                            radius: 20.r,
+                          ),
+                          title: Text(
+                            c.name,
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: AppColors.white,
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Alert Sent',
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                  color: AppColors.success, // Assuming AppColors.success is green
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                              Icon(
+                                Icons.check_box, // Matches the square checkbox in the design
+                                color: AppColors.success,
+                                size: 20.w,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -685,6 +718,31 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                     label: run.sosLoading ? 'Cancelling...' : "I'm Safe",
                     onPressed: run.sosLoading ? null : _markSafe,
                   ),
+                ],
+              ),
+            ),
+            Padding(
+                padding: EdgeInsets.symmetric(horizontal:  16.w),
+                child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lock_outline_rounded, // Matches the square checkbox in the design
+                    color: AppColors.whiteText,
+                    size: 15.w,
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      "Your live location will remain shared until SOS is turned off. Only select 'I'm Safe' when you're out of danger.",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.whiteText, // Assuming AppColors.success is green
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+
                 ],
               ),
             ),

@@ -22,7 +22,7 @@ class SecondaryButton extends StatelessWidget {
       ),
       child: Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(
         color: AppColors.white,
-        fontSize: 14.sp,
+        fontSize: 16.sp,
       ),),
     );
   }
