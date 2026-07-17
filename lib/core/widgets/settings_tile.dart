@@ -14,6 +14,7 @@ class SettingsTile extends StatelessWidget {
     this.trailing,
     this.showChevron = true,
     this.isDestructive = false,
+    this.dividerColors=AppColors.border
   });
 
   final String label;
@@ -21,6 +22,7 @@ class SettingsTile extends StatelessWidget {
   final String? iconAssetPath;
   final IconData fallbackIcon;
   final String? subtitle;
+  final Color? dividerColors;
   final Widget? trailing;
   final bool showChevron;
   final bool isDestructive;
@@ -30,65 +32,45 @@ class SettingsTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final labelColor = isDestructive ? AppColors.primary : AppColors.white;
     final chevronColor =
-        isDestructive ? AppColors.primary : AppColors.textMuted;
+        isDestructive ? AppColors.primary : AppColors.white;
 
     return InkWell(
       onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-        child: Row(
-          children: [
-           /* if (iconAssetPath != null)
-              Padding(
-                padding: EdgeInsets.only(right: 14.w),
-                child: AppAssetIcon(
-                  assetPath: iconAssetPath!,
-                  fallbackIcon: fallbackIcon,
-                  size: 22,
-                  color: isDestructive ? AppColors.primary : null,
-                ),
-              )
-            else
-              Padding(
-                padding: EdgeInsets.only(right: 14.w),
-                child: Icon(
-                  fallbackIcon,
-                  size: 22.sp,
-                  color: labelColor,
-                ),
-              ),*/
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: textTheme.bodyLarge?.copyWith(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w500,
-                      color: labelColor,
-                    ),
+      child: Column(
+        spacing: 5.h,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  label,
+                  style: textTheme.bodyLarge?.copyWith(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w700,
+                    color: labelColor,
                   ),
-                  if (subtitle != null) ...[
-                    SizedBox(height: 4.h),
-                    Text(
-                      subtitle!,
-                      style: textTheme.bodySmall?.copyWith(fontSize: 12.sp),
-                    ),
-                  ],
-                ],
-              ),
+                ),
+                trailing ??
+                    (showChevron
+                        ? Icon(
+                            Icons.chevron_right,
+                            color: chevronColor,
+                            size: 22.sp,
+                          )
+                        : const SizedBox.shrink()),
+              ],
             ),
-            trailing ??
-                (showChevron
-                    ? Icon(
-                        Icons.chevron_right,
-                        color: chevronColor,
-                        size: 22.sp,
-                      )
-                    : const SizedBox.shrink()),
-          ],
-        ),
+          ),
+          Divider(
+            height: 0.5,
+            thickness: 1.2,
+            color: dividerColors,
+            indent: 16.w,
+            endIndent: 16.w,
+          )
+        ],
       ),
     );
   }

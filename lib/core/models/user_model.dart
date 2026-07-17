@@ -2,7 +2,8 @@ class UserModel {
   final String id;
   final String? email;
   final String? phoneNumber;
-  final String? fullName;
+  final String? firstName;
+  final String? lastName;
   final String? gender;
   final String? visitReason;
   final String? runPreference;
@@ -14,7 +15,8 @@ class UserModel {
     required this.id,
     this.email,
     this.phoneNumber,
-    this.fullName,
+    this.firstName,
+    this.lastName,
     this.gender,
     this.visitReason,
     this.runPreference,
@@ -40,7 +42,8 @@ class UserModel {
       id: '${json['id'] ?? json['user_id'] ?? ''}',
       email: json['email'] as String?,
       phoneNumber: json['phone'] as String? ?? json['phone_number'] as String?,
-      fullName: json['full_name'] as String? ?? json['fullName'] as String?,
+      firstName: json['first_name'] as String? ?? json['first_name'] as String?,
+      lastName: json['last_name'] as String? ?? json['last_name'] as String?,
       gender: json['gender'] as String?,
       visitReason: json['visit_reason'] as String?,
       runPreference: runPreference ?? json['run_preference'] as String?,
@@ -54,7 +57,8 @@ class UserModel {
         'id': id,
         if (email != null) 'email': email,
         if (phoneNumber != null) 'phone': phoneNumber,
-        if (fullName != null) 'full_name': fullName,
+        if (firstName != null) 'first_name': firstName,
+        if (lastName != null) 'last_name': lastName,
         if (gender != null) 'gender': gender,
         if (visitReason != null) 'visit_reason': visitReason,
         if (runPreference != null) 'run_preference': runPreference,
@@ -79,7 +83,8 @@ class UserModel {
       id: id ?? this.id,
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
-      fullName: fullName ?? this.fullName,
+      firstName: firstName ?? firstName,
+      lastName: lastName ?? lastName,
       gender: gender ?? this.gender,
       visitReason: visitReason ?? this.visitReason,
       runPreference: runPreference ?? this.runPreference,

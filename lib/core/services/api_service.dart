@@ -240,6 +240,8 @@ class ApiService {
   }
 
   Future<AuthResponseModel> register({
+    required String firstName,
+    required String lastName,
     required String email,
     required String password,
     required String passwordConfirmation,
@@ -253,6 +255,8 @@ class ApiService {
       final response = await _dio.post(
         _path('/auth/register'),
         data: _form({
+          'first_name':firstName,
+          'last_name':lastName,
           'email': email,
           'password': password,
           'password_confirmation': passwordConfirmation,
@@ -281,6 +285,8 @@ class ApiService {
       onboarding: onboarding,
     );
     return register(
+      firstName: fields['first_name'] as String,
+      lastName: fields['last_name'] as String,
       email: fields['email'] as String,
       password: fields['password'] as String,
       passwordConfirmation: fields['password_confirmation'] as String,

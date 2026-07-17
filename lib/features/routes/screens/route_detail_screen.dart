@@ -38,7 +38,7 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
     final detail = context.watch<RouteDetailService>();
     final route = detail.route;
     final textTheme = Theme.of(context).textTheme;
-    final userName = auth.currentUser?.fullName?.split(' ').first ??
+    final userName = auth.currentUser?.firstName?.split(' ').first ??
         auth.currentUser?.email?.split('@').first ??
         'Runner';
 

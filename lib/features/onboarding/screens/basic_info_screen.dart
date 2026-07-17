@@ -8,6 +8,8 @@ import 'package:saefra_run/core/widgets/onboarding_progress_widgets.dart';
 import 'package:saefra_run/features/onboarding/widgets/onboarding_input_field.dart';
 import 'package:saefra_run/generated/assets.dart';
 
+import '../../../core/widgets/app_text_field.dart';
+
 class BasicInfoScreen extends StatefulWidget {
   const BasicInfoScreen({super.key});
 
@@ -107,42 +109,50 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(height: 10.h),
-                    Text(
-                      "Let's Get to Know You",
-                      style: textTheme.headlineMedium?.copyWith(
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.w700,
+                    Center(
+                      child: Text(
+                        "Let's Get to Know You",
+                        style: textTheme.displayLarge?.copyWith(
+                          fontSize: 22.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     SizedBox(height: 12.h),
                     Text(
                       'Tell us a little about yourself so we can personalize your Saefra experience.',
                       style: textTheme.bodySmall?.copyWith(
-                        fontSize: 13.sp,
-                        height: 1.45,
-                        color: AppColors.textSecondary,
+                          fontSize: 13.sp,
+                          height: 1.45,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w400
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 28.h),
                     Text(
                       'Basic Information',
-                      style: textTheme.titleMedium?.copyWith(fontSize: 15.sp),
+                      style: textTheme.displayLarge?.copyWith(fontSize: 15.sp,fontWeight: FontWeight.w700),
                     ),
                     SizedBox(height: 12.h),
-                    OnboardingInputField(
+                    AppTextField(
+                      keyboardType: TextInputType.text,
                       controller: _firstNameController,
-                      hint: 'enter first name',
-                      icon: Icons.person_outline,
-                      iconAssetPath: Assets.onboardingConsistencyIcon,
+                      hint: "Enter first name ",
                       onChanged: onboarding.setFirstName,
+                      prefixIcon: AppFieldPrefixIcon(
+                        icon: Image.asset(Assets.user,scale: 2.5,),
+                      ),
                     ),
                     SizedBox(height: 12.h),
-                    OnboardingInputField(
+                    AppTextField(
+                      keyboardType: TextInputType.text,
                       controller: _lastNameController,
-                      hint: 'enter last name',
-                      icon: Icons.person_outline,
-                      iconAssetPath: Assets.onboardingConsistencyIcon,
+                      hint: "Enter Last Name  ",
                       onChanged: onboarding.setLastName,
+                      prefixIcon: AppFieldPrefixIcon(
+                        icon: Image.asset(Assets.user,scale: 2.5,),
+                      ),
                     ),
                     SizedBox(height: 12.h),
                     GestureDetector(

@@ -7,8 +7,10 @@ import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/models/save_route_payload.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/route_service.dart';
-import 'package:saefra_run/core/utils/location_route_utils.dart';
+
 import 'package:saefra_run/core/utils/polyline_decoder.dart';
+
+import '../utils/location_route_utils.dart';
 
 class GenerateRouteService extends ChangeNotifier {
   GenerateRouteService();

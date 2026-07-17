@@ -101,6 +101,7 @@ class Assets {
   static const String closeIcon = '${mainImageUrl}closedIcon.png';
   static const String seftiIcon = '${mainImageUrl}seftiIcon.png';
   static const String saftyinfoIcon = '${mainImageUrl}saftyinfo.png';
+  static const String user = '${mainImageUrl}user.png';
 
 
   static const String saefraRun = '.env';

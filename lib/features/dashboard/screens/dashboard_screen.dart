@@ -48,7 +48,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final auth = context.watch<AuthService>();
     final user = auth.currentUser;
     final screenSize = MediaQuery.of(context).size;
-    final greetingName = user?.email ?? 'Jenny Wilson';
+    final greetingName = "${user?.firstName} ${user?.lastName}";
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -71,7 +71,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
 
-                  // "+" quick-add FAB over map layer
                   Positioned(
                     right: 16,
                     bottom: 43.h,

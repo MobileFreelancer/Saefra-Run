@@ -58,7 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final textTheme = Theme.of(context).textTheme;
     final displayName = settings.firstName.isNotEmpty
         ? '${settings.firstName} ${settings.lastName}'.trim()
-        : user?.fullName ?? user?.email ?? 'User';
+        : user?.firstName ?? user?.email ?? 'User';
     final email = settings.email.isNotEmpty
         ? settings.email
         : user?.email ?? '';
@@ -72,8 +72,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: 'Settings',
               onBack: () => context.goNamed('dashboard'),
             ),
-            if (settings.isLoading)
-              const LinearProgressIndicator(color: AppColors.primary),
+            // if (settings.isLoading)
+            //   const LinearProgressIndicator(color: AppColors.primary),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
@@ -120,7 +120,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               Text(
                                 email,
                                 style: textTheme.bodySmall?.copyWith(
-                                  fontSize: 13.sp,
+                                  fontSize: 14.sp,
+                                  color: Color(0xFFE2E2E2)  ,
+                                  fontWeight: FontWeight.w400
                                 ),
                               ),
                             ],
@@ -137,20 +139,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         fallbackIcon: Icons.person_outline,
                         onTap: () => context.pushNamed('editProfile'),
                       ),
-                      _SettingsDivider(),
+                      //_SettingsDivider(),
                       SettingsTile(
                         label: 'Safety Settings',
                         fallbackIcon: Icons.shield_outlined,
                         onTap: () => context.pushNamed('safetySettings'),
                       ),
-                      _SettingsDivider(),
+                      //_SettingsDivider(),
                       SettingsTile(
                         label: 'Notification',
                         fallbackIcon: Icons.notifications_none,
                         onTap: () => context.pushNamed('notificationSettings'),
                       ),
-                      _SettingsDivider(),
+                     // _SettingsDivider(),
                       SettingsTile(
+                        dividerColors: Colors.transparent,
                         label: 'Change Password',
                         fallbackIcon: Icons.lock_outline,
                         onTap: () => context.pushNamed('changePassword'),
@@ -165,7 +168,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         fallbackIcon: Icons.mail_outline,
                         onTap: () => context.pushNamed('contactUs'),
                       ),
-                      _SettingsDivider(),
+                      //_SettingsDivider(),
                       SettingsTile(
                         label: 'Privacy & Policy',
                         fallbackIcon: Icons.privacy_tip_outlined,
@@ -174,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           queryParameters: {'type': 'privacy'},
                         ),
                       ),
-                      _SettingsDivider(),
+                     // _SettingsDivider(),
                       SettingsTile(
                         label: 'Terms & Conditions',
                         fallbackIcon: Icons.description_outlined,
@@ -183,8 +186,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           queryParameters: {'type': 'terms'},
                         ),
                       ),
-                      _SettingsDivider(),
+                      //_SettingsDivider(),
                       SettingsTile(
+                        dividerColors: Colors.transparent,
                         label: 'About saefra',
                         fallbackIcon: Icons.info_outline,
                         onTap: () => context.pushNamed('aboutUs'),
@@ -195,6 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _SettingsGroup(
                     children: [
                       SettingsTile(
+                        dividerColors: Colors.transparent,
                         label: 'Logout',
                         fallbackIcon: Icons.logout,
                         onTap: _confirmLogout,

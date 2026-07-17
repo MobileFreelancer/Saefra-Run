@@ -93,7 +93,8 @@ class SettingsService extends ChangeNotifier {
   void _hydrateProfile(UserModel user) {
     _email = user.email ?? '';
     _phone = user.phoneNumber ?? '';
-    final name = user.fullName ?? '';
+    final name = "${user.firstName} ${user.lastName}";
+
     final parts = name.split(' ');
     _firstName = parts.isNotEmpty ? parts.first : '';
     _lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
