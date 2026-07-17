@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/run_session_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 
@@ -15,12 +16,20 @@ class RunService extends ChangeNotifier {
   RunSessionModel _session = const RunSessionModel();
   bool _sosActive = false;
   bool _sosDialogVisible = false;
+  bool _sosLoading = false;
+  String? _sosError;
+  String? _sosMessage;
+  List<EmergencyContactModel> _sosNotifiedContacts = [];
   RunMood? _mood;
 
   RunStatus get status => _status;
   RunSessionModel get session => _session;
   bool get sosActive => _sosActive;
   bool get sosDialogVisible => _sosDialogVisible;
+  bool get sosLoading => _sosLoading;
+  String? get sosError => _sosError;
+  String? get sosMessage => _sosMessage;
+  List<EmergencyContactModel> get sosNotifiedContacts => _sosNotifiedContacts;
   RunMood? get mood => _mood;
   bool get isRunning => _status == RunStatus.running;
   bool get isPaused => _status == RunStatus.paused;
@@ -33,6 +42,9 @@ class RunService extends ChangeNotifier {
     );
     _status = RunStatus.running;
     _sosActive = false;
+    _sosError = null;
+    _sosMessage = null;
+    _sosNotifiedContacts = [];
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     notifyListeners();
@@ -138,22 +150,59 @@ class RunService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> activateSos() async {
+  Future<bool> activateSos({
+    double? latitude,
+    double? longitude,
+    String? addressLink,
+  }) async {
     _sosDialogVisible = false;
-    _sosActive = true;
+    _sosLoading = true;
+    _sosError = null;
     notifyListeners();
+
     try {
-      await _api.sendSos(
-        routeId: _session.routeId,
-        latitude: 0,
-        longitude: 0,
+      final response = await _api.activateSos(
+        latitude: latitude,
+        longitude: longitude,
+        addressLink: addressLink,
       );
-    } catch (_) {}
+      _sosActive = true;
+      _sosMessage = response.message;
+      _sosNotifiedContacts = response.contacts;
+      _sosError = null;
+      return true;
+    } catch (e) {
+      _sosActive = false;
+      _sosError = e.toString();
+      debugPrint('RunService.activateSos failed: $e');
+      return false;
+    } finally {
+      _sosLoading = false;
+      notifyListeners();
+    }
   }
 
-  void markSafe() {
-    _sosActive = false;
+  Future<bool> markSafe() async {
+    if (!_sosActive) return true;
+
+    _sosLoading = true;
     notifyListeners();
+
+    try {
+      final response = await _api.cancelSos();
+      _sosActive = false;
+      _sosMessage = response.message;
+      _sosNotifiedContacts = [];
+      _sosError = null;
+      return true;
+    } catch (e) {
+      _sosError = e.toString();
+      debugPrint('RunService.markSafe failed: $e');
+      return false;
+    } finally {
+      _sosLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<bool> saveActivity() async {
@@ -179,6 +228,10 @@ class RunService extends ChangeNotifier {
     _session = const RunSessionModel();
     _sosActive = false;
     _sosDialogVisible = false;
+    _sosLoading = false;
+    _sosError = null;
+    _sosMessage = null;
+    _sosNotifiedContacts = [];
     _mood = null;
     notifyListeners();
   }

@@ -12,7 +12,7 @@ import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/models/run_review_form_model.dart';
-import 'package:saefra_run/core/models/run_session_model.dart';
+import 'package:saefra_run/core/models/sos_response_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_exception.dart';
 import 'package:saefra_run/core/services/secure_storage_service.dart';
@@ -751,20 +751,38 @@ class ApiService {
 
   // ─── Live run / SOS / reviews ───────────────────────────────────────────────
 
-  Future<void> sendSos({
-    String? routeId,
-    required double latitude,
-    required double longitude,
+  Future<SosActivateResponse> activateSos({
+    double? latitude,
+    double? longitude,
+    String? addressLink,
   }) async {
     try {
-      await _dio.post(
-        _path('/sos/activate'),
-        data: _form({
-          if (routeId != null) 'route_id': routeId,
-          'latitude': '$latitude',
-          'longitude': '$longitude',
-        }),
+      final fields = <String, dynamic>{};
+      if (latitude != null) fields['latitude'] = latitude;
+      if (longitude != null) fields['longitude'] = longitude;
+      if (addressLink != null && addressLink.trim().isNotEmpty) {
+        fields['address_link'] = addressLink.trim();
+      }
+
+      final response = await _dio.post(
+        _path('/sos-activate'),
+        data: _form(fields),
       );
+      final map = _map(response);
+      return SosActivateResponse.fromApiMap(map);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<SosCancelResponse> cancelSos() async {
+    try {
+      final response = await _dio.post(
+        _path('/sos-cancel'),
+        data: _form({}),
+      );
+      final map = _map(response);
+      return SosCancelResponse.fromApiMap(map);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

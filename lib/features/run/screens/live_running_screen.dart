@@ -8,6 +8,7 @@ import 'package:saefra_run/core/services/dashboard_services.dart';
 import 'package:saefra_run/core/services/run_service.dart';
 import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
+import 'package:saefra_run/core/widgets/emergency_contact_avatar.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/secondary_button.dart';
@@ -100,8 +101,44 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
         onCancel: () => Navigator.pop(ctx),
         onSend: () async {
           Navigator.pop(ctx);
-          await context.read<RunService>().activateSos();
-          if (mounted) context.pushNamed('sosActive');
+
+          final tracking = context.read<RunningProvider>();
+          final dashboard = context.read<DashboardServices>();
+          final settings = context.read<SettingsService>();
+          final runService = context.read<RunService>();
+
+          if (settings.contacts.isEmpty) {
+            await settings.load();
+          }
+
+          final lat =
+              tracking.currentPosition?.latitude ?? dashboard.latitude;
+          final lng =
+              tracking.currentPosition?.longitude ?? dashboard.longitude;
+          final addressLink = lat != null && lng != null
+              ? 'https://www.google.com/maps?q=$lat,$lng'
+              : null;
+
+          final ok = await runService.activateSos(
+            latitude: lat,
+            longitude: lng,
+            addressLink: addressLink,
+          );
+
+          if (!mounted) return;
+
+          if (ok) {
+            context.pushNamed('sosActive');
+            return;
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                runService.sosError ?? 'Failed to activate SOS. Please try again.',
+              ),
+            ),
+          );
         },
       ),
     );
@@ -523,10 +560,30 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
     });
   }
 
+  Future<void> _markSafe() async {
+    final run = context.read<RunService>();
+    final ok = await run.markSafe();
+    if (!mounted) return;
+
+    if (ok) {
+      context.pop();
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(run.sosError ?? 'Failed to cancel SOS. Please try again.'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsService>();
     final run = context.watch<RunService>();
+    final contacts = run.sosNotifiedContacts.isNotEmpty
+        ? run.sosNotifiedContacts
+        : settings.contacts;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -559,28 +616,63 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                         width: 56,
                         errorBuilder: (_, __, ___) => const Text(
                           'SOS',
-                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 24),
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
                         ),
                       ),
                     ),
                   ),
                   SizedBox(height: 16.h),
                   Text(
-                    'SOS Activated. Your location is now being shared with your emergency contacts.',
+                    run.sosMessage ??
+                        'SOS Activated. Your location is now being shared with your emergency contacts.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   SizedBox(height: 20.h),
-                  Text('Emergency Contacts Notified', style: Theme.of(context).textTheme.titleMedium),
-                  SizedBox(height: 10.h),
-                  ...settings.contacts.map(
-                    (c) => ListTile(
-                      leading: CircleAvatar(child: Text(c.name[0])),
-                      title: Text(c.name),
-                      subtitle: Text(c.phone),
-                      trailing: const Icon(Icons.check_circle, color: AppColors.success),
-                    ),
+                  Text(
+                    'Emergency Contacts Notified',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
+                  SizedBox(height: 10.h),
+                  if (settings.isLoading && contacts.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    )
+                  else if (contacts.isEmpty)
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      child: Text(
+                        'No emergency contacts found. Add contacts in Settings first.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                      ),
+                    )
+                  else
+                    ...contacts.map(
+                      (c) => ListTile(
+                        leading: EmergencyContactAvatar(
+                          contact: c,
+                          radius: 20,
+                        ),
+                        title: Text(c.name),
+                        subtitle: Text(c.phone),
+                        trailing: const Icon(
+                          Icons.check_circle,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -599,11 +691,8 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                   ),
                   SizedBox(height: 8.h),
                   SecondaryButton(
-                    label: "I'm Safe",
-                    onPressed: () {
-                      run.markSafe();
-                      context.pop();
-                    },
+                    label: run.sosLoading ? 'Cancelling...' : "I'm Safe",
+                    onPressed: run.sosLoading ? null : _markSafe,
                   ),
                 ],
               ),

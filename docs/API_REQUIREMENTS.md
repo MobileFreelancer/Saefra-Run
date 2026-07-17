@@ -117,9 +117,10 @@ Toggle mock data locally with `USE_MOCK_API=true` in `.env` — no backend neede
 
 | Method | Path | Body |
 |--------|------|------|
+| POST | `/api/v1/sos-activate` | `latitude` (optional), `longitude` (optional), `address_link` (optional URL) |
+| POST | `/api/v1/sos-cancel` | — |
 | POST | `/api/runs/summary` | See below |
 | POST | `/api/runs/{runId}/review` | See run review |
-| POST | `/api/sos/activate` | `route_id`, `latitude`, `longitude` |
 
 **Run summary payload (`POST /api/runs/summary`):**
 ```json
@@ -189,7 +190,7 @@ Errors: HTTP 4xx/5xx with `message` and optional `errors` object.
 | `RouteDetailService` | `route_detail_service.dart` | `getRouteDetail` |
 | `CommunityService` | `community_service.dart` | `getPopularRoutes`, `getTopRatedRoutes`, `getCommunityRouteDetail`, `getRouteReviews` |
 | `ActivityService` | `activity_service.dart` | `getActivitySummary`, `getRecentActivities`, `getLifetimeStats` |
-| `RunService` | `run_service.dart` | `sendSos`, `submitRunSummary` |
+| `RunService` | `run_service.dart` | `activateSos`, `cancelSos`, `submitRunSummary` |
 | `RunReviewService` | `run_review_service.dart` | `submitRunReview` |
 | `SettingsService` | `settings_service.dart` | `getCurrentUser`, `getPreferences`, `updateProfile`, `getEmergencyContacts`, etc. |
 | `DashboardServices` | `dashboard_services.dart` | `generateSafeRoute` |
