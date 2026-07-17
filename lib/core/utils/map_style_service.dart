@@ -8,32 +8,26 @@ enum MapTheme {
 }
 
 class MapStyleService {
+  static final Map<MapTheme, String> _styleCache = {};
+
   static Future<void> applyStyle({
     required GoogleMapController controller,
     required MapTheme theme,
   }) async {
-    String style = "";
-
-    switch (theme) {
-      case MapTheme.light:
-        style = await rootBundle.loadString(
-          'assets/map_style/light.json',
-        );
-        break;
-
-      case MapTheme.dark:
-        style = await rootBundle.loadString(
-          'assets/map_style/dark.json',
-        );
-        break;
-
-      case MapTheme.park:
-        style = await rootBundle.loadString(
-          'assets/map_style/park.json',
-        );
-        break;
+    final cached = _styleCache[theme];
+    if (cached != null) {
+      await controller.setMapStyle(cached);
+      return;
     }
 
-    controller.setMapStyle(style);
+    final assetPath = switch (theme) {
+      MapTheme.light => 'assets/map_style/light.json',
+      MapTheme.dark => 'assets/map_style/dark.json',
+      MapTheme.park => 'assets/map_style/park.json',
+    };
+
+    final style = await rootBundle.loadString(assetPath);
+    _styleCache[theme] = style;
+    await controller.setMapStyle(style);
   }
 }

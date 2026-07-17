@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -36,9 +37,13 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
   // Local state variable to manage dynamic unit toggling
   bool _isKm = true;
   bool _routeContextSynced = false;
+  Timer? _locationDebounce;
 
   LatLng? get _destination {
     final service = context.read<GenerateRouteService>();
+    if (service.filters.shape == RouteShape.loop) {
+      return null;
+    }
     if (service.hasDestination) {
       return LatLng(service.destinationLatitude!, service.destinationLongitude!);
     }
@@ -70,16 +75,6 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
         widget.destLng ?? dashboard.destinationPositionLongitude;
     final destinationName = widget.destName ?? dashboard.destinationName;
 
-    if (destinationLat != null &&
-        destinationLng != null &&
-        !dashboard.hasSelectedDestination) {
-      await dashboard.focusOnLocation(
-        destinationLat,
-        destinationLng,
-        name: destinationName,
-      );
-    }
-
     await service.syncRouteContext(
       originLatitude: dashboard.latitude,
       originLongitude: dashboard.longitude,
@@ -92,10 +87,18 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
   }
 
   void _onDashboardUpdate() {
-    if (!mounted) return;
+    if (!mounted || !_routeContextSynced) return;
     final dashboard = context.read<DashboardServices>();
     if (dashboard.latitude == null || dashboard.longitude == null) return;
-    _syncRouteContext(force: true);
+
+    _locationDebounce?.cancel();
+    _locationDebounce = Timer(const Duration(milliseconds: 1200), () {
+      if (!mounted) return;
+      context.read<GenerateRouteService>().onOriginMoved(
+            latitude: dashboard.latitude!,
+            longitude: dashboard.longitude!,
+          );
+    });
   }
 
   Future<void> _generate() async {
@@ -129,6 +132,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
 
   @override
   void dispose() {
+    _locationDebounce?.cancel();
     context.read<DashboardServices>().removeListener(_onDashboardUpdate);
     super.dispose();
   }

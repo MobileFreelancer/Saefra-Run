@@ -4,56 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/dashboard_services.dart';
 import 'package:saefra_run/core/utils/location_route_utils.dart';
+import 'package:saefra_run/core/utils/map_style_service.dart';
 
-class _AppRouteMapSnapshot {
-  const _AppRouteMapSnapshot({
-    required this.latitude,
-    required this.longitude,
-    required this.destinationLatitude,
-    required this.destinationLongitude,
-    required this.routePolylinePoints,
-  });
-
-  final double? latitude;
-  final double? longitude;
-  final double? destinationLatitude;
-  final double? destinationLongitude;
-  final List<LatLng> routePolylinePoints;
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is _AppRouteMapSnapshot &&
-        other.latitude == latitude &&
-        other.longitude == longitude &&
-        other.destinationLatitude == destinationLatitude &&
-        other.destinationLongitude == destinationLongitude &&
-        _polylineEqual(other.routePolylinePoints, routePolylinePoints);
-  }
-
-  @override
-  int get hashCode => Object.hash(
-        latitude,
-        longitude,
-        destinationLatitude,
-        destinationLongitude,
-        routePolylinePoints.length,
-        routePolylinePoints.isEmpty
-            ? 0
-            : routePolylinePoints.first.latitude,
-      );
-
-  static bool _polylineEqual(List<LatLng> a, List<LatLng> b) {
-    if (a.length != b.length) return false;
-    if (a.isEmpty) return true;
-    return a.first.latitude == b.first.latitude &&
-        a.first.longitude == b.first.longitude &&
-        a.last.latitude == b.last.latitude &&
-        a.last.longitude == b.last.longitude;
-  }
-}
-
-/// Reusable Google Map — draws only real route polylines from API data.
+/// Reusable Google Map — draws route polylines without continuous camera fighting.
 class AppRouteMap extends StatefulWidget {
   const AppRouteMap({
     super.key,
@@ -68,6 +21,7 @@ class AppRouteMap extends StatefulWidget {
     this.fitToContent = true,
     this.preferDestinationCamera = false,
     this.zoom = 14,
+    this.useDashboardLocation = false,
   });
 
   final double? height;
@@ -81,6 +35,9 @@ class AppRouteMap extends StatefulWidget {
   final bool fitToContent;
   final bool preferDestinationCamera;
   final double zoom;
+  /// When false and [origin]/[polylinePoints] are provided, GPS stream updates
+  /// from [DashboardServices] will not rebuild or re-fit this map.
+  final bool useDashboardLocation;
 
   @override
   State<AppRouteMap> createState() => _AppRouteMapState();
@@ -88,157 +45,197 @@ class AppRouteMap extends StatefulWidget {
 
 class _AppRouteMapState extends State<AppRouteMap> {
   GoogleMapController? _controller;
-  String? _lastCameraKey;
+  String? _lastFitKey;
+  bool _userMovedCamera = false;
+  bool _styleApplied = false;
+
+  bool get _standalone =>
+      !widget.useDashboardLocation &&
+      (widget.origin != null ||
+          widget.destination != null ||
+          widget.polylinePoints != null);
 
   @override
   Widget build(BuildContext context) {
-    return Selector<DashboardServices, _AppRouteMapSnapshot>(
-      selector: (_, services) => _AppRouteMapSnapshot(
-        latitude: services.latitude,
-        longitude: services.longitude,
-        destinationLatitude: services.destinationPositionLatitude,
-        destinationLongitude: services.destinationPositionLongitude,
-        routePolylinePoints: services.routePolylinePoints,
+    if (_standalone) {
+      return _wrapMap(
+        _buildMap(
+          origin: widget.origin,
+          destination: widget.destination,
+          polylinePoints: widget.polylinePoints ?? const [],
+        ),
+      );
+    }
+
+    return Selector<DashboardServices, _DashboardMapData>(
+      selector: (_, services) => _DashboardMapData.from(
+        services,
+        includePolyline: widget.fallbackToDashboardPolyline,
       ),
-      builder: (context, snapshot, _) {
-        final resolvedOrigin = widget.origin ??
-            (snapshot.latitude != null && snapshot.longitude != null
-                ? LatLng(snapshot.latitude!, snapshot.longitude!)
+      builder: (context, data, _) {
+        final origin = widget.origin ??
+            (data.latitude != null && data.longitude != null
+                ? LatLng(data.latitude!, data.longitude!)
                 : null);
-        final resolvedDestination = widget.destination ??
-            (snapshot.destinationLatitude != null &&
-                    snapshot.destinationLongitude != null
+        final destination = widget.destination ??
+            (data.destinationLatitude != null &&
+                    data.destinationLongitude != null
                 ? LatLng(
-                    snapshot.destinationLatitude!,
-                    snapshot.destinationLongitude!,
+                    data.destinationLatitude!,
+                    data.destinationLongitude!,
                   )
                 : null);
-
         final points = _resolvePoints(
           widget.polylinePoints,
           widget.fallbackToDashboardPolyline
-              ? snapshot.routePolylinePoints
+              ? data.routePolylinePoints
               : const [],
         );
 
-        final target = resolvedOrigin ??
-            resolvedDestination ??
-            (points.isNotEmpty
-                ? points.first
-                : const LatLng(21.1702, 72.8311));
-
-        final useLocalCamera = !widget.preferDestinationCamera &&
-            LocationRouteUtils.shouldUseLocalCamera(
-              resolvedOrigin,
-              resolvedDestination,
-            );
-        final showOriginMarker = resolvedOrigin != null &&
-            (resolvedDestination == null ||
-                LocationRouteUtils.isPlausibleRoute(
-                  resolvedOrigin,
-                  resolvedDestination,
-                ));
-
-        final markers = <Marker>{};
-
-        if (showOriginMarker) {
-          markers.add(
-            Marker(
-              markerId: const MarkerId('route_origin'),
-              position: resolvedOrigin,
-              icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueGreen,
-              ),
-              infoWindow: const InfoWindow(title: 'Start'),
-            ),
-          );
-        } else if (widget.showLocationMarker &&
-            resolvedOrigin == null &&
-            snapshot.latitude != null &&
-            snapshot.longitude != null) {
-          markers.add(
-            Marker(
-              markerId: const MarkerId('map_center'),
-              position: LatLng(snapshot.latitude!, snapshot.longitude!),
-              icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueAzure,
-              ),
-              infoWindow: const InfoWindow(title: 'My Location'),
-            ),
-          );
-        }
-
-        if (resolvedDestination != null &&
-            !_nearLatLng(resolvedOrigin, resolvedDestination)) {
-          markers.add(
-            Marker(
-              markerId: const MarkerId('route_destination'),
-              position: resolvedDestination,
-              icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueRed,
-              ),
-              infoWindow: const InfoWindow(title: 'Destination'),
-            ),
-          );
-        }
-
-        final cameraKey = _cameraKey(markers, points, useLocalCamera);
-        if (widget.fitToContent && cameraKey != _lastCameraKey) {
-          _lastCameraKey = cameraKey;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _fitCamera(
-              markers,
-              points,
-              fallbackTarget: resolvedDestination ?? target,
-              useLocalCamera: useLocalCamera,
-            );
-          });
-        }
-
-        final map = GoogleMap(
-          initialCameraPosition: CameraPosition(target: target, zoom: widget.zoom),
-          myLocationEnabled: false,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          compassEnabled: false,
-          mapToolbarEnabled: false,
-          markers: markers,
-          polylines: widget.showRoutePolyline && points.length > 1
-              ? {
-                  Polyline(
-                    polylineId: const PolylineId('app_route_polyline'),
-                    points: points,
-                    color: AppColors.primary,
-                    width: 5,
-                  ),
-                }
-              : {},
-          onMapCreated: (controller) async {
-            _controller = controller;
-            await context.read<DashboardServices>().applyMapStyle(controller);
-            if (widget.fitToContent) {
-              _fitCamera(
-                markers,
-                points,
-                fallbackTarget: resolvedDestination ?? target,
-                useLocalCamera: useLocalCamera,
-              );
-            }
-          },
-        );
-
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-          child: widget.height != null
-              ? SizedBox(
-                  height: widget.height,
-                  width: double.infinity,
-                  child: map,
-                )
-              : SizedBox.expand(child: map),
+        return _wrapMap(
+          _buildMap(
+            origin: origin,
+            destination: destination,
+            polylinePoints: points,
+          ),
         );
       },
     );
+  }
+
+  Widget _wrapMap(Widget map) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(widget.borderRadius),
+      child: widget.height != null
+          ? SizedBox(
+              height: widget.height,
+              width: double.infinity,
+              child: map,
+            )
+          : SizedBox.expand(child: map),
+    );
+  }
+
+  Widget _buildMap({
+    required LatLng? origin,
+    required LatLng? destination,
+    required List<LatLng> polylinePoints,
+  }) {
+    final target = origin ??
+        destination ??
+        (polylinePoints.isNotEmpty
+            ? polylinePoints.first
+            : const LatLng(21.1702, 72.8311));
+
+    final useLocalCamera = !widget.preferDestinationCamera &&
+        LocationRouteUtils.shouldUseLocalCamera(origin, destination);
+    final showOriginMarker = origin != null &&
+        (destination == null ||
+            LocationRouteUtils.isPlausibleRoute(origin, destination));
+
+    final markers = <Marker>{};
+    if (showOriginMarker) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('route_origin'),
+          position: origin,
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen,
+          ),
+          infoWindow: const InfoWindow(title: 'Start'),
+        ),
+      );
+    }
+
+    if (destination != null && !_nearLatLng(origin, destination)) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('route_destination'),
+          position: destination,
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueRed,
+          ),
+          infoWindow: const InfoWindow(title: 'Destination'),
+        ),
+      );
+    }
+
+    final fitKey = _fitKey(markers, polylinePoints, useLocalCamera);
+    _scheduleFitIfNeeded(
+      fitKey: fitKey,
+      markers: markers,
+      points: polylinePoints,
+      fallbackTarget: destination ?? target,
+      useLocalCamera: useLocalCamera,
+    );
+
+    return GoogleMap(
+      key: ValueKey('app_route_map_${widget.hashCode}'),
+      initialCameraPosition: CameraPosition(target: target, zoom: widget.zoom),
+      myLocationEnabled: false,
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: true,
+      zoomGesturesEnabled: true,
+      scrollGesturesEnabled: true,
+      rotateGesturesEnabled: true,
+      tiltGesturesEnabled: true,
+      compassEnabled: false,
+      mapToolbarEnabled: false,
+      markers: markers,
+      polylines: widget.showRoutePolyline && polylinePoints.length > 1
+          ? {
+              Polyline(
+                polylineId: const PolylineId('app_route_polyline'),
+                points: polylinePoints,
+                color: AppColors.primary,
+                width: 5,
+              ),
+            }
+          : {},
+      onCameraMoveStarted: () {
+        _userMovedCamera = true;
+      },
+      onMapCreated: (controller) async {
+        _controller = controller;
+        if (!_styleApplied) {
+          _styleApplied = true;
+          final theme = context.read<DashboardServices>().mapTheme;
+          await MapStyleService.applyStyle(
+            controller: controller,
+            theme: theme,
+          );
+        }
+        if (widget.fitToContent && !_userMovedCamera) {
+          await _fitCamera(
+            markers,
+            polylinePoints,
+            fallbackTarget: destination ?? target,
+            useLocalCamera: useLocalCamera,
+          );
+        }
+      },
+    );
+  }
+
+  void _scheduleFitIfNeeded({
+    required String fitKey,
+    required Set<Marker> markers,
+    required List<LatLng> points,
+    required LatLng fallbackTarget,
+    required bool useLocalCamera,
+  }) {
+    if (!widget.fitToContent || fitKey == _lastFitKey) return;
+    _lastFitKey = fitKey;
+    _userMovedCamera = false;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fitCamera(
+        markers,
+        points,
+        fallbackTarget: fallbackTarget,
+        useLocalCamera: useLocalCamera,
+      );
+    });
   }
 
   Future<void> _fitCamera(
@@ -247,6 +244,8 @@ class _AppRouteMapState extends State<AppRouteMap> {
     required LatLng fallbackTarget,
     required bool useLocalCamera,
   }) async {
+    if (_userMovedCamera) return;
+
     final controller = _controller;
     if (controller == null) return;
 
@@ -320,7 +319,7 @@ class _AppRouteMapState extends State<AppRouteMap> {
     }
   }
 
-  String _cameraKey(
+  String _fitKey(
     Set<Marker> markers,
     List<LatLng> points,
     bool useLocalCamera,
@@ -328,13 +327,13 @@ class _AppRouteMapState extends State<AppRouteMap> {
     final markerKey = markers
         .map(
           (marker) =>
-              '${marker.markerId.value}:${marker.position.latitude},${marker.position.longitude}',
+              '${marker.markerId.value}:${_roundCoord(marker.position.latitude)},${_roundCoord(marker.position.longitude)}',
         )
         .join('|');
     final pointKey = points.isEmpty
         ? ''
-        : '${points.first.latitude},${points.first.longitude}->'
-            '${points.last.latitude},${points.last.longitude}(${points.length})';
+        : '${_roundCoord(points.first.latitude)},${_roundCoord(points.first.longitude)}->'
+            '${_roundCoord(points.last.latitude)},${_roundCoord(points.last.longitude)}(${points.length})';
     return '$markerKey#$pointKey#$useLocalCamera';
   }
 
@@ -351,9 +350,74 @@ class _AppRouteMapState extends State<AppRouteMap> {
     return const [];
   }
 
+  static double _roundCoord(double value) =>
+      (value * 1000).roundToDouble() / 1000;
+
   static bool _nearLatLng(LatLng? a, LatLng? b, {double epsilon = 0.0005}) {
     if (a == null || b == null) return false;
     return (a.latitude - b.latitude).abs() < epsilon &&
         (a.longitude - b.longitude).abs() < epsilon;
+  }
+}
+
+class _DashboardMapData {
+  const _DashboardMapData({
+    required this.latitude,
+    required this.longitude,
+    required this.destinationLatitude,
+    required this.destinationLongitude,
+    required this.routePolylinePoints,
+  });
+
+  final double? latitude;
+  final double? longitude;
+  final double? destinationLatitude;
+  final double? destinationLongitude;
+  final List<LatLng> routePolylinePoints;
+
+  factory _DashboardMapData.from(
+    DashboardServices services, {
+    required bool includePolyline,
+  }) {
+    return _DashboardMapData(
+      latitude: services.latitude,
+      longitude: services.longitude,
+      destinationLatitude: services.destinationPositionLatitude,
+      destinationLongitude: services.destinationPositionLongitude,
+      routePolylinePoints:
+          includePolyline ? services.routePolylinePoints : const [],
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _DashboardMapData &&
+        other.latitude == latitude &&
+        other.longitude == longitude &&
+        other.destinationLatitude == destinationLatitude &&
+        other.destinationLongitude == destinationLongitude &&
+        _polylineEqual(other.routePolylinePoints, routePolylinePoints);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        latitude,
+        longitude,
+        destinationLatitude,
+        destinationLongitude,
+        routePolylinePoints.length,
+        routePolylinePoints.isEmpty
+            ? 0
+            : routePolylinePoints.first.latitude,
+      );
+
+  static bool _polylineEqual(List<LatLng> a, List<LatLng> b) {
+    if (a.length != b.length) return false;
+    if (a.isEmpty) return true;
+    return a.first.latitude == b.first.latitude &&
+        a.first.longitude == b.first.longitude &&
+        a.last.latitude == b.last.latitude &&
+        a.last.longitude == b.last.longitude;
   }
 }

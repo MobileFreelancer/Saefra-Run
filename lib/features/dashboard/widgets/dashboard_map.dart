@@ -90,10 +90,14 @@ class _DashboardMapSnapshot {
   bool get hasLocation => latitude != null && longitude != null;
 
   factory _DashboardMapSnapshot.from(DashboardServices services) {
+    final lat = _round(services.latitude);
+    final lng = _round(services.longitude);
+    final destLat = _round(services.destinationPositionLatitude);
+    final destLng = _round(services.destinationPositionLongitude);
     final markers = <Marker>{};
 
     if (services.latitude != null && services.longitude != null) {
-      final origin = LatLng(services.latitude!, services.longitude!);
+      final origin = LatLng(lat!, lng!);
       markers.add(
         Marker(
           markerId: const MarkerId('route_origin'),
@@ -107,10 +111,7 @@ class _DashboardMapSnapshot {
     }
 
     if (services.hasSelectedDestination) {
-      final destination = LatLng(
-        services.destinationPositionLatitude!,
-        services.destinationPositionLongitude!,
-      );
+      final destination = LatLng(destLat!, destLng!);
       markers.add(
         Marker(
           markerId: const MarkerId('route_destination'),
@@ -126,11 +127,11 @@ class _DashboardMapSnapshot {
     }
 
     final circles = <Circle>{};
-    if (services.latitude != null && services.longitude != null) {
+    if (lat != null && lng != null) {
       circles.add(
         Circle(
           circleId: const CircleId('live_location_pulse_ring'),
-          center: LatLng(services.latitude!, services.longitude!),
+          center: LatLng(lat, lng),
           radius: 65,
           strokeColor: const Color(0x332196F3),
           strokeWidth: 2,
@@ -154,10 +155,10 @@ class _DashboardMapSnapshot {
     }
 
     return _DashboardMapSnapshot(
-      latitude: services.latitude,
-      longitude: services.longitude,
-      destinationLatitude: services.destinationPositionLatitude,
-      destinationLongitude: services.destinationPositionLongitude,
+      latitude: lat,
+      longitude: lng,
+      destinationLatitude: destLat,
+      destinationLongitude: destLng,
       hasSelectedDestination: services.hasSelectedDestination,
       markers: markers,
       circles: circles,
@@ -209,4 +210,9 @@ class _DashboardMapSnapshot {
     }
     return true;
   }
+}
+
+double? _round(double? value) {
+  if (value == null) return null;
+  return (value * 1000).roundToDouble() / 1000;
 }

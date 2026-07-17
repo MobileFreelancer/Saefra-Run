@@ -51,6 +51,8 @@ class DashboardServices extends ChangeNotifier {
   MapTheme _mapTheme = MapTheme.light;
 
   final ApiService _apiService = ApiService();
+  Timer? _fetchRouteDebounce;
+  int _fetchRouteGeneration = 0;
 
   double? get latitude => _latitude;
   double? get longitude => _longitude;
@@ -211,7 +213,7 @@ class DashboardServices extends ChangeNotifier {
     notifyListeners();
 
     if (_latitude != null && _longitude != null) {
-      await fetchSafeRoute(
+      _scheduleFetchSafeRoute(
         originLat: _latitude!,
         originLng: _longitude!,
         destLat: lat,
@@ -234,12 +236,30 @@ class DashboardServices extends ChangeNotifier {
     }
   }
 
+  void _scheduleFetchSafeRoute({
+    required double originLat,
+    required double originLng,
+    required double destLat,
+    required double destLng,
+  }) {
+    _fetchRouteDebounce?.cancel();
+    _fetchRouteDebounce = Timer(const Duration(milliseconds: 600), () {
+      fetchSafeRoute(
+        originLat: originLat,
+        originLng: originLng,
+        destLat: destLat,
+        destLng: destLng,
+      );
+    });
+  }
+
   Future<void> fetchSafeRoute({
     required double originLat,
     required double originLng,
     required double destLat,
     required double destLng,
   }) async {
+    final generation = ++_fetchRouteGeneration;
     _isRouteLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -251,6 +271,8 @@ class DashboardServices extends ChangeNotifier {
         destLat: destLat,
         destLng: destLng,
       );
+
+      if (generation != _fetchRouteGeneration) return;
 
       if (result['success'] == true ||
           result['status']?.toString().toLowerCase() == 'success') {
@@ -281,9 +303,11 @@ class DashboardServices extends ChangeNotifier {
         _errorMessage = result['message'] ?? 'Failed to generate safe route.';
       }
     } catch (e) {
+      if (generation != _fetchRouteGeneration) return;
       _errorMessage = e.toString();
       debugPrint('Error fetching safe route: $e');
     } finally {
+      if (generation != _fetchRouteGeneration) return;
       _isRouteLoading = false;
       notifyListeners();
     }
@@ -440,6 +464,7 @@ class DashboardServices extends ChangeNotifier {
 
   @override
   void dispose() {
+    _fetchRouteDebounce?.cancel();
     _positionStreamSubscription?.cancel();
     super.dispose();
   }

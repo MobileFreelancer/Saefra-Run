@@ -80,6 +80,13 @@ class GenerateRouteService extends ChangeNotifier {
     _previewLongitude = longitude;
   }
 
+  /// Updates origin from GPS without re-binding destination or full sync.
+  void onOriginMoved({required double latitude, required double longitude}) {
+    _previewLatitude = latitude;
+    _previewLongitude = longitude;
+    _schedulePreview();
+  }
+
   void bindDestination({
     required double? latitude,
     required double? longitude,
@@ -117,16 +124,6 @@ class GenerateRouteService extends ChangeNotifier {
   }
 
   Future<LoopRouteResult?> _buildPreviewRoute(LatLng origin) async {
-    if (hasDestination) {
-      return _routeService.createRouteToDestination(
-        origin: origin,
-        destination: LatLng(_destinationLatitude!, _destinationLongitude!),
-        difficulty: _filters.difficulty.apiValue,
-        lighting: _filters.lighting.apiValue,
-        routeName: _destinationName,
-      );
-    }
-
     if (_filters.shape == RouteShape.loop) {
       return _routeService.createLoopRoute(
         currentLocation: origin,
@@ -134,6 +131,16 @@ class GenerateRouteService extends ChangeNotifier {
         difficulty: _filters.difficulty.apiValue,
         routeType: 'loop',
         lighting: _filters.lighting.apiValue,
+      );
+    }
+
+    if (hasDestination) {
+      return _routeService.createRouteToDestination(
+        origin: origin,
+        destination: LatLng(_destinationLatitude!, _destinationLongitude!),
+        difficulty: _filters.difficulty.apiValue,
+        lighting: _filters.lighting.apiValue,
+        routeName: _destinationName,
       );
     }
 
@@ -174,7 +181,7 @@ class GenerateRouteService extends ChangeNotifier {
 
     try {
       final origin = LatLng(latitude, longitude);
-      if (hasDestination) {
+      if (hasDestination && _filters.shape != RouteShape.loop) {
         final destination = LatLng(_destinationLatitude!, _destinationLongitude!);
         final validationError = LocationRouteUtils.routeValidationError(
           origin: origin,
@@ -226,7 +233,7 @@ class GenerateRouteService extends ChangeNotifier {
       return null;
     }
 
-    if (hasDestination) {
+    if (hasDestination && _filters.shape != RouteShape.loop) {
       final validationError = LocationRouteUtils.routeValidationError(
         origin: LatLng(latitude, longitude),
         destination: LatLng(_destinationLatitude!, _destinationLongitude!),

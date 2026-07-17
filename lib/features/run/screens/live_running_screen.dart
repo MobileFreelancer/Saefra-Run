@@ -596,34 +596,25 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                 padding: EdgeInsets.all(16.w),
                 children: [
                   Center(
-                    child: Container(
-                      width: 120.w,
-                      height: 120.w,
-                      decoration: BoxDecoration(
+                    child:  Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: const BoxDecoration(
+                        color: Color(0x33E52344),
                         shape: BoxShape.circle,
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.4),
-                            blurRadius: 24,
-                            spreadRadius: 4,
-                          ),
-                        ],
                       ),
-                      alignment: Alignment.center,
-                      child: Image.asset(
-                        Assets.sos,
-                        width: 56,
-                        errorBuilder: (_, __, ___) => const Text(
-                          'SOS',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 24,
-                          ),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0x33E52344),
+                          shape: BoxShape.circle,
+                        ),
+                        child: CircleAvatar(
+                          backgroundColor: const Color(0xFFE52344),
+                          radius: 30,
+                          child: const Text('SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                         ),
                       ),
-                    ),
+                    )
                   ),
                   SizedBox(height: 16.h),
                   Text(
