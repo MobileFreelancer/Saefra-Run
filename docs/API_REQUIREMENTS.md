@@ -163,6 +163,41 @@ Toggle mock data locally with `USE_MOCK_API=true` in `.env` — no backend neede
 
 ---
 
+## Notifications & FCM (implemented)
+
+| Method | Path | Body / Params |
+|--------|------|----------------|
+| POST | `/api/v1/update-fcm-token` | `fcm_token` (required) |
+| POST | `/api/v1/get-notifications` | `category` (optional), `page` (optional), `perPage` (optional) |
+| POST | `/api/v1/read-notification/{id}` | `id` (path + query param) |
+| DELETE | `/api/v1/delete-notification/{id}` | `id` (path + query param) |
+| DELETE | `/api/v1/clear-all-notifications` | — |
+
+**Get notifications response:**
+```json
+{
+  "message": "Notifications found successfully!",
+  "data": {
+    "notifications": [
+      {
+        "id": 2,
+        "notification_type": "sos_cancelled",
+        "category": "Safety Alerts",
+        "title": "SOS Cancelled",
+        "message": "You cancelled the SOS alert...",
+        "payload": [],
+        "is_read": false,
+        "read_at": null,
+        "created_at": "2026-07-17 13:16:01",
+        "updated_at": "2026-07-17 13:16:01"
+      }
+    ]
+  }
+}
+```
+
+---
+
 ## Standard response format
 
 The app parser (`ApiResponseParser`) expects Laravel-style responses:
@@ -193,6 +228,8 @@ Errors: HTTP 4xx/5xx with `message` and optional `errors` object.
 | `RunService` | `run_service.dart` | `activateSos`, `cancelSos`, `submitRunSummary` |
 | `RunReviewService` | `run_review_service.dart` | `submitRunReview` |
 | `SettingsService` | `settings_service.dart` | `getCurrentUser`, `getPreferences`, `updateProfile`, `getEmergencyContacts`, etc. |
+| `NotificationInboxService` | `notification_inbox_service.dart` | `getNotifications`, `markNotificationRead`, `deleteNotification`, `clearAllNotifications` |
+| `FcmService` | `fcm_service.dart` | `updateFcmToken` |
 | `DashboardServices` | `dashboard_services.dart` | `generateSafeRoute` |
 
 When adding a real endpoint, update the matching method in `lib/core/services/api_service.dart` — UI and providers stay unchanged.

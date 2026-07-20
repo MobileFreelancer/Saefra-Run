@@ -6,6 +6,7 @@ import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
+import 'package:saefra_run/core/services/fcm_service.dart';
 import 'package:saefra_run/core/services/socil_auth%20services.dart';
 
 class AuthService extends ChangeNotifier {
@@ -87,6 +88,7 @@ class AuthService extends ChangeNotifier {
       if (token != null && token.isNotEmpty) {
         _currentUser = await _apiService.getCurrentUser();
         notifyListeners();
+        await FcmService.initialize();
       }
     } catch (e, s) {
       debugPrint('AUTH initialize failed: $e');
@@ -124,6 +126,7 @@ class AuthService extends ChangeNotifier {
         key: ApiConfig.storageKeyUserPassword,
         value: password,
       );
+      await FcmService.syncToken();
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -164,6 +167,7 @@ class AuthService extends ChangeNotifier {
       await _storage.write(key: ApiConfig.storageKeyUserEmail, value: email);
       await _storage.write(key: ApiConfig.storageKeyUserPassword, value: password);
       _clearPendingSignup();
+      await FcmService.syncToken();
       return true;
     } catch (e) {
       _setError(e.toString());

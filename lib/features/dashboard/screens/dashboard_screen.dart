@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/notification_inbox_service.dart';
 import 'package:saefra_run/core/widgets/recent_route_tile.dart';
 import 'package:saefra_run/core/widgets/recommended_route_card.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -36,6 +37,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final services = context.read<DashboardServices>();
       await services.getCurrentLocation();
+      if (!mounted) return;
+      context.read<NotificationInboxService>().load(refresh: true);
       //fetchAndShowRouteData();
     });
   }
@@ -44,6 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    final inbox = context.watch<NotificationInboxService>();
     final user = auth.currentUser;
     final screenSize = MediaQuery.of(context).size;
     final greetingName = "${user?.firstName} ${user?.lastName}";
@@ -339,26 +343,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         GestureDetector(
                           onTap: () => context.pushNamed('notificationsInbox'),
-                          child: Container(
-                            height: 38,
-                            width: 38,
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: AppColors.white.withValues(alpha: 0.05),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                height: 38,
+                                width: 38,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: AppColors.white.withValues(alpha: 0.05),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.all(9),
+                                child: Image.asset(
+                                  Assets.homeNotificationIcon,
+                                  color: AppColors.white,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.notifications_none,
+                                    size: 18,
+                                    color: AppColors.white,
+                                  ),
+                                ),
                               ),
-                            ),
-                            padding: const EdgeInsets.all(9),
-                            child: Image.asset(
-                              Assets.homeNotificationIcon,
-                              color: AppColors.white,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                Icons.notifications_none,
-                                size: 18,
-                                color: AppColors.white,
-                              ),
-                            ),
+                              if (inbox.unreadCount > 0)
+                                Positioned(
+                                  top: -2,
+                                  right: -2,
+                                  child: Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],

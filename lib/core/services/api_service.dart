@@ -8,6 +8,7 @@ import 'package:saefra_run/core/models/activity_model.dart';
 import 'package:saefra_run/core/models/auth_response_model.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
+import 'package:saefra_run/core/models/notification_model.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/models/route_model.dart';
@@ -810,6 +811,114 @@ class ApiService {
         _path('/runs/$runId/review'),
         data: _form(form.toJson()),
       );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  // ─── Notifications / FCM ───────────────────────────────────────────────────
+
+  List<AppNotificationModel> _parseNotificationsList(dynamic raw) {
+    if (raw is List) {
+      return raw
+          .map(
+            (e) => AppNotificationModel.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ),
+          )
+          .toList();
+    }
+    if (raw is Map) {
+      final map = Map<String, dynamic>.from(raw);
+      for (final key in ['notifications', 'data', 'items']) {
+        final value = map[key];
+        if (value is List) return _parseNotificationsList(value);
+      }
+    }
+    return [];
+  }
+
+  Future<void> updateFcmToken(String fcmToken) async {
+    try {
+      await _dio.post(
+        _path('/update-fcm-token'),
+        data: _form({'fcm_token': fcmToken}),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<NotificationListResult> getNotifications({
+    String? category,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    try {
+      final fields = <String, dynamic>{
+        'page': page,
+        'perPage': perPage,
+      };
+      if (category != null && category.trim().isNotEmpty) {
+        fields['category'] = category.trim();
+      }
+
+      final response = await _dio.post(
+        _path('/get-notifications'),
+        data: _form(fields),
+      );
+      final map = _map(response);
+      final payload = ApiResponseParser.payload(map);
+      final list = _parseNotificationsList(
+        payload['notifications'] ?? payload,
+      );
+
+      return NotificationListResult(
+        notifications: list,
+        currentPage: page,
+        hasMore: list.length >= perPage,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<AppNotificationModel> markNotificationRead(String id) async {
+    try {
+      final response = await _dio.post(
+        _path('/read-notification/$id'),
+        queryParameters: {'id': id},
+      );
+      final map = _map(response);
+      final payload = ApiResponseParser.payload(map);
+      if (payload.containsKey('id')) {
+        return AppNotificationModel.fromJson(payload);
+      }
+      return AppNotificationModel(
+        id: id,
+        title: '',
+        message: '',
+        isRead: true,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> deleteNotification(String id) async {
+    try {
+      await _dio.delete(
+        _path('/delete-notification/$id'),
+        queryParameters: {'id': id},
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> clearAllNotifications() async {
+    try {
+      await _dio.delete(_path('/clear-all-notifications'));
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

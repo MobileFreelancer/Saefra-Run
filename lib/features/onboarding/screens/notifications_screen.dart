@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/fcm_service.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/widgets/photo_permission_scaffold.dart';
 import 'package:saefra_run/generated/assets.dart';
@@ -25,6 +26,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     await PermissionService.requestNotificationPermission();
     onboardingService.setPushNotifications(enable);
     onboardingService.setEmailNotifications(enable);
+    await FcmService.initialize();
 
     // Fire onboarding completion
     final success = await onboardingService.completeOnboarding(authService);
