@@ -5,6 +5,7 @@ enum RunStatus { idle, running, paused, stopped }
 enum RunMood { great, good, okay, tough, exhausted }
 
 class RunSessionModel {
+  final String? runId;
   final String? routeId;
   final String? routeName;
   final double distanceKm;
@@ -15,8 +16,10 @@ class RunSessionModel {
   final int routeRemainingMeters;
   final List<RunSplitModel> splits;
   final List<LatLng> routePath;
+  final DateTime? startedAt;
 
   const RunSessionModel({
+    this.runId,
     this.routeId,
     this.routeName,
     this.distanceKm = 0,
@@ -27,9 +30,11 @@ class RunSessionModel {
     this.routeRemainingMeters = 0,
     this.splits = const [],
     this.routePath = const [],
+    this.startedAt,
   });
 
   RunSessionModel copyWith({
+    String? runId,
     String? routeId,
     String? routeName,
     double? distanceKm,
@@ -40,8 +45,10 @@ class RunSessionModel {
     int? routeRemainingMeters,
     List<RunSplitModel>? splits,
     List<LatLng>? routePath,
+    DateTime? startedAt,
   }) {
     return RunSessionModel(
+      runId: runId ?? this.runId,
       routeId: routeId ?? this.routeId,
       routeName: routeName ?? this.routeName,
       distanceKm: distanceKm ?? this.distanceKm,
@@ -52,6 +59,7 @@ class RunSessionModel {
       routeRemainingMeters: routeRemainingMeters ?? this.routeRemainingMeters,
       splits: splits ?? this.splits,
       routePath: routePath ?? this.routePath,
+      startedAt: startedAt ?? this.startedAt,
     );
   }
 
@@ -69,6 +77,7 @@ class RunSessionModel {
   }
 
   String get paceDisplayLabel {
+    if (paceLabel.isNotEmpty && paceLabel.contains('/km')) return paceLabel;
     if (distanceKm <= 0) return paceLabel;
     final paceSeconds = elapsed.inSeconds / distanceKm;
     final min = paceSeconds ~/ 60;
@@ -77,12 +86,23 @@ class RunSessionModel {
   }
 
   factory RunSessionModel.fromJson(Map<String, dynamic> json) {
+    final distance = (json['distance_km'] as num?)?.toDouble() ??
+        (json['distance'] as num?)?.toDouble() ??
+        0;
+    final durationSeconds = json['elapsed_seconds'] as int? ??
+        json['duration'] as int? ??
+        0;
+    final pace = json['pace']?.toString() ??
+        json['pace_label']?.toString() ??
+        '';
+
     return RunSessionModel(
+      runId: json['run_id']?.toString() ?? json['id']?.toString(),
       routeId: json['route_id'] as String?,
       routeName: json['route_name'] as String?,
-      distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0,
-      elapsed: Duration(seconds: json['elapsed_seconds'] as int? ?? 0),
-      paceLabel: json['pace'] as String? ?? '',
+      distanceKm: distance,
+      elapsed: Duration(seconds: durationSeconds),
+      paceLabel: pace.isNotEmpty ? pace : '0:00 min/km',
       calories: json['calories'] as int? ?? 0,
       steps: json['steps'] as int? ?? 0,
       routeRemainingMeters: json['route_remaining_m'] as int? ?? 0,
@@ -90,10 +110,20 @@ class RunSessionModel {
               ?.map((e) => RunSplitModel.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList() ??
           const [],
+      startedAt: _parseDateTime(json['started_at']),
     );
   }
 
+  static DateTime? _parseDateTime(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is DateTime) return raw;
+    final text = raw.toString().trim();
+    if (text.isEmpty) return null;
+    return DateTime.tryParse(text.replaceFirst(' ', 'T'));
+  }
+
   Map<String, dynamic> toSubmitJson({RunMood? mood}) => {
+        if (runId != null) 'run_id': runId,
         if (routeId != null) 'route_id': routeId,
         'distance_km': distanceKm,
         'elapsed_seconds': elapsed.inSeconds,

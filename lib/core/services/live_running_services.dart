@@ -54,6 +54,16 @@ class RunningProvider extends ChangeNotifier {
   String _routeRemainingStr = "0m";
   String get routeRemainingStr => _routeRemainingStr;
 
+  void Function({
+    required double latitude,
+    required double longitude,
+    required double distanceKm,
+    required int durationSeconds,
+    required double speedKmh,
+    required int steps,
+    required String pace,
+  })? onTrackingUpdate;
+
   BitmapDescriptor? _runnerIconIdle;
   BitmapDescriptor? _runnerIconActive;
 
@@ -345,6 +355,26 @@ class RunningProvider extends ChangeNotifier {
     }
   }
 
+  String get paceLabel {
+    if (_totalDistanceKm <= 0) return "0'00\" /km";
+    final paceSeconds = _secondsElapsed / _totalDistanceKm;
+    final min = paceSeconds ~/ 60;
+    final sec = (paceSeconds % 60).round().toString().padLeft(2, '0');
+    return "$min'$sec\" /km";
+  }
+
+  void _notifyTrackingUpdate(LatLng position) {
+    onTrackingUpdate?.call(
+      latitude: position.latitude,
+      longitude: position.longitude,
+      distanceKm: _totalDistanceKm,
+      durationSeconds: _secondsElapsed,
+      speedKmh: _currentSpeedKmh,
+      steps: _totalSteps,
+      pace: paceLabel,
+    );
+  }
+
   void _startLiveLocationTracking() {
     try {
       _locationSubscription?.cancel();
@@ -403,6 +433,7 @@ class RunningProvider extends ChangeNotifier {
             _currentPosition = newPos;
             _updateRunnerMarker(newPos);
             _calculateRemainingDistance();
+            _notifyTrackingUpdate(newPos);
 
             if (_mapController.isCompleted) {
               final GoogleMapController controller = await _mapController.future;

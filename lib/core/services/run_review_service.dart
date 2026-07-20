@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:saefra_run/core/models/run_review_form_model.dart';
-import 'package:saefra_run/core/models/run_session_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 
 class RunReviewService extends ChangeNotifier {
@@ -55,12 +53,16 @@ class RunReviewService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> submit({String? runId}) async {
+  Future<bool> submit({
+    required String runId,
+    required String routeId,
+  }) async {
     _isSubmitting = true;
     notifyListeners();
     try {
       await _api.submitRunReview(
-        runId: runId ?? 'latest',
+        runId: runId,
+        routeId: routeId,
         form: _form,
       );
       _submitted = true;

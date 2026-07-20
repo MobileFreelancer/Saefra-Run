@@ -90,4 +90,43 @@ class ApiFieldMapper {
         'last_name': onboarding.lastName,
     };
   }
+
+  static String routeFeelToApi(String value) {
+    switch (value) {
+      case 'openWellTraveled':
+        return 'open_and_well_traveled';
+      case 'balanced':
+        return 'balanced';
+      case 'quietSecluded':
+        return 'quiet_and_secluded';
+      default:
+        return value.trim().toLowerCase().replaceAll(' ', '_');
+    }
+  }
+
+  static String routeSurfaceToApi(String value) {
+    switch (value) {
+      case 'mostlyPaved':
+        return 'mostly_paved';
+      case 'mixedSurfaces':
+        return 'mixed_surfaces';
+      case 'mostlyUnpaved':
+        return 'mostly_unpaved';
+      default:
+        return value.trim().toLowerCase().replaceAll(' ', '_');
+    }
+  }
+
+  static String routeSidewalkToApi(String value) {
+    switch (value) {
+      case 'someSections':
+        return 'some_sections';
+      case 'yes':
+        return 'yes';
+      case 'no':
+        return 'no';
+      default:
+        return value.trim().toLowerCase().replaceAll(' ', '_');
+    }
+  }
 }

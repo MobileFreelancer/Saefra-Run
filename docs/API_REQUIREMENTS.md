@@ -117,10 +117,16 @@ Toggle mock data locally with `USE_MOCK_API=true` in `.env` — no backend neede
 
 | Method | Path | Body |
 |--------|------|------|
+| POST | `/api/v1/run-start` | `route_id`, `latitude`, `longitude`, `started_at` (Y-m-d H:i:s) |
+| POST | `/api/v1/run-update` | `run_id`, `latitude`, `longitude`, `timestamp` (Y-m-d H:i:s), `distance`, `duration`, `speed`, `pace`, `steps` |
+| POST | `/api/v1/run-pause` | `run_id` |
+| POST | `/api/v1/run-resume` | `run_id` |
+| POST | `/api/v1/run-finish` | `run_id`, `ended_at` (Y-m-d H:i:s), `polyline`, `latitude`, `longitude` |
+| GET | `/api/v1/run-summary/{run_id}` | Query: `run_id` |
+| POST | `/api/v1/run-review` | `run_id`, `route_id`, `overall_rating`, `route_feel`, `route_surface`, `route_sidewalk`, `route_image[]`, `comment` |
+| POST | `/api/v1/run-feeling` | `run_id`, `run_feeling` (`great`, `good`, `okay`, `tough`, `exhausted`) |
 | POST | `/api/v1/sos-activate` | `latitude` (optional), `longitude` (optional), `address_link` (optional URL) |
 | POST | `/api/v1/sos-cancel` | — |
-| POST | `/api/runs/summary` | See below |
-| POST | `/api/runs/{runId}/review` | See run review |
 
 **Run summary payload (`POST /api/runs/summary`):**
 ```json
@@ -137,7 +143,21 @@ Toggle mock data locally with `USE_MOCK_API=true` in `.env` — no backend neede
 }
 ```
 
-**Run review payload (`POST /api/runs/{runId}/review`):**
+**Run review payload (`POST /api/v1/run-review`):**
+```json
+{
+  "run_id": "12",
+  "route_id": "2",
+  "overall_rating": 5,
+  "route_feel": "balanced",
+  "route_surface": "mixed_surfaces",
+  "route_sidewalk": "some_sections",
+  "comment": "Great route!",
+  "route_image[]": ["file uploads"]
+}
+```
+
+**Run review payload (legacy `/api/runs/{runId}/review`):**
 ```json
 {
   "who_with": "noOne",
@@ -225,8 +245,8 @@ Errors: HTTP 4xx/5xx with `message` and optional `errors` object.
 | `RouteDetailService` | `route_detail_service.dart` | `getRouteDetail` |
 | `CommunityService` | `community_service.dart` | `getPopularRoutes`, `getTopRatedRoutes`, `getCommunityRouteDetail`, `getRouteReviews` |
 | `ActivityService` | `activity_service.dart` | `getActivitySummary`, `getRecentActivities`, `getLifetimeStats` |
-| `RunService` | `run_service.dart` | `activateSos`, `cancelSos`, `submitRunSummary` |
-| `RunReviewService` | `run_review_service.dart` | `submitRunReview` |
+| `RunService` | `run_service.dart` | `startRunSession`, `updateRunSession`, `pauseRunSession`, `resumeRunSession`, `finishRunSession`, `getRunSummary`, `submitRunFeeling`, `activateSos`, `cancelSos` |
+| `RunReviewService` | `run_review_service.dart` | `submitRunReview` (`/api/v1/run-review`) |
 | `SettingsService` | `settings_service.dart` | `getCurrentUser`, `getPreferences`, `updateProfile`, `getEmergencyContacts`, etc. |
 | `NotificationInboxService` | `notification_inbox_service.dart` | `getNotifications`, `markNotificationRead`, `deleteNotification`, `clearAllNotifications` |
 | `FcmService` | `fcm_service.dart` | `updateFcmToken` |

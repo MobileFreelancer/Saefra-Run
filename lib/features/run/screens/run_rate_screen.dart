@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/run_review_form_model.dart';
@@ -42,9 +43,19 @@ class _RunRateScreenState extends State<RunRateScreen> {
     setState(() => _submitError = null);
     review.setReviewText(_reviewController.text);
 
-    final ok = await review.submit(
-      runId: context.read<RunService>().session.routeId,
-    );
+    final session = context.read<RunService>().session;
+    final runId = session.runId;
+    final routeId = session.routeId;
+    if (runId == null || runId.isEmpty) {
+      setState(() => _submitError = 'Run ID not found. Please finish a run first.');
+      return;
+    }
+    if (routeId == null || routeId.isEmpty) {
+      setState(() => _submitError = 'Route ID not found for this run.');
+      return;
+    }
+
+    final ok = await review.submit(runId: runId, routeId: routeId);
     if (!mounted) return;
 
     if (!ok) {
@@ -66,14 +77,21 @@ class _RunRateScreenState extends State<RunRateScreen> {
     );
   }
 
-  void _addImage() {
+  Future<void> _addImage() async {
     final review = context.read<RunReviewService>();
     if (review.form.imagePaths.length >= 3) {
       setState(() => _submitError = 'You can upload up to 3 images');
       return;
     }
+
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
     setState(() => _submitError = null);
-    review.addImage('assets/images/background.png');
+    review.addImage(picked.path);
   }
 
   @override
