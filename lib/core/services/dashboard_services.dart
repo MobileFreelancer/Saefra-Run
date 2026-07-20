@@ -408,7 +408,6 @@ class DashboardServices extends ChangeNotifier {
       );
       _latitude = pos.latitude;
       _longitude = pos.longitude;
-
       await _animateToCurrentLocation();
       notifyListeners();
     } catch (e) {

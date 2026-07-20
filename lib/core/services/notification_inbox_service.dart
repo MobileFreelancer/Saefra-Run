@@ -27,6 +27,24 @@ class NotificationInboxService extends ChangeNotifier {
   int get unreadCount => _items.where((n) => !n.isRead).length;
   int get todayUnreadCount => unreadCount;
 
+  void prependFromPush({
+    required String title,
+    required String body,
+    Map<String, dynamic> data = const {},
+  }) {
+    final item = AppNotificationModel(
+      id: 'push-${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      message: body,
+      category: data['category']?.toString() ?? 'Push',
+      notificationType: data['notification_type']?.toString() ?? 'push',
+      isRead: false,
+      createdAt: DateTime.now().toIso8601String(),
+    );
+    _items = [item, ..._items];
+    notifyListeners();
+  }
+
   Future<void> load({String? category, bool refresh = false}) async {
     if (_isLoading) return;
 
@@ -47,7 +65,13 @@ class NotificationInboxService extends ChangeNotifier {
         perPage: _perPage,
       );
 
-      _items = result.notifications;
+      if (refresh) {
+        final localPush =
+            _items.where((n) => n.id.startsWith('push-')).toList();
+        _items = [...localPush, ...result.notifications];
+      } else {
+        _items = [..._items, ...result.notifications];
+      }
       _hasMore = result.hasMore;
       _currentPage = result.currentPage;
     } catch (e) {

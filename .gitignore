@@ -11,7 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
-
+assets/notification.json
 # IntelliJ related
 *.iml
 *.ipr
@@ -32,7 +32,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
-
+assets/notifaction.json
 # Symbolication related
 app.*.symbols
 

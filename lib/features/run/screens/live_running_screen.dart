@@ -16,7 +16,7 @@ import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/secondary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
 
-import '../../../core/services/live_runing_services.dart';
+import '../../../core/services/live_running_services.dart';
 
 class LiveRunningScreen extends StatefulWidget {
   const LiveRunningScreen({super.key, this.routeId, this.routeName});
