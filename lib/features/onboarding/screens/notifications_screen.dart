@@ -26,7 +26,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     await PermissionService.requestNotificationPermission();
     onboardingService.setPushNotifications(enable);
     onboardingService.setEmailNotifications(enable);
-    await FcmService.initialize();
+    await FcmService.requestPermissionAndSync();
 
     // Fire onboarding completion
     final success = await onboardingService.completeOnboarding(authService);

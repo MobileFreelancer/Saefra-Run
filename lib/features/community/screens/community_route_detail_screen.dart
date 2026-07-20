@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/community_service.dart';
-import 'package:saefra_run/core/services/live_runing_services.dart';
+import 'package:saefra_run/core/services/live_running_services.dart';
 import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';

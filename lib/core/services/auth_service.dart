@@ -7,7 +7,7 @@ import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/fcm_service.dart';
-import 'package:saefra_run/core/services/socil_auth%20services.dart';
+import 'package:saefra_run/core/services/social_auth_services.dart';
 
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
@@ -88,7 +88,7 @@ class AuthService extends ChangeNotifier {
       if (token != null && token.isNotEmpty) {
         _currentUser = await _apiService.getCurrentUser();
         notifyListeners();
-        await FcmService.initialize();
+        await FcmService.requestPermissionAndSync();
       }
     } catch (e, s) {
       debugPrint('AUTH initialize failed: $e');

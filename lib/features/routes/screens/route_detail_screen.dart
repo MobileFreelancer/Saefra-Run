@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
-import 'package:saefra_run/core/services/live_runing_services.dart';
+import 'package:saefra_run/core/services/live_running_services.dart';
 import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_route_map.dart';

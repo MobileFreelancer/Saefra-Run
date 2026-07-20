@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -25,7 +26,9 @@ import 'package:saefra_run/core/theme/app_theme.dart';
 import 'package:saefra_run/firebase_options.dart';
 
 import 'core/services/dashboard_services.dart';
-import 'core/services/live_runing_services.dart';
+import 'core/services/firebase_messaging_background.dart';
+import 'core/services/fcm_service.dart';
+import 'core/services/live_running_services.dart';
 
 
 
@@ -36,6 +39,7 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await GoogleFonts.pendingFonts([
     GoogleFonts.manrope(),
     GoogleFonts.inter(),
@@ -56,6 +60,9 @@ Future<void> main() async {
   );
 
   AppRouter.init(authStateNotifier);
+  await FcmService.setup();
+  FcmService.generateAccessToken();
+  final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   runApp(
     MultiProvider(
@@ -86,13 +93,71 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => RunReviewService()),
         ChangeNotifierProvider(create: (_) => RunningProvider()),
       ],
-      child: const SaefraRunApp(),
+      child: _AppWithFcm(scaffoldMessengerKey: scaffoldMessengerKey),
     ),
   );
 }
 
+/// Wires FCM push events to [NotificationInboxService] after providers exist.
+class _AppWithFcm extends StatefulWidget {
+  const _AppWithFcm({required this.scaffoldMessengerKey});
+
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
+
+  @override
+  State<_AppWithFcm> createState() => _AppWithFcmState();
+}
+
+class _AppWithFcmState extends State<_AppWithFcm> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await FcmService.requestPermissionAndSync();
+      if (!mounted) return;
+
+      FcmService.setPushReceivedCallback((message) {
+        if (!mounted) return;
+        final title = message.notification?.title ??
+            message.data['title']?.toString() ??
+            'Notification';
+        final body = message.notification?.body ??
+            message.data['body']?.toString() ??
+            '';
+
+        final inbox = context.read<NotificationInboxService>();
+        inbox.prependFromPush(
+          title: title,
+          body: body,
+          data: message.data,
+        );
+
+        widget.scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text('$title${body.isNotEmpty ? '\n$body' : ''}'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    FcmService.setPushReceivedCallback(null);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SaefraRunApp(
+        scaffoldMessengerKey: widget.scaffoldMessengerKey,
+      );
+}
+
 class SaefraRunApp extends StatelessWidget {
-  const SaefraRunApp({super.key});
+  const SaefraRunApp({super.key, required this.scaffoldMessengerKey});
+
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +172,7 @@ class SaefraRunApp extends StatelessWidget {
           theme: AppTheme.darkTheme,
           routerConfig: AppRouter.router,
           debugShowCheckedModeBanner: false,
+          scaffoldMessengerKey: scaffoldMessengerKey,
         ),
       ),
     );

@@ -39,7 +39,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await services.getCurrentLocation();
       if (!mounted) return;
       context.read<NotificationInboxService>().load(refresh: true);
-      //fetchAndShowRouteData();
+      services.fetchSafeRoute(
+        originLat: services.latitude!,
+        originLng: services.longitude!,
+        destLat:
+        services.latitude!,
+        destLng:
+        services.longitude!,
+      );
     });
   }
   late final services = context.read<DashboardServices>();
