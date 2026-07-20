@@ -76,7 +76,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         route: route,
                         bodyStyle: bodyStyle,
                         onTap: () => context.pushNamed(
-                          'communityRouteDetail',
+                          'routeReviews',
                           pathParameters: {'id': route.id},
                         ),
                         onLike: () => community.toggleLike(route.id),
@@ -97,7 +97,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         route: route,
                         bodyStyle: bodyStyle,
                         onTap: () => context.pushNamed(
-                          'communityRouteDetail',
+                          'routeReviews',
                           pathParameters: {'id': route.id},
                         ),
                         onLike: () => community.toggleLike(route.id),

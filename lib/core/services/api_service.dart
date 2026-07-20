@@ -393,8 +393,31 @@ class ApiService {
     required String birthdate,
   }) async {
     try {
-      final parsed = DateTime.parse(birthdate);
-      final formatted = DateFormat('M-d-yyyy').format(parsed);
+      DateTime parsed;
+      if (birthdate.contains('.')) {
+        // Handle DD.MM.YYYY
+        final parts = birthdate.split('.');
+        parsed = DateTime(
+          int.parse(parts[2]),
+          int.parse(parts[1]),
+          int.parse(parts[0]),
+        );
+      } else if (birthdate.contains('-') && birthdate.split('-').first.length == 4) {
+        // Handle YYYY-MM-DD
+        parsed = DateTime.parse(birthdate);
+      } else if (birthdate.contains('-')) {
+        // Handle MM-DD-YYYY or DD-MM-YYYY (assume MM-DD-YYYY based on existing code logic)
+        final parts = birthdate.split('-');
+        parsed = DateTime(
+          int.parse(parts[2]),
+          int.parse(parts[0]),
+          int.parse(parts[1]),
+        );
+      } else {
+        parsed = DateTime.parse(birthdate);
+      }
+
+      final formatted = DateFormat('yyyy-MM-dd').format(parsed);
       final response = await _dio.post(
         _path('/profile'),
         data: _form({'gender': gender, 'birthdate': formatted}),

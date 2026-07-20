@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
-import 'package:saefra_run/core/widgets/app_page_header.dart';
+import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
 import 'package:saefra_run/core/widgets/settings_tile.dart';
 import 'package:saefra_run/features/settings/widgets/logout_dialog.dart';
 
@@ -66,14 +66,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            AppPageHeader(
-              title: 'Settings',
-              onBack: () => context.goNamed('dashboard'),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
+              child: Center(
+                child: Text(
+                  'Settings',
+                  style: textTheme.titleLarge?.copyWith(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
-            // if (settings.isLoading)
-            //   const LinearProgressIndicator(color: AppColors.primary),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
@@ -213,6 +220,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNav(activeIndex: 3),
     );
   }
 }
