@@ -37,7 +37,7 @@ class _CommunityRouteDetailScreenState extends State<CommunityRouteDetailScreen>
 
     if (start != null && end != null) {
       final points = routeModel!.polylinePoints;
-      context.read<RunningProvider>().selectDestination(
+      context.read<RunningProvider>().prepareForRun(
             startPoint: start,
             endPoint: end,
             routePolyline: points.length > 1 ? points : null,

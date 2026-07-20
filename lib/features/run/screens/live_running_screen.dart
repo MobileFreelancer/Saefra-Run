@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
+import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/dashboard_services.dart';
+import 'package:saefra_run/core/services/generate_route_service.dart';
 import 'package:saefra_run/core/services/run_service.dart';
 import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
@@ -27,36 +29,68 @@ class LiveRunningScreen extends StatefulWidget {
 }
 
 class _LiveRunningScreenState extends State<LiveRunningScreen> {
+  bool _bootstrapped = false;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      context.read<RunService>().startRun(
-            routeId: widget.routeId,
-            routeName: widget.routeName,
-          );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
 
-      final tracking = context.read<RunningProvider>();
-      if (widget.routeId != null && tracking.destinationPosition == null) {
-        final detail = context.read<RouteDetailService>();
-        await detail.load(widget.routeId!);
-        final route = detail.route;
-        final start = route?.startPoint;
-        final end = route?.endPoint;
-        if (start != null && end != null) {
-          final points = route!.polylinePoints;
-          tracking.selectDestination(
-            startPoint: start,
-            endPoint: end,
-            routePolyline: points.length > 1 ? points : null,
-          );
-        }
-      }
+  Future<void> _bootstrap() async {
+    if (_bootstrapped || !mounted) return;
+    _bootstrapped = true;
 
-      if (mounted) {
-        tracking.initTracking();
+    final tracking = context.read<RunningProvider>();
+    final runService = context.read<RunService>();
+
+    runService.startRun(
+      routeId: widget.routeId,
+      routeName: widget.routeName,
+    );
+
+    RouteModel? route = await _resolveRoute();
+    if (!mounted) return;
+
+    if (route != null) {
+      final start = route.startPoint;
+      final end = route.endPoint;
+      if (start != null && end != null) {
+        final points = route.polylinePoints;
+        tracking.prepareForRun(
+          startPoint: start,
+          endPoint: end,
+          routePolyline: points.length > 1 ? points : null,
+        );
       }
-    });
+    }
+
+    await tracking.initTracking();
+    if (!mounted) return;
+
+    if (tracking.destinationPosition != null && !tracking.isTracking) {
+      tracking.startRunSession();
+    }
+  }
+
+  Future<RouteModel?> _resolveRoute() async {
+    final detail = context.read<RouteDetailService>();
+    final generated = context.read<GenerateRouteService>().generatedRoute;
+    final dashboard = context.read<DashboardServices>();
+
+    if (widget.routeId != null && widget.routeId!.trim().isNotEmpty) {
+      await detail.load(widget.routeId!);
+      if (detail.route != null) return detail.route;
+    }
+
+    if (generated != null) return generated;
+
+    final recommended = dashboard.recommendedRoute;
+    if (recommended != null) {
+      return RouteModel.fromJson(Map<String, dynamic>.from(recommended));
+    }
+
+    return null;
   }
 
   void _endRunAndGoToSummary() {
@@ -168,9 +202,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
               zoom: 16,
             ),
             onMapCreated: (GoogleMapController controller) {
-              if (!trackingProvider.mapController.isCompleted) {
-                trackingProvider.mapController.complete(controller);
-              }
+              trackingProvider.onMapReady(controller);
               context.read<DashboardServices>().applyMapStyle(controller);
             },
             polylines: Set<Polyline>.of(trackingProvider.polylines.values),
@@ -216,7 +248,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                           const SizedBox(height: 4),
                           Text(
                             trackingProvider.destinationPosition == null
-                                ? '👉 Tap map to select destination'
+                                ? 'Loading route...'
                                 : 'Route Remaining: ${trackingProvider.routeRemainingStr}',
                             style: TextStyle(fontSize: 15, color: Colors.grey[500]),
                           ),

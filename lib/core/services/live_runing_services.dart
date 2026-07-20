@@ -54,12 +54,62 @@ class RunningProvider extends ChangeNotifier {
   String _routeRemainingStr = "0m";
   String get routeRemainingStr => _routeRemainingStr;
 
-  void initTracking() {
+  BitmapDescriptor? _runnerIconIdle;
+  BitmapDescriptor? _runnerIconActive;
+
+  Future<void> _ensureRunnerIcons() async {
+    _runnerIconIdle ??= BitmapDescriptor.defaultMarkerWithHue(
+      BitmapDescriptor.hueRose,
+    );
+    _runnerIconActive ??= BitmapDescriptor.defaultMarkerWithHue(
+      BitmapDescriptor.hueAzure,
+    );
+  }
+
+  Future<void> initTracking() async {
     try {
-      _initLocationPermission();
+      await _ensureRunnerIcons();
+      await _initLocationPermission();
     } catch (e) {
       debugPrint("❌ Error inside initTracking: $e");
     }
+  }
+
+  /// Clears prior run state and applies a generated/saved route for live tracking.
+  void prepareForRun({
+    required LatLng startPoint,
+    required LatLng endPoint,
+    List<LatLng>? routePolyline,
+  }) {
+    _locationSubscription?.cancel();
+    _runningTimer?.cancel();
+    _isTracking = false;
+    _isLoadingRoute = false;
+    _totalDistanceKm = 0.0;
+    _totalSteps = 0;
+    _currentSpeedKmh = 0.0;
+    _secondsElapsed = 0;
+    _routeRemainingStr = "0m";
+    _runningPathCoordinates.clear();
+    _polylines.clear();
+    _markers.remove(const MarkerId('destination_location'));
+
+    selectDestination(
+      startPoint: startPoint,
+      endPoint: endPoint,
+      routePolyline: routePolyline,
+    );
+  }
+
+  void onMapReady(GoogleMapController controller) {
+    if (!_mapController.isCompleted) {
+      _mapController.complete(controller);
+    }
+    _adjustCameraToFitRoute();
+    if (_currentPosition != null) {
+      _updateRunnerMarker(_currentPosition!);
+    }
+    notifyListeners();
   }
 
   Future<void> _initLocationPermission() async {
@@ -70,6 +120,9 @@ class RunningProvider extends ChangeNotifier {
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
       if (permission != LocationPermission.always &&
           permission != LocationPermission.whileInUse) {
         debugPrint('Location not granted — skipping live tracking init.');
@@ -84,7 +137,7 @@ class RunningProvider extends ChangeNotifier {
 
       if (_currentPosition != newPosition && !_isTracking) {
         _currentPosition = newPosition;
-        _updateMarker(_currentPosition!, "runner_location", BitmapDescriptor.hueRose);
+        _updateRunnerMarker(_currentPosition!);
 
         if (_mapController.isCompleted) {
           final GoogleMapController controller = await _mapController.future;
@@ -112,7 +165,7 @@ class RunningProvider extends ChangeNotifier {
       _routeRemainingStr = "0m";
 
       _currentPosition = startPoint;
-      _updateMarker(startPoint, "runner_location", BitmapDescriptor.hueRose);
+      _updateRunnerMarker(startPoint);
 
       _destinationPosition = endPoint;
       _isSafeRouteSelected = true;
@@ -258,6 +311,7 @@ class RunningProvider extends ChangeNotifier {
     try {
       if (_destinationPosition == null) return;
       _isTracking = true;
+      _updateRunnerMarker(_currentPosition ?? _destinationPosition!);
       _startTimer();
       _startLiveLocationTracking();
       notifyListeners();
@@ -347,7 +401,7 @@ class RunningProvider extends ChangeNotifier {
             }
 
             _currentPosition = newPos;
-            _updateMarker(newPos, "runner_location", BitmapDescriptor.hueRose);
+            _updateRunnerMarker(newPos);
             _calculateRemainingDistance();
 
             if (_mapController.isCompleted) {
@@ -384,6 +438,22 @@ class RunningProvider extends ChangeNotifier {
     }
   }
 
+  void _updateRunnerMarker(LatLng position) {
+    final icon = _isTracking
+        ? (_runnerIconActive ??
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure))
+        : (_runnerIconIdle ??
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose));
+    MarkerId id = const MarkerId("runner_location");
+    _markers[id] = Marker(
+      markerId: id,
+      position: position,
+      icon: icon,
+      anchor: const Offset(0.5, 0.5),
+      zIndex: 2,
+    );
+  }
+
   void _updateMarker(LatLng position, String idStr, double colorHue) {
     try {
       MarkerId id = MarkerId(idStr);
@@ -400,6 +470,9 @@ class RunningProvider extends ChangeNotifier {
   void togglePauseResume() {
     try {
       _isTracking = !_isTracking;
+      if (_currentPosition != null) {
+        _updateRunnerMarker(_currentPosition!);
+      }
       if (_isTracking) {
         _startLiveLocationTracking();
       } else {
@@ -432,6 +505,8 @@ class RunningProvider extends ChangeNotifier {
       _locationSubscription?.cancel();
       _runningPathCoordinates.clear();
       _polylines.clear();
+      _destinationPosition = null;
+      _markers.clear();
       notifyListeners();
     } catch (e) {
       debugPrint("❌ Error during session cleanup: $e");

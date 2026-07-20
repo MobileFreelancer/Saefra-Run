@@ -119,7 +119,7 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                                   return;
                                 }
                                 final routePoints = route.polylinePoints;
-                                context.read<RunningProvider>().selectDestination(
+                                context.read<RunningProvider>().prepareForRun(
                                   startPoint: start,
                                   endPoint: end,
                                   routePolyline: routePoints.length > 1
