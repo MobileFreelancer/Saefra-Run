@@ -20,6 +20,7 @@ class AuthService extends ChangeNotifier {
   final FlutterSecureStorage _storage = SecureStorageService.instance;
 
   UserModel? _currentUser;
+  String? _sessionToken;
   bool _isLoading = false;
   String? _error;
   String? _pendingResetEmail;
@@ -29,8 +30,11 @@ class AuthService extends ChangeNotifier {
   String? _pendingSignupPassword;
 
   UserModel? get currentUser => _currentUser;
+  String? get sessionToken => _sessionToken;
+
+  /// Logged-in state is driven by a persisted access token only.
   bool get isLoggedIn =>
-      _currentUser != null && _currentUser!.id.trim().isNotEmpty;
+      _sessionToken != null && _sessionToken!.trim().isNotEmpty;
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get pendingResetIdentifier => _pendingResetEmail;
@@ -40,6 +44,7 @@ class AuthService extends ChangeNotifier {
   bool _agreedToTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _sessionLoaded = false;
 
   bool get agreedToTerms => _agreedToTerms;
   bool get obscurePassword => _obscurePassword;
@@ -82,21 +87,72 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
+    if (_sessionLoaded) return;
+
     try {
-      final token = await _storage
+      _sessionToken = await _storage
           .read(key: ApiConfig.storageKeyAccessToken)
           .timeout(const Duration(seconds: 5));
 
-      if (token != null && token.isNotEmpty) {
-        _currentUser = await _apiService.getCurrentUser();
+      if (_sessionToken == null || _sessionToken!.trim().isEmpty) {
+        _sessionToken = null;
+        _currentUser = null;
         notifyListeners();
-        await FcmService.requestPermissionAndSync();
+        return;
       }
+
+      // Notify immediately so router/splash see logged-in state from token.
+      notifyListeners();
+
+      await _restoreUserProfile();
+      notifyListeners();
+      await FcmService.requestPermissionAndSync();
     } catch (e, s) {
       debugPrint('AUTH initialize failed: $e');
       debugPrint('$s');
-      await _clearTokens();
-      _currentUser = null;
+      _sessionToken = await _storage.read(key: ApiConfig.storageKeyAccessToken);
+      if (_sessionToken == null || _sessionToken!.trim().isEmpty) {
+        await _clearTokens();
+        _currentUser = null;
+        _sessionToken = null;
+      } else {
+        await _restoreUserProfile(fromCacheOnly: true);
+      }
+      notifyListeners();
+    } finally {
+      _sessionLoaded = true;
+    }
+  }
+
+  Future<void> _restoreUserProfile({bool fromCacheOnly = false}) async {
+    if (!fromCacheOnly) {
+      try {
+        _currentUser = await _apiService.getCurrentUser();
+        return;
+      } catch (e) {
+        debugPrint('getCurrentUser failed, using cached session: $e');
+      }
+    }
+
+    final userId = await _storage.read(key: ApiConfig.storageKeyUserId);
+    final email = await _storage.read(key: ApiConfig.storageKeyUserEmail);
+
+    if (userId != null && userId.trim().isNotEmpty) {
+      _currentUser = UserModel(
+        id: userId.trim(),
+        email: email,
+        firstName: email?.split('@').first,
+      );
+      return;
+    }
+
+    // Token exists but profile cache missing — keep session, fetch profile later.
+    if (_sessionToken != null && _sessionToken!.trim().isNotEmpty) {
+      _currentUser = UserModel(
+        id: '',
+        email: email,
+        firstName: email?.split('@').first,
+      );
     }
   }
 
@@ -265,6 +321,8 @@ class AuthService extends ChangeNotifier {
     } finally {
       await _clearTokens();
       _currentUser = null;
+      _sessionToken = null;
+      _sessionLoaded = false;
       _pendingResetEmail = null;
       _pendingResetOtp = null;
       _clearPendingSignup();
@@ -281,6 +339,7 @@ class AuthService extends ChangeNotifier {
       key: ApiConfig.storageKeyUserId,
       value: response.user.id,
     );
+    _sessionToken = response.accessToken;
     _currentUser = response.user;
     notifyListeners();
   }
@@ -290,6 +349,7 @@ class AuthService extends ChangeNotifier {
     await _storage.delete(key: ApiConfig.storageKeyUserId);
     await _storage.delete(key: ApiConfig.storageKeyUserEmail);
     await _storage.delete(key: ApiConfig.storageKeyUserPassword);
+    _sessionToken = null;
   }
 
   void _clearPendingSignup() {

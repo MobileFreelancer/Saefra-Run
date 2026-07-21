@@ -19,6 +19,9 @@ enum DashboardMapStyle {
 }
 
 class DashboardServices extends ChangeNotifier {
+  static const double defaultLatitude = 21.205194905801783;
+  static const double defaultLongitude = 72.77568113625402;
+
   double? _latitude;
   double? _longitude;
 
@@ -33,7 +36,9 @@ class DashboardServices extends ChangeNotifier {
   // Location stream
   StreamSubscription<Position>? _positionStreamSubscription;
   bool _locationInitStarted = false;
+  bool _locationInitInProgress = false;
   bool _locationPermissionResolved = false;
+  bool _homeRoutesRequested = false;
   DateTime? _lastLocationNotifyAt;
 
   // State variables for Location Autocomplete Search
@@ -276,14 +281,27 @@ class DashboardServices extends ChangeNotifier {
 
       if (result['success'] == true ||
           result['status']?.toString().toLowerCase() == 'success') {
-        final routeData = result['route'] ?? result['data']?['route'];
+        final routeData = result['route'] ?? result['data']?['route'] ?? result['data'];
         if (routeData == null) {
           _errorMessage = result['message'] ?? 'Failed to generate safe route.';
           return;
         }
-        _recommendedRoute = routeData['recommended_routes'];
 
-        final list = routeData['recent_routes'];
+        final routeMap = routeData is Map<String, dynamic>
+            ? routeData
+            : Map<String, dynamic>.from(routeData as Map);
+
+        final recommended = routeMap['recommended_routes'] ?? routeMap['recommended_route'];
+        if (recommended is List && recommended.isNotEmpty) {
+          _recommendedRoute =
+              Map<String, dynamic>.from(recommended.first as Map);
+        } else if (recommended is Map) {
+          _recommendedRoute = Map<String, dynamic>.from(recommended);
+        } else {
+          _recommendedRoute = null;
+        }
+
+        final list = routeMap['recent_routes'];
         if (list is List) {
           _recentRoutes = list;
         }
@@ -358,10 +376,54 @@ class DashboardServices extends ChangeNotifier {
     }
   }
 
-  Future<void> getCurrentLocation() async {
+  void resetHomeRoutes() {
+    _homeRoutesRequested = false;
+    _recommendedRoute = null;
+    _recentRoutes = [];
+    _errorMessage = null;
+    notifyListeners();
+  }
 
-    if (_locationInitStarted) return;
-    _locationInitStarted = true;
+  Future<void> initializeDashboard() async {
+    try {
+      await getCurrentLocation().timeout(const Duration(seconds: 8));
+    } catch (e) {
+      debugPrint('getCurrentLocation timed out or failed: $e');
+    }
+    await loadHomeRoutesIfNeeded();
+  }
+
+  /// Loads the default safe-route feed once coordinates are available.
+  Future<void> loadHomeRoutesIfNeeded() async {
+    if (_homeRoutesRequested) return;
+
+    final lat = _latitude ?? defaultLatitude;
+    final lng = _longitude ?? defaultLongitude;
+
+    _homeRoutesRequested = true;
+    debugPrint('Dashboard: loading home routes at $lat, $lng');
+
+    await fetchSafeRoute(
+      originLat: lat,
+      originLng: lng,
+      destLat: lat,
+      destLng: lng,
+    );
+  }
+
+  Future<void> getCurrentLocation() async {
+    if (_locationInitInProgress) return;
+
+    if (_locationInitStarted &&
+        _latitude != null &&
+        _longitude != null) {
+      return;
+    }
+
+    _locationInitInProgress = true;
+    if (!_locationInitStarted) {
+      _locationInitStarted = true;
+    }
 
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -400,23 +462,26 @@ class DashboardServices extends ChangeNotifier {
         _latitude = position.latitude;
         _longitude = position.longitude;
         _notifyLocationListeners();
+        loadHomeRoutesIfNeeded();
       });
 
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
         ),
-      );
+      ).timeout(const Duration(seconds: 6));
       _latitude = pos.latitude;
       _longitude = pos.longitude;
 
       await _animateToCurrentLocation();
+      await loadHomeRoutesIfNeeded();
       notifyListeners();
     } catch (e) {
       debugPrint('getCurrentLocation failed: $e');
     } finally {
       _isLoading = false;
       _locationPermissionResolved = true;
+      _locationInitInProgress = false;
       notifyListeners();
     }
   }

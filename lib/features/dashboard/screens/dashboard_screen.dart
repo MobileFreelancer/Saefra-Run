@@ -36,19 +36,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final services = context.read<DashboardServices>();
-      await services.getCurrentLocation();
+      await services.initializeDashboard();
       if (!mounted) return;
       context.read<NotificationInboxService>().load(refresh: true);
-      services.fetchSafeRoute(
-        originLat: services.latitude!,
-        originLng: services.longitude!,
-        destLat:
-        services.latitude!,
-        destLng:
-        services.longitude!,
-      );
     });
   }
+
   late final services = context.read<DashboardServices>();
 
   @override

@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/fcm_oauth_token_helper.dart';
 import 'package:saefra_run/core/services/permission_service.dart';
+import 'package:saefra_run/core/services/secure_storage_service.dart';
+
+import '../config/api_config.dart';
 
 typedef PushReceivedCallback = void Function(RemoteMessage message);
 
@@ -140,6 +143,14 @@ class FcmService {
 
   static Future<void> syncToken([String? token]) async {
     try {
+      final storage = SecureStorageService.instance;
+      final accessToken = await storage.read(key: ApiConfig.storageKeyAccessToken);
+
+      if (accessToken == null || accessToken.isEmpty) {
+        developer.log('FCM token sync skipped: No active session');
+        return;
+      }
+
       final resolved = token ?? await FirebaseMessaging.instance.getToken();
       if (resolved == null || resolved.isEmpty) return;
       await _api.updateFcmToken(resolved);

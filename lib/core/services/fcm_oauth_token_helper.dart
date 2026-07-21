@@ -10,7 +10,7 @@ import 'package:googleapis_auth/auth_io.dart';
 class FcmOAuthTokenHelper {
   FcmOAuthTokenHelper._();
 
-  static const _serviceAccountAsset = 'assets/notifaction.json';
+  static const _serviceAccountAsset = 'assets/notification.json';
 
   static Future<void> generateAccessToken() async {
     final jsonString = await rootBundle.loadString(_serviceAccountAsset);

@@ -39,11 +39,10 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (auth.isLoggedIn) {
+      await onboarding.markCompleteLocally();
       await FcmService.requestPermissionAndSync();
       if (!mounted) return;
-      context.go(
-        onboarding.isComplete ? '/dashboard' : '/onboarding/gender',
-      );
+      context.go('/dashboard');
       return;
     }
 

@@ -103,6 +103,20 @@ class OnboardingService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> markCompleteLocally() async {
+    if (_isComplete) return;
+    try {
+      await _storage.write(
+        key: ApiConfig.storageKeyOnboardingComplete,
+        value: 'true',
+      );
+      _isComplete = true;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Onboarding markCompleteLocally failed: $e');
+    }
+  }
+
   Future<bool> completeOnboarding(AuthService auth) async {
     _isLoading = true;
     _error = null;

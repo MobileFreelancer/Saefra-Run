@@ -54,6 +54,8 @@ Future<void> main() async {
 
   final authService = AuthService();
   final onboardingService = OnboardingService();
+  await authService.initialize();
+  await onboardingService.initialize();
   final authStateNotifier = _AuthStateNotifier(
     authService,
     onboardingService,
@@ -61,7 +63,6 @@ Future<void> main() async {
 
   AppRouter.init(authStateNotifier);
   await FcmService.setup();
-  FcmService.generateAccessToken();
   final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   runApp(
