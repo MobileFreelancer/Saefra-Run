@@ -394,6 +394,7 @@ class ApiService {
     required String firstName,
     required String lastName,
     required String mobileNumber,
+    String? profileImagePath,
   }) async {
     try {
       DateTime parsed;
@@ -421,17 +422,24 @@ class ApiService {
       }
 
       final formatted = DateFormat('yyyy-MM-dd').format(parsed);
+      final Map<String, dynamic> dataMap = {
+        'first_name': firstName,
+        'last_name': lastName,
+        'phone': mobileNumber,
+        'gender': gender,
+        'birthdate': formatted,
+      };
+
+      if (profileImagePath != null && profileImagePath.isNotEmpty) {
+        dataMap['profile_image'] = await MultipartFile.fromFile(
+          profileImagePath,
+          filename: profileImagePath.split('/').last,
+        );
+      }
+
       final response = await _dio.post(
         _path('/profile'),
-        data: _form(
-            {
-              'first_name': firstName,
-              'last_name': lastName,
-              'phone': mobileNumber,
-              'gender': gender,
-              'birthdate': formatted,
-            }
-        ),
+        data: _form(dataMap),
       );
       final map = _map(response);
       final payload = ApiResponseParser.payload(map);

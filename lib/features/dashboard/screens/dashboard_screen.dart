@@ -59,7 +59,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final displayName = greetingName.isNotEmpty
         ? greetingName
         : (user?.email?.split('@').first ?? 'Runner');
-
+    final userProFileImage=user?.profileImage.toString();
+    print("+++++++++++++++");
+    print(userProFileImage);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -328,14 +330,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Row(
                       children: [
-                        _UserAvatar(name: displayName),
+                        userProFileImage != null && userProFileImage.isNotEmpty
+                            ? CircleAvatar(
+                          radius: 20.r,
+                          backgroundImage: NetworkImage(userProFileImage),
+                        )
+                            : _UserAvatar(name: displayName),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Hello, $displayName',
+                                'Hello, $greetingName',
                                 style:   Theme.of(context)
                                     .textTheme
                                     .displayLarge

@@ -9,6 +9,9 @@ import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import 'package:saefra_run/core/utils/app_validators.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:saefra_run/core/utils/app_loader.dart';
+import 'package:saefra_run/core/utils/app_tost.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -19,6 +22,7 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+  final ImagePicker _picker = ImagePicker();
   late final TextEditingController _firstName;
   late final TextEditingController _lastName;
   late final TextEditingController _email;
@@ -138,6 +142,117 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     context.pop();
   }
 
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 1000,
+        maxHeight: 1000,
+        imageQuality: 85,
+      );
+      if (image == null || !mounted) return;
+
+      final settings = context.read<SettingsService>();
+      settings.updateProfileFields(
+        firstName: _firstName.text.trim(),
+        lastName: _lastName.text.trim(),
+        email: _email.text.trim(),
+        phone: _phone.text.trim(),
+        gender: _gender,
+        birthdate: _birthdate,
+        runningLevel: _runningLevel,
+      );
+
+      AppLoader.show();
+      setState(() => _apiError = null);
+      
+      final ok = await settings.saveProfile(profileImagePath: image.path);
+      
+      AppLoader.hide();
+
+      if (!mounted) return;
+      if (ok) {
+        AppToast.success('Profile picture updated successfully.');
+      } else {
+        setState(() => _apiError = settings.error ?? 'Failed to upload profile picture');
+        AppToast.error(settings.error ?? 'Failed to upload profile picture');
+      }
+    } catch (e) {
+      AppLoader.hide();
+      if (mounted) {
+        setState(() => _apiError = e.toString());
+        AppToast.error('An error occurred: $e');
+      }
+    }
+  }
+
+  void _showImageSourceBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (BuildContext context) {
+        final textTheme = Theme.of(context).textTheme;
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(
+                      color: AppColors.textMuted.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 18.h),
+                Text(
+                  'Update Profile Picture',
+                  textAlign: TextAlign.center,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    fontSize: 16.sp,
+                  ),
+                ),
+                SizedBox(height: 24.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _ImageSourceOption(
+                      icon: Icons.camera_alt_outlined,
+                      label: 'Camera',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickImage(ImageSource.camera);
+                      },
+                    ),
+                    _ImageSourceOption(
+                      icon: Icons.photo_library_outlined,
+                      label: 'Gallery',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickImage(ImageSource.gallery);
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsService>();
@@ -167,54 +282,57 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   SizedBox(height: 20.h),
                   Center(
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(4.w),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.white.withValues(alpha: 0.15),
-                                blurRadius: 16.r,
-                                spreadRadius: 2.r,
-                              ),
-                            ],
-                          ),
-                          child: CircleAvatar(
-                            radius: 56.r,
-                            backgroundColor: AppColors.surfaceLight,
-                            backgroundImage: user?.profileImage != null
-                                ? NetworkImage(user!.profileImage!)
-                                : null,
-                            child: user?.profileImage == null
-                                ? Icon(
-                                    Icons.person,
-                                    size: 48.sp,
-                                    color: AppColors.textMuted,
-                                  )
-                                : null,
-                          ),
-                        ),
-                        Positioned(
-                          right: 4.w,
-                          bottom: 4.h,
-                          child: Container(
-                            width: 34.w,
-                            height: 34.w,
-                            decoration: const BoxDecoration(
-                              color: AppColors.buttonColor,
+                    child: GestureDetector(
+                      onTap: () => _showImageSourceBottomSheet(context),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(4.w),
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.white.withValues(alpha: 0.15),
+                                  blurRadius: 16.r,
+                                  spreadRadius: 2.r,
+                                ),
+                              ],
                             ),
-                            child: Icon(
-                              Icons.edit,
-                              size: 16.sp,
-                              color: AppColors.white,
+                            child: CircleAvatar(
+                              radius: 56.r,
+                              backgroundColor: AppColors.surfaceLight,
+                              backgroundImage: user?.profileImage != null
+                                  ? NetworkImage(user!.profileImage!)
+                                  : null,
+                              child: user?.profileImage == null
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 48.sp,
+                                      color: AppColors.textMuted,
+                                    )
+                                  : null,
                             ),
                           ),
-                        ),
-                      ],
+                          Positioned(
+                            right: 4.w,
+                            bottom: 4.h,
+                            child: Container(
+                              width: 34.w,
+                              height: 34.w,
+                              decoration: const BoxDecoration(
+                                color: AppColors.buttonColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.edit,
+                                size: 16.sp,
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   SizedBox(height: 24.h),
@@ -509,6 +627,54 @@ class _ProfilePickerField extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ImageSourceOption extends StatelessWidget {
+  const _ImageSourceOption({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16.r),
+      child: Container(
+        width: 120.w,
+        padding: EdgeInsets.symmetric(vertical: 20.h),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(
+            color: AppColors.white.withValues(alpha: 0.05),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 32.sp,
+              color: AppColors.buttonColor,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

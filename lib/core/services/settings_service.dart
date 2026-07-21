@@ -196,12 +196,12 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> saveProfile() async {
+  Future<bool> saveProfile({String? profileImagePath}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      await _api.updateProfile(
+      final updatedUser = await _api.updateProfile(
         gender: _gender.toLowerCase().contains('female')
             ? 'female'
             : _gender.toLowerCase().contains('not')
@@ -211,7 +211,10 @@ class SettingsService extends ChangeNotifier {
         firstName: _firstName,
         lastName: _lastName,
         mobileNumber: _phone,
+        profileImagePath: profileImagePath,
       );
+      await _auth.syncCurrentUser(updatedUser);
+      _hydrateProfile(updatedUser);
       return true;
     } catch (e) {
       _error = e.toString();
