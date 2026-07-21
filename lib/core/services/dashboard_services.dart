@@ -359,6 +359,7 @@ class DashboardServices extends ChangeNotifier {
   }
 
   Future<void> getCurrentLocation() async {
+
     if (_locationInitStarted) return;
     _locationInitStarted = true;
 
@@ -408,6 +409,7 @@ class DashboardServices extends ChangeNotifier {
       );
       _latitude = pos.latitude;
       _longitude = pos.longitude;
+
       await _animateToCurrentLocation();
       notifyListeners();
     } catch (e) {
@@ -425,8 +427,7 @@ class DashboardServices extends ChangeNotifier {
       if (!serviceEnabled) return;
 
       var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
         return;
       }
 
@@ -444,9 +445,7 @@ class DashboardServices extends ChangeNotifier {
   }
 
   Future<void> _animateToCurrentLocation() async {
-    if (_mapController == null ||
-        _latitude == null ||
-        _longitude == null) {
+    if (_mapController == null || _latitude == null || _longitude == null) {
       return;
     }
     try {

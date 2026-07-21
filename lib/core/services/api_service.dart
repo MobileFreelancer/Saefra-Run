@@ -391,6 +391,9 @@ class ApiService {
   Future<UserModel> updateProfile({
     required String gender,
     required String birthdate,
+    required String firstName,
+    required String lastName,
+    required String mobileNumber,
   }) async {
     try {
       DateTime parsed;
@@ -420,7 +423,15 @@ class ApiService {
       final formatted = DateFormat('yyyy-MM-dd').format(parsed);
       final response = await _dio.post(
         _path('/profile'),
-        data: _form({'gender': gender, 'birthdate': formatted}),
+        data: _form(
+            {
+              'first_name': firstName,
+              'last_name': lastName,
+              'phone': mobileNumber,
+              'gender': gender,
+              'birthdate': formatted,
+            }
+        ),
       );
       final map = _map(response);
       final payload = ApiResponseParser.payload(map);
@@ -435,6 +446,9 @@ class ApiService {
     return updateProfile(
       gender: fields['gender'] as String,
       birthdate: fields['birthdate'] as String,
+      firstName: fields['first_name'] as String,
+      lastName: fields['last_name'] as String,
+      mobileNumber: fields['phone'] as String,
     );
   }
 

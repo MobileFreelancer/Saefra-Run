@@ -99,12 +99,14 @@ class SettingsService extends ChangeNotifier {
     _firstName = parts.isNotEmpty ? parts.first : '';
     _lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
     _gender = _formatGender(user.gender);
+
     if (user.birthdate != null) {
       final d = user.birthdate!;
       _birthdate =
-          '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+          '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
     }
     _runningLevel = _formatRunningLevel(user.runPreference);
+
   }
 
   String _formatGender(String? value) {
@@ -193,6 +195,9 @@ class SettingsService extends ChangeNotifier {
                 ? 'prefer_not_to_say'
                 : 'male',
         birthdate: _birthdate.isNotEmpty ? _birthdate : '01-01-1990',
+        firstName: _firstName,
+        lastName: _lastName,
+        mobileNumber: _phone,
       );
       return true;
     } catch (e) {

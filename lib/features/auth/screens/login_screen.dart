@@ -137,7 +137,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                           child: Image.asset(Assets.googleLogo,scale: 2.6,)
                       ),
-                      if (Platform.isIOS) Image.asset(Assets.aapleLogo, scale: 2.6) else const SizedBox.shrink()
+                      if (Platform.isIOS) InkWell(
+                        onTap: ()async{
+                          final user = await auth.signInWithApple();
+
+                          if (user != null) {
+                            print(user.user?.uid);
+                            print(user.user?.email);
+                            print(user.user?.displayName);
+                          }
+                        },
+                          child: Image.asset(Assets.aapleLogo, scale: 2.6)
+                      ) else const SizedBox.shrink()
                     ],
                   ),
                   SizedBox(height: 5.h,),

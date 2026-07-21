@@ -92,7 +92,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (picked == null || !mounted) return;
     setState(() {
       _birthdate =
-          '${picked.day.toString().padLeft(2, '0')}.${picked.month.toString().padLeft(2, '0')}.${picked.year}';
+          '${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year}';
       _birthdateError = null;
     });
   }
@@ -101,9 +101,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (_birthdate.isEmpty) return null;
     final parts = _birthdate.split('.');
     if (parts.length != 3) return null;
-    return DateTime.tryParse(
-      '${parts[2]}-${parts[1]}-${parts[0]}',
-    );
+    return DateTime.tryParse('${parts[2]}-${parts[1]}-${parts[0]}',);
   }
 
   Future<void> _save() async {
@@ -163,7 +161,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     style: textTheme.bodyMedium?.copyWith(
                       fontSize: 13.sp,
                       height: 1.45,
-                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF888888),
                     ),
                   ),
                   SizedBox(height: 20.h),
