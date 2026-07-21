@@ -208,6 +208,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                   SizedBox(height: 12.h),
+
                   _SettingsGroup(
                     children: [
                       SettingsTile(

@@ -100,7 +100,7 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                             ),
                             SizedBox(height: 16.h),
                              _RouteMapCard(route: route),
-                             SizedBox(height: 12.h),
+                             SizedBox(height: 20.h),
                             // _RouteStatsRow(route: route),
                             // SizedBox(height: 16.h),
                             PrimaryButton(
@@ -135,7 +135,7 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                                 );
                               },
                             ),
-                            SizedBox(height: 24.h),
+                            SizedBox(height: 15.h),
                             Text(
                               'More Information',
                               style: textTheme.titleMedium,
@@ -215,7 +215,7 @@ class _RouteMapCard extends StatelessWidget {
                   width: 2
                 ),
                 color: AppColors.border.withOpacity(.7),
-                borderRadius: BorderRadius.circular(8.r),
+                borderRadius: BorderRadius.circular(20.r),
               ),
               child: Row(
                 spacing: 8.w,
@@ -380,11 +380,22 @@ class _SaefraScoreCard extends StatelessWidget {
                 children: [
                   Text(
                     'SAEFRA SCORE',
-                    style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500),
+                    style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 14.sp,fontWeight: FontWeight.w500,color: AppColors.white),
                   ),
-                  Text(
-                    '${pct.round()}%',
-                    style: textTheme.displayLarge?.copyWith(fontSize: 38.sp, fontWeight: FontWeight.w800, color: AppColors.primary),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    alignment: AlignmentGeometry.bottomEnd,
+                    children: [
+                      Text(
+                        '${pct.round()}',
+                        style: textTheme.displayLarge?.copyWith(fontSize: 38.sp, fontWeight: FontWeight.w800, color: AppColors.primary),
+                      ),
+
+                      Positioned(
+                        left: 53,
+                          child: Text("%",style: textTheme.displayLarge?.copyWith(fontSize: 20.sp, fontWeight: FontWeight.w800, color: AppColors.primary),)
+                      )
+                    ],
                   ),
                 ],
               ),
@@ -403,7 +414,7 @@ class _SaefraScoreCard extends StatelessWidget {
               color: AppColors.primary,
             ),
           ),
-          SizedBox(height: 10.w),
+          SizedBox(height: 8.w),
           Text(
             'Optimal conditions for your morning run.',
             style: textTheme.bodySmall?.copyWith(letterSpacing: 0.6, fontSize: 12.sp,fontWeight: FontWeight.w500,color: AppColors.white),
@@ -443,7 +454,7 @@ class _SafetyInfoRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(width: 1.2,color: AppColors.textBorder),
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(10.r),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,19 +470,19 @@ class _SafetyInfoRow extends StatelessWidget {
             ],
           ),
           SizedBox(height: 12.h,),
-          if (difficulty != null || travelMode != null) ...[
-            Text(
-              [
-                if (difficulty != null) 'Difficulty: $difficulty',
-                if (travelMode != null) 'Mode: $travelMode',
-              ].join(' • '),
-              style: textTheme.bodySmall,
-            ),
-            SizedBox(height: 12.h),
-          ],
+          // if (difficulty != null || travelMode != null) ...[
+          //   Text(
+          //     [
+          //       if (difficulty != null) 'Difficulty: $difficulty',
+          //       if (travelMode != null) 'Mode: $travelMode',
+          //     ].join(' • '),
+          //     style: textTheme.bodySmall,
+          //   ),
+          //   SizedBox(height: 12.h),
+          // ],
           Container(
             width: 300.w,
-            height: 50.h,
+            height: 35.h,
             padding: EdgeInsets.symmetric(horizontal: 14.w,),
             decoration: BoxDecoration(
               color: AppColors.white,

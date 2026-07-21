@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
@@ -55,25 +56,58 @@ class RunningProvider extends ChangeNotifier {
   String get routeRemainingStr => _routeRemainingStr;
 
   void Function({
-    required double latitude,
-    required double longitude,
-    required double distanceKm,
-    required int durationSeconds,
-    required double speedKmh,
-    required int steps,
-    required String pace,
+  required double latitude,
+  required double longitude,
+  required double distanceKm,
+  required int durationSeconds,
+  required double speedKmh,
+  required int steps,
+  required String pace,
   })? onTrackingUpdate;
 
+  // Custom Asset Markers
   BitmapDescriptor? _runnerIconIdle;
   BitmapDescriptor? _runnerIconActive;
+  BitmapDescriptor? _destinationIcon;
 
+  /// Loads custom marker images from app assets.
   Future<void> _ensureRunnerIcons() async {
-    _runnerIconIdle ??= BitmapDescriptor.defaultMarkerWithHue(
-      BitmapDescriptor.hueRose,
-    );
-    _runnerIconActive ??= BitmapDescriptor.defaultMarkerWithHue(
-      BitmapDescriptor.hueAzure,
-    );
+    try {
+      const ImageConfiguration imageConfig = ImageConfiguration(size: Size(48, 48));
+
+      _runnerIconIdle ??= await BitmapDescriptor.asset(
+        imageConfig,
+        'assets/images/startrun.png',
+          width: 25.w,
+          height: 25.h
+      );
+
+      _runnerIconActive ??= await BitmapDescriptor.asset(
+        imageConfig,
+        'assets/images/startrun.png',
+          width: 25.w,
+          height: 25.h
+      );
+
+      _destinationIcon ??= await BitmapDescriptor.asset(
+        imageConfig,
+        'assets/images/endimage.png',
+        width: 25.w,
+        height: 25.h
+      );
+    } catch (e) {
+      debugPrint("⚠️ Could not load custom asset icons, falling back to default colors: $e");
+
+      _runnerIconIdle ??= BitmapDescriptor.defaultMarkerWithHue(
+        BitmapDescriptor.hueRose,
+      );
+      _runnerIconActive ??= BitmapDescriptor.defaultMarkerWithHue(
+        BitmapDescriptor.hueAzure,
+      );
+      _destinationIcon ??= BitmapDescriptor.defaultMarkerWithHue(
+        BitmapDescriptor.hueRed,
+      );
+    }
   }
 
   Future<void> initTracking() async {
@@ -179,7 +213,7 @@ class RunningProvider extends ChangeNotifier {
 
       _destinationPosition = endPoint;
       _isSafeRouteSelected = true;
-      _updateMarker(endPoint, "destination_location", BitmapDescriptor.hueRed);
+      _updateDestinationMarker(endPoint);
 
       _adjustCameraToFitRoute();
 
@@ -208,13 +242,33 @@ class RunningProvider extends ChangeNotifier {
       LatLngBounds bounds;
       if (_currentPosition!.latitude > _destinationPosition!.latitude) {
         bounds = LatLngBounds(
-          southwest: LatLng(_destinationPosition!.latitude, _destinationPosition!.longitude < _currentPosition!.longitude ? _destinationPosition!.longitude : _currentPosition!.longitude),
-          northeast: LatLng(_currentPosition!.latitude, _destinationPosition!.longitude > _currentPosition!.longitude ? _destinationPosition!.longitude : _currentPosition!.longitude),
+          southwest: LatLng(
+            _destinationPosition!.latitude,
+            _destinationPosition!.longitude < _currentPosition!.longitude
+                ? _destinationPosition!.longitude
+                : _currentPosition!.longitude,
+          ),
+          northeast: LatLng(
+            _currentPosition!.latitude,
+            _destinationPosition!.longitude > _currentPosition!.longitude
+                ? _destinationPosition!.longitude
+                : _currentPosition!.longitude,
+          ),
         );
       } else {
         bounds = LatLngBounds(
-          southwest: LatLng(_currentPosition!.latitude, _currentPosition!.longitude < _destinationPosition!.longitude ? _currentPosition!.longitude : _destinationPosition!.longitude),
-          northeast: LatLng(_destinationPosition!.latitude, _currentPosition!.longitude > _destinationPosition!.longitude ? _destinationPosition!.longitude : _currentPosition!.longitude),
+          southwest: LatLng(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude < _destinationPosition!.longitude
+                ? _currentPosition!.longitude
+                : _destinationPosition!.longitude,
+          ),
+          northeast: LatLng(
+            _destinationPosition!.latitude,
+            _destinationPosition!.longitude > _destinationPosition!.longitude
+                ? _destinationPosition!.longitude
+                : _currentPosition!.longitude,
+          ),
         );
       }
 
@@ -238,7 +292,6 @@ class RunningProvider extends ChangeNotifier {
           origin: PointLatLng(_currentPosition!.latitude, _currentPosition!.longitude),
           destination: PointLatLng(_destinationPosition!.latitude, _destinationPosition!.longitude),
           travelMode: TravelMode.walking,
-          // ⭐ FIXED: Walking mode ke liye unspecified preference hona mandatory hai
           routingPreference: RoutingPreference.unspecified,
         ),
       );
@@ -255,7 +308,6 @@ class RunningProvider extends ChangeNotifier {
           _runningPathCoordinates.add(LatLng(point.latitude, point.longitude));
         }
 
-        // DRAWING LINE TO MAP
         _drawRunningPolyline(const Color(0xFFE91E63));
         _calculateRemainingDistance();
 
@@ -472,9 +524,10 @@ class RunningProvider extends ChangeNotifier {
   void _updateRunnerMarker(LatLng position) {
     final icon = _isTracking
         ? (_runnerIconActive ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure))
+        BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure))
         : (_runnerIconIdle ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose));
+        BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose));
+
     MarkerId id = const MarkerId("runner_location");
     _markers[id] = Marker(
       markerId: id,
@@ -485,16 +538,18 @@ class RunningProvider extends ChangeNotifier {
     );
   }
 
-  void _updateMarker(LatLng position, String idStr, double colorHue) {
+  void _updateDestinationMarker(LatLng position) {
     try {
-      MarkerId id = MarkerId(idStr);
+      MarkerId id = const MarkerId("destination_location");
       _markers[id] = Marker(
         markerId: id,
         position: position,
-        icon: BitmapDescriptor.defaultMarkerWithHue(colorHue),
+        icon: _destinationIcon ??
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        anchor: const Offset(0.5, 1.0),
       );
     } catch (e) {
-      debugPrint("❌ Error updating marker: $e");
+      debugPrint("❌ Error updating destination marker: $e");
     }
   }
 

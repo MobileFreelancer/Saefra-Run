@@ -1,3 +1,6 @@
+import 'dart:developer';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -33,7 +36,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _runningLevel = 'Intermediate';
   String? _birthdateError;
   String? _apiError;
-
+  String? _selectedProfileImagePath;
   static const _genders = ['Male', 'Female', 'Prefer not to say'];
   static const _runningLevels = ['Beginner', 'Intermediate', 'Advanced'];
 
@@ -122,6 +125,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     final settings = context.read<SettingsService>();
+
     settings.updateProfileFields(
       firstName: _firstName.text.trim(),
       lastName: _lastName.text.trim(),
@@ -131,13 +135,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       birthdate: _birthdate,
       runningLevel: _runningLevel,
     );
-    final ok = await settings.saveProfile();
+
+   // AppLoader.show();
+
+    final ok = await settings.saveProfile(
+      profileImagePath: _selectedProfileImagePath,
+    );
+
+    //AppLoader.hide();
+
     if (!mounted) return;
 
     if (!ok) {
       setState(() => _apiError = settings.error ?? 'Save failed');
       return;
     }
+
+    //AppToast.success('Profile updated successfully.');
+
+    // Clear the selected image after successful upload
+    _selectedProfileImagePath = null;
 
     context.pop();
   }
@@ -150,35 +167,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         maxHeight: 1000,
         imageQuality: 85,
       );
+
       if (image == null || !mounted) return;
+      log("imagePath--->${image.path}");
+      setState(() {
+        _selectedProfileImagePath = image.path;
+        _apiError = null;
+      });
 
-      final settings = context.read<SettingsService>();
-      settings.updateProfileFields(
-        firstName: _firstName.text.trim(),
-        lastName: _lastName.text.trim(),
-        email: _email.text.trim(),
-        phone: _phone.text.trim(),
-        gender: _gender,
-        birthdate: _birthdate,
-        runningLevel: _runningLevel,
-      );
-
-      AppLoader.show();
-      setState(() => _apiError = null);
-      
-      final ok = await settings.saveProfile(profileImagePath: image.path);
-      
-      AppLoader.hide();
-
-      if (!mounted) return;
-      if (ok) {
-        AppToast.success('Profile picture updated successfully.');
-      } else {
-        setState(() => _apiError = settings.error ?? 'Failed to upload profile picture');
-        AppToast.error(settings.error ?? 'Failed to upload profile picture');
-      }
+      // Optional: Show preview immediately.
+      //AppToast.success('Profile picture selected.');
     } catch (e) {
-      AppLoader.hide();
       if (mounted) {
         setState(() => _apiError = e.toString());
         AppToast.error('An error occurred: $e');
@@ -299,18 +298,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 ),
                               ],
                             ),
-                            child: CircleAvatar(
+                            child:CircleAvatar(
                               radius: 56.r,
                               backgroundColor: AppColors.surfaceLight,
-                              backgroundImage: user?.profileImage != null
-                                  ? NetworkImage(user!.profileImage!)
-                                  : null,
-                              child: user?.profileImage == null
+                              backgroundImage: _selectedProfileImagePath != null
+                                  ? FileImage(File(_selectedProfileImagePath!))
+                                  : (user?.profileImage != null && user!.profileImage!.isNotEmpty
+                                  ? NetworkImage(user.profileImage!)
+                                  : null) as ImageProvider?,
+                              child: (_selectedProfileImagePath == null &&
+                                  (user?.profileImage == null || user!.profileImage!.isEmpty))
                                   ? Icon(
-                                      Icons.person,
-                                      size: 48.sp,
-                                      color: AppColors.textMuted,
-                                    )
+                                Icons.person,
+                                size: 48.sp,
+                                color: AppColors.textMuted,
+                              )
                                   : null,
                             ),
                           ),

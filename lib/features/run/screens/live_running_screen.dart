@@ -384,11 +384,11 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildMetricItem(Icons.directions_run, trackingProvider.totalDistanceKm.toStringAsFixed(1), "km"),
+                        _buildMetricItem("assets/images/runicon.png", trackingProvider.totalDistanceKm.toStringAsFixed(1), "km"),
                         _buildVerticalDivider(),
-                        _buildMetricItem(Icons.directions_walk, "${trackingProvider.totalSteps}", "Steps"),
+                        _buildMetricItem("assets/images/runicon.png", "${trackingProvider.totalSteps}", "Steps"),
                         _buildVerticalDivider(),
-                        _buildMetricItem(Icons.flash_on, trackingProvider.currentSpeedKmh.toStringAsFixed(1), "km/hr"),
+                        _buildMetricItem("assets/images/kmphicon.png", trackingProvider.currentSpeedKmh.toStringAsFixed(1), "km/hr"),
                       ],
                     ),
                   ),
@@ -446,7 +446,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.flag, color: AppColors.white),
+                                Icon(Icons.flag_outlined, color: AppColors.white),
                                 const SizedBox(width: 8),
                                 Text("Finish", style: TextStyle(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                               ],
@@ -470,12 +470,13 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
     return Container(height: 30, width: 1, color: Colors.grey[300]);
   }
 
-  Widget _buildMetricItem(IconData icon, String value, String unit) {
+  Widget _buildMetricItem(String icon, String value, String unit) {
     return Column(
       children: [
         Row(
           children: [
-            Icon(icon, color: const Color(0xFFF07522), size: 18), // Warna jingga ikon sesuai Screenshot
+            Image.asset(icon,scale: 2.5,),
+            // Icon(icon, color: const Color(0xFFF07522), size: 18),
             const SizedBox(width: 4),
             Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
           ],

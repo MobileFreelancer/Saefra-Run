@@ -177,7 +177,8 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                 children: [
                   SizedBox(height: 8.h),
                   Text('Create My Route', style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-                  Text("Define your path. We'll ensure it's safe and optimized for your performance goals.", style: TextStyle(color:  textMuted, fontSize: 10.sp, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 5.h),
+                  Text("Define your path. We'll ensure it's safe and optimized for your performance goals.", style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w400,color: AppColors.welcomeColor,fontSize: 12.sp)),
                   SizedBox(height: 12.h),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20.r),
@@ -187,16 +188,48 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          AppRouteMap(
-                            height: 180.h,
-                            borderRadius: 20,
-                            polylinePoints:
-                                service.previewPolylinePoints.length > 1
-                                    ? service.previewPolylinePoints
-                                    : null,
-                            origin: origin,
-                            destination: destination,
-                            preferDestinationCamera: preferDestinationCamera,
+                          Stack(
+                            children: [
+                              AppRouteMap(
+                                height: 180.h,
+                                borderRadius: 10,
+                                polylinePoints:
+                                    service.previewPolylinePoints.length > 1
+                                        ? service.previewPolylinePoints
+                                        : null,
+                                origin: origin,
+                                destination: destination,
+                                preferDestinationCamera: preferDestinationCamera,
+                              ),
+                              Positioned(
+                                top: 12.h,
+                                right: 12.w,
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                        color: AppColors.white,
+                                        width: 2
+                                    ),
+                                    color: AppColors.border.withOpacity(.7),
+                                    borderRadius: BorderRadius.circular(20.r),
+                                  ),
+                                  child: Row(
+                                    spacing: 8.w,
+                                    children: [
+                                      Image.asset(Assets.seftiIcon, width: 18.w, height: 18.h,color: AppColors.white,),
+                                      Text(
+                                        'Route Scope',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: AppColors.white,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            ],
                           ),
                           if (service.isPreviewLoading)
                             const Center(
@@ -234,10 +267,9 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                       ),
                     ),
                   ),
-                  Text('Route Setup', style: textTheme.titleMedium),
-                  SizedBox(height: 12.h),
-
-                  // 1. DISTANCE CARD
+                  SizedBox(height: 15.h),
+                  Text('Route Setup', style: textTheme.titleMedium?.copyWith(fontSize: 16.sp,fontWeight: FontWeight.w700)),
+                  SizedBox(height: 5.h),
                   Container(
                     padding: EdgeInsets.all(16.w),
                     margin: EdgeInsets.only(bottom: 14.h),
@@ -309,11 +341,11 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                           data: SliderTheme.of(context).copyWith(
                             trackHeight: 10.h,
                             activeTrackColor: AppColors.primary,
-                            inactiveTrackColor: AppColors.surfaceLight.withValues(alpha: 0.4),
+                            inactiveTrackColor: AppColors.surfaceLight.withValues(alpha: 0.9),
                             overlayColor: AppColors.primary.withValues(alpha: 0.15),
                             // Using our custom pixel-perfect square block shape builder
                             thumbShape: _CustomSquareSliderThumbShape(
-                              thumbRadius: 14.r,
+                              thumbRadius: 10.r,
                               thumbColor: AppColors.primary,
                               borderColor: Colors.white,
                               borderWidth: 2.w,
@@ -481,7 +513,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                             Expanded(
                               child: _buildOptionBlock(
                                 label: 'Dim/Dark',
-                                icon: Icons.nightlight_round,
+                                icon:Icons.nightlight_outlined,
                                 isSelected: filters.lighting == RouteLighting.dimDark,
                                 selectedBg: selectedBg,
                                 selectedBorder: selectedBorder,
@@ -524,8 +556,9 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
     bool isRowStyle = false,
     required VoidCallback onTap,
   }) {
-    final contentColor = isSelected ? AppColors.white : (accentIconColor ?? AppColors.white.withValues(alpha: 0.4));
-    final textColor = isSelected ? AppColors.white : AppColors.white.withValues(alpha: 0.5);
+    final textTheme = Theme.of(context).textTheme;
+    final contentColor = isSelected ? AppColors.white : (accentIconColor ?? AppColors.white);
+    final textColor = isSelected ? AppColors.white : AppColors.white;
 
     // Render Image Asset if provided; otherwise fall back to regular Icon layout
     final Widget visualElement = imageAssetPath != null
@@ -533,7 +566,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
       imageAssetPath,
       width: 24.r,
       height: 24.r,
-      color: isSelected ? null : AppColors.white.withValues(alpha: 0.8), // Keeps unselected assets subtle
+      color: isSelected ? null : AppColors.redDark, // Keeps unselected assets subtle
     )
         : Icon(icon, color: contentColor, size: 22.r);
 
@@ -542,11 +575,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
       SizedBox(width: isRowStyle ? 8.w : 0, height: isRowStyle ? 0 : 8.h),
       Text(
         label,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 12.sp,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-        ),
+        style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600,color: textColor,fontSize: 12.sp,),
       ),
     ];
 
