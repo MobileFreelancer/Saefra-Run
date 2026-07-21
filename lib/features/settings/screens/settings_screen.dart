@@ -82,8 +82,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () =>
+                    context.read<SettingsService>().load(refresh: true),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
                 children: [
                   Container(
                     padding: EdgeInsets.all(14.w),
@@ -216,6 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ],
               ),
+            ),
             ),
           ],
         ),

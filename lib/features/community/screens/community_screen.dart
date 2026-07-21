@@ -46,8 +46,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ? const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               )
-            : ListView(
-                padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
+            : RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () =>
+                    context.read<CommunityService>().load(refresh: true),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
                 children: [
                   Center(
                     child: Text(
@@ -106,6 +111,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   ),
                 ],
               ),
+            ),
       ),
       bottomNavigationBar: const AppBottomNav(activeIndex: 1),
     );

@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:saefra_run/core/config/api_config.dart';
+import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/utils/map_style_service.dart';
 import 'package:saefra_run/core/utils/polyline_decoder.dart';
@@ -81,6 +82,15 @@ class DashboardServices extends ChangeNotifier {
 
   Map<String, dynamic>? get recommendedRoute => _recommendedRoute;
   List<dynamic> get recentRoutes => _recentRoutes;
+  bool get hasHomeData => _homeRoutesRequested;
+
+  List<RouteModel> get recentRouteModels => _recentRoutes
+      .map(
+        (item) => RouteModel.fromJson(
+          Map<String, dynamic>.from(item as Map),
+        ),
+      )
+      .toList();
   List<LatLng> get routePolylinePoints => _routePolylinePoints;
   bool get isRouteLoading => _isRouteLoading;
   String? get errorMessage => _errorMessage;
@@ -385,10 +395,28 @@ class DashboardServices extends ChangeNotifier {
   }
 
   Future<void> initializeDashboard() async {
+    if (_homeRoutesRequested) return;
+
     try {
       await getCurrentLocation().timeout(const Duration(seconds: 8));
     } catch (e) {
       debugPrint('getCurrentLocation timed out or failed: $e');
+    }
+    await loadHomeRoutesIfNeeded();
+  }
+
+  /// Pull-to-refresh: re-fetch home routes from the API.
+  Future<void> refreshHomeData() async {
+    _homeRoutesRequested = false;
+    _recommendedRoute = null;
+    _recentRoutes = [];
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await refreshCurrentLocation();
+    } catch (e) {
+      debugPrint('refreshHomeData location failed: $e');
     }
     await loadHomeRoutesIfNeeded();
   }

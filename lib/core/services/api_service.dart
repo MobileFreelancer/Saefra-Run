@@ -382,7 +382,7 @@ class ApiService {
       final response = await _dio.get(_path('/profile'));
       final map = _map(response);
       final payload = ApiResponseParser.payload(map);
-      return UserModel.fromJson(ApiResponseParser.asMap(payload['user']));
+      return UserModel.fromJson(ApiResponseParser.userFromPayload(payload));
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -435,7 +435,7 @@ class ApiService {
       );
       final map = _map(response);
       final payload = ApiResponseParser.payload(map);
-      return UserModel.fromJson(ApiResponseParser.asMap(payload['user']));
+      return UserModel.fromJson(ApiResponseParser.userFromPayload(payload));
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

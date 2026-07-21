@@ -36,9 +36,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final services = context.read<DashboardServices>();
-      await services.initializeDashboard();
+      if (!services.hasHomeData) {
+        await services.initializeDashboard();
+      }
       if (!mounted) return;
-      context.read<NotificationInboxService>().load(refresh: true);
+      context.read<NotificationInboxService>().loadIfNeeded();
     });
   }
 
@@ -50,7 +52,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final inbox = context.watch<NotificationInboxService>();
     final user = auth.currentUser;
     final screenSize = MediaQuery.of(context).size;
-    final greetingName = "${user?.firstName} ${user?.lastName}";
+    final greetingName = [
+      user?.firstName,
+      user?.lastName,
+    ].where((part) => part != null && part.trim().isNotEmpty).join(' ').trim();
+    final displayName = greetingName.isNotEmpty
+        ? greetingName
+        : (user?.email?.split('@').first ?? 'Runner');
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -112,9 +120,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   child: Consumer<DashboardServices>(
                     builder: (context, services, child) {
-                      return ListView(
-                        padding: const EdgeInsets.fromLTRB(18, 20, 18, 110),
-                        children: [
+                      return RefreshIndicator(
+                        color: AppColors.primary,
+                        onRefresh: () async {
+                          await services.refreshHomeData();
+                          if (!context.mounted) return;
+                          await context
+                              .read<NotificationInboxService>()
+                              .load(refresh: true);
+                        },
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(18, 20, 18, 110),
+                          children: [
                           const Text(
                             'Recommended Route',
                             style: TextStyle(
@@ -289,7 +307,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ],
                         ],
-                      );
+                      ),
+                    );
                     },
                   ),
                 ),
@@ -309,14 +328,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Row(
                       children: [
-                        _UserAvatar(name: greetingName),
+                        _UserAvatar(name: displayName),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Hello, $greetingName',
+                                'Hello, $displayName',
                                 style:   Theme.of(context)
                                     .textTheme
                                     .displayLarge

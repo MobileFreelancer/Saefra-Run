@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:saefra_run/core/models/place_prediction_model.dart';
 import 'package:saefra_run/core/models/route_model.dart';
-import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/places_search_service.dart';
 
 enum RouteSearchStatus { idle, loadingRecent, loading, notFound, results }
@@ -10,7 +9,6 @@ enum RouteSearchStatus { idle, loadingRecent, loading, notFound, results }
 class RouteSearchService extends ChangeNotifier {
   RouteSearchService();
 
-  final ApiService _api = ApiService();
   final PlacesSearchService _places = PlacesSearchService();
 
   String _query = '';
@@ -38,47 +36,16 @@ class RouteSearchService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadRecentRoutes({
-    double? latitude,
-    double? longitude,
-    bool force = false,
-  }) async {
-    if (!force && _status == RouteSearchStatus.loadingRecent) return;
-
-    _status = RouteSearchStatus.loadingRecent;
+  /// Uses recent routes already loaded on the dashboard — no API call.
+  void syncRecentRoutesFromDashboard(List<dynamic> rawRoutes) {
+    _recentRoutes = rawRoutes
+        .map(
+          (item) => RouteModel.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
+        .toList();
     _error = null;
-    notifyListeners();
-
-    if (latitude == null || longitude == null) {
-      _recentRoutes = [];
-      _error = 'Location is required to load recent routes.';
-      _status = RouteSearchStatus.idle;
-      notifyListeners();
-      return;
-    }
-
-    try {
-      final result = await _api.generateSafeRoute(
-        originLat: latitude,
-        originLng: longitude,
-        destLat: latitude,
-        destLng: longitude,
-      );
-
-      final routeData = result['route'] as Map<String, dynamic>?;
-      final list = routeData?['recent_routes'] as List<dynamic>? ?? [];
-      _recentRoutes = list
-          .map(
-            (item) => RouteModel.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
-          )
-          .toList();
-    } catch (e) {
-      _recentRoutes = [];
-      _error = e.toString();
-    }
-
     if (_query.trim().isEmpty) {
       _status = RouteSearchStatus.idle;
     }

@@ -38,15 +38,31 @@ class UserModel {
       runPreference = preference['run_preference'] as String?;
     }
 
+    String? firstName = json['first_name'] as String?;
+    String? lastName = json['last_name'] as String?;
+    if ((firstName == null || firstName.isEmpty) &&
+        (lastName == null || lastName.isEmpty)) {
+      final fullName = json['name'] as String?;
+      if (fullName != null && fullName.trim().isNotEmpty) {
+        final parts = fullName.trim().split(RegExp(r'\s+'));
+        firstName = parts.first;
+        if (parts.length > 1) {
+          lastName = parts.sublist(1).join(' ');
+        }
+      }
+    }
+
     return UserModel(
       id: '${json['id'] ?? json['user_id'] ?? ''}',
       email: json['email'] as String?,
       phoneNumber: json['phone'] as String? ?? json['phone_number'] as String?,
-      firstName: json['first_name'] as String? ?? json['first_name'] as String?,
-      lastName: json['last_name'] as String? ?? json['last_name'] as String?,
+      firstName: firstName,
+      lastName: lastName,
       gender: json['gender'] as String?,
       visitReason: json['visit_reason'] as String?,
-      runPreference: runPreference ?? json['run_preference'] as String?,
+      runPreference: runPreference ??
+          json['run_preference'] as String? ??
+          json['running_level'] as String?,
       birthdate: parsedBirthdate,
       profileImage: json['profile_image'] as String?,
       age: json['age'] as int?,
@@ -71,7 +87,8 @@ class UserModel {
     String? id,
     String? email,
     String? phoneNumber,
-    String? fullName,
+    String? firstName,
+    String? lastName,
     String? gender,
     String? visitReason,
     String? runPreference,
@@ -83,8 +100,8 @@ class UserModel {
       id: id ?? this.id,
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
-      firstName: firstName ?? firstName,
-      lastName: lastName ?? lastName,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       gender: gender ?? this.gender,
       visitReason: visitReason ?? this.visitReason,
       runPreference: runPreference ?? this.runPreference,

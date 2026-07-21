@@ -13,6 +13,7 @@ class ActivityService extends ChangeNotifier {
   List<RecentActivityModel> _recentRuns = [];
   LifetimeStatsModel? _lifetime;
   bool _isLoading = false;
+  bool _hasLoaded = false;
   String? _error;
 
   ActivityPeriod get period => _period;
@@ -22,7 +23,9 @@ class ActivityService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> load() async {
+  Future<void> load({bool refresh = false}) async {
+    if (!refresh && _hasLoaded && _recentRuns.isNotEmpty) return;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -35,6 +38,7 @@ class ActivityService extends ChangeNotifier {
       _applyMockData();
     } finally {
       if (_recentRuns.isEmpty) _applyMockData();
+      _hasLoaded = true;
       _isLoading = false;
       notifyListeners();
     }

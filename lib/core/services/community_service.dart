@@ -17,6 +17,7 @@ class CommunityService extends ChangeNotifier {
   CommunityRouteModel? _selectedRoute;
   List<ReviewModel> _reviews = [];
   bool _isLoading = false;
+  bool _hasLoaded = false;
   String? _error;
 
   List<CommunityRouteModel> get popularRoutes => _popularRoutes;
@@ -26,7 +27,9 @@ class CommunityService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> load() async {
+  Future<void> load({bool refresh = false}) async {
+    if (!refresh && _hasLoaded && _popularRoutes.isNotEmpty) return;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -38,6 +41,7 @@ class CommunityService extends ChangeNotifier {
       _applyMockRoutes();
     } finally {
       if (_popularRoutes.isEmpty) _applyMockRoutes();
+      _hasLoaded = true;
       _isLoading = false;
       notifyListeners();
     }

@@ -124,10 +124,27 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<void> syncCurrentUser(UserModel user) async {
+    _currentUser = user;
+    if (user.id.trim().isNotEmpty) {
+      await _storage.write(
+        key: ApiConfig.storageKeyUserId,
+        value: user.id.trim(),
+      );
+    }
+    if (user.email != null && user.email!.trim().isNotEmpty) {
+      await _storage.write(
+        key: ApiConfig.storageKeyUserEmail,
+        value: user.email!.trim(),
+      );
+    }
+    notifyListeners();
+  }
+
   Future<void> _restoreUserProfile({bool fromCacheOnly = false}) async {
     if (!fromCacheOnly) {
       try {
-        _currentUser = await _apiService.getCurrentUser();
+        await syncCurrentUser(await _apiService.getCurrentUser());
         return;
       } catch (e) {
         debugPrint('getCurrentUser failed, using cached session: $e');

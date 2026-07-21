@@ -14,7 +14,7 @@ class AuthResponseModel {
 
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
     final data = ApiResponseParser.payload(json);
-    final userJson = ApiResponseParser.asMap(data['user']);
+    final userJson = ApiResponseParser.userFromPayload(data);
 
     return AuthResponseModel(
       accessToken: data['token'] as String? ??

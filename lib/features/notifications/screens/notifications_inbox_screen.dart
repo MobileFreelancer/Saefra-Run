@@ -28,7 +28,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NotificationInboxService>().load(refresh: true);
+      context.read<NotificationInboxService>().loadIfNeeded();
     });
     _scrollController.addListener(_onScroll);
   }

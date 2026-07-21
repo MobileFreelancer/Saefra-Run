@@ -11,6 +11,7 @@ class NotificationInboxService extends ChangeNotifier {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  bool _hasLoaded = false;
   int _currentPage = 1;
   String? _error;
   String? _category;
@@ -43,6 +44,12 @@ class NotificationInboxService extends ChangeNotifier {
     );
     _items = [item, ..._items];
     notifyListeners();
+  }
+
+  Future<void> loadIfNeeded() async {
+    if (_hasLoaded || _isLoading) return;
+    _hasLoaded = true;
+    await load(refresh: true);
   }
 
   Future<void> load({String? category, bool refresh = false}) async {

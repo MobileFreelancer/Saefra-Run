@@ -84,4 +84,17 @@ class ApiResponseParser {
     if (data is Map) return Map<String, dynamic>.from(data);
     return {};
   }
+
+  /// Profile/auth responses may nest the user under `user` or return fields directly.
+  static Map<String, dynamic> userFromPayload(Map<String, dynamic> payload) {
+    final nested = payload['user'];
+    if (nested is Map) return asMap(nested);
+    if (payload.containsKey('id') ||
+        payload.containsKey('email') ||
+        payload.containsKey('first_name') ||
+        payload.containsKey('name')) {
+      return payload;
+    }
+    return {};
+  }
 }

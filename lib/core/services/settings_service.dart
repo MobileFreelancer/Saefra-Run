@@ -17,6 +17,7 @@ class SettingsService extends ChangeNotifier {
   UserPreferencesModel? _preferences;
   List<EmergencyContactModel> _contacts = [];
   bool _isLoading = false;
+  bool _hasLoaded = false;
   String? _error;
 
   bool _liveTracking = true;
@@ -56,13 +57,24 @@ class SettingsService extends ChangeNotifier {
   String get birthdate => _birthdate;
   String get runningLevel => _runningLevel;
 
-  Future<void> load() async {
+  Future<void> load({bool refresh = false}) async {
+    if (!refresh && _hasLoaded) return;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final user = _auth.currentUser ?? await _api.getCurrentUser();
+      UserModel user;
+      final cached = _auth.currentUser;
+      if (refresh ||
+          cached == null ||
+          (cached.firstName?.trim().isEmpty ?? true)) {
+        user = await _api.getCurrentUser();
+        await _auth.syncCurrentUser(user);
+      } else {
+        user = cached;
+      }
       _hydrateProfile(user);
       _preferences = await _api.getPreferences();
       _liveTracking = _preferences?.shareLiveLocation ?? _liveTracking;
@@ -80,6 +92,7 @@ class SettingsService extends ChangeNotifier {
       _contacts = await LocalEmergencyContactsStorage.read();
       await _loadLocalSafetySettings();
     } finally {
+      _hasLoaded = true;
       _isLoading = false;
       notifyListeners();
     }
@@ -93,11 +106,12 @@ class SettingsService extends ChangeNotifier {
   void _hydrateProfile(UserModel user) {
     _email = user.email ?? '';
     _phone = user.phoneNumber ?? '';
-    final name = "${user.firstName} ${user.lastName}";
-
-    final parts = name.split(' ');
-    _firstName = parts.isNotEmpty ? parts.first : '';
-    _lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    _firstName = user.firstName?.trim() ?? '';
+    _lastName = user.lastName?.trim() ?? '';
+    if (_firstName.isEmpty && _lastName.isEmpty) {
+      final name = user.email?.split('@').first ?? '';
+      if (name.isNotEmpty) _firstName = name;
+    }
     _gender = _formatGender(user.gender);
 
     if (user.birthdate != null) {
@@ -106,7 +120,6 @@ class SettingsService extends ChangeNotifier {
           '${d.day.toString().padLeft(2, '0')}-${d.month.toString().padLeft(2, '0')}-${d.year}';
     }
     _runningLevel = _formatRunningLevel(user.runPreference);
-
   }
 
   String _formatGender(String? value) {

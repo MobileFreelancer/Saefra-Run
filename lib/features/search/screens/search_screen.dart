@@ -26,38 +26,51 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   late final TextEditingController _controller;
+  late final DashboardServices _dashboard;
   Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialQuery);
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    _dashboard = context.read<DashboardServices>();
+    _dashboard.addListener(_syncRecentFromDashboard);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       final search = context.read<RouteSearchService>();
-      final dashboard = context.read<DashboardServices>();
 
       search.clearSearch();
-      await search.loadRecentRoutes(
-        latitude: dashboard.latitude,
-        longitude: dashboard.longitude,
-        force: true,
-      );
-
-      if (!mounted) return;
+      _syncRecentFromDashboard();
 
       search.setQuery(widget.initialQuery);
       if (widget.initialQuery.isNotEmpty) {
-        await search.search(
+        search.search(
           widget.initialQuery,
-          latitude: dashboard.latitude,
-          longitude: dashboard.longitude,
+          latitude: _dashboard.latitude,
+          longitude: _dashboard.longitude,
         );
       }
     });
   }
 
+  void _syncRecentFromDashboard() {
+    if (!mounted) return;
+    final search = context.read<RouteSearchService>();
+    if (search.query.trim().isNotEmpty) return;
+    search.syncRecentRoutesFromDashboard(_dashboard.recentRoutes);
+  }
+
+  Future<void> _refreshRecentRoutes() async {
+    final search = context.read<RouteSearchService>();
+
+    await _dashboard.refreshHomeData();
+    if (!mounted) return;
+    search.syncRecentRoutesFromDashboard(_dashboard.recentRoutes);
+  }
+
   @override
   void dispose() {
+    _dashboard.removeListener(_syncRecentFromDashboard);
     _debounce?.cancel();
     _controller.dispose();
     super.dispose();
@@ -152,43 +165,45 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildBody(RouteSearchService search) {
     if (search.showRecentRoutes) {
-      if (search.isLoadingRecent) {
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      if (search.recentRoutes.isEmpty) {
+        return RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: _refreshRecentRoutes,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             children: [
-              const CircularProgressIndicator(color: AppColors.primary),
-              SizedBox(height: 12.h),
-              Text('Loading...', style: Theme.of(context).textTheme.bodyMedium),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+              Center(
+                child: Text(
+                  'Find safe routes near you',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
             ],
           ),
         );
       }
 
-      if (search.recentRoutes.isEmpty) {
-        return Center(
-          child: Text(
-            'Find safe routes near you',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        );
-      }
-
-      return ListView.separated(
-        padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
-        itemCount: search.recentRoutes.length + 1,
-        separatorBuilder: (_, index) {
-          if (index == 0) return const SizedBox(height: 6);
-          return const SizedBox(height: 12);
-        },
-        itemBuilder: (context, index) {
-          if (index == 0) return const RecentRoutesSectionHeader();
-          final route = search.recentRoutes[index - 1];
-          return RecentRouteTile.fromRouteModel(
-            route,
-            onTap: () => _openRoute(route),
-          );
-        },
+      return RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: _refreshRecentRoutes,
+        child: ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
+          itemCount: search.recentRoutes.length + 1,
+          separatorBuilder: (_, index) {
+            if (index == 0) return const SizedBox(height: 6);
+            return const SizedBox(height: 12);
+          },
+          itemBuilder: (context, index) {
+            if (index == 0) return const RecentRoutesSectionHeader();
+            final route = search.recentRoutes[index - 1];
+            return RecentRouteTile.fromRouteModel(
+              route,
+              onTap: () => _openRoute(route),
+            );
+          },
+        ),
       );
     }
 

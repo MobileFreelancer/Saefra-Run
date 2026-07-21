@@ -46,8 +46,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
             ? const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               )
-            : ListView(
-                padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
+            : RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () =>
+                    context.read<ActivityService>().load(refresh: true),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
                 children: [
                   Center(
                     child: Text(
@@ -112,6 +117,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   ),
                 ],
               ),
+            ),
       ),
       bottomNavigationBar: const AppBottomNav(activeIndex: 2),
     );
