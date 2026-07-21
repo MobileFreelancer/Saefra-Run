@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -10,7 +11,7 @@ class RunService extends ChangeNotifier {
   RunService();
 
   final ApiService _api = ApiService();
-  Timer? _timer;
+  DateTime? _lastLiveUpdateAt;
 
   RunStatus _status = RunStatus.idle;
   RunSessionModel _session = const RunSessionModel();
@@ -21,6 +22,7 @@ class RunService extends ChangeNotifier {
   String? _sosMessage;
   List<EmergencyContactModel> _sosNotifiedContacts = [];
   RunMood? _mood;
+  String? _apiError;
 
   RunStatus get status => _status;
   RunSessionModel get session => _session;
@@ -31,57 +33,126 @@ class RunService extends ChangeNotifier {
   String? get sosMessage => _sosMessage;
   List<EmergencyContactModel> get sosNotifiedContacts => _sosNotifiedContacts;
   RunMood? get mood => _mood;
+  String? get apiError => _apiError;
   bool get isRunning => _status == RunStatus.running;
   bool get isPaused => _status == RunStatus.paused;
+  bool get hasRunId => _session.runId != null && _session.runId!.isNotEmpty;
 
-  Future<void> startRun({String? routeId, String? routeName}) async {
+  Future<bool> startRun({
+    String? routeId,
+    String? routeName,
+    required double latitude,
+    required double longitude,
+  }) async {
+    _apiError = null;
     _session = RunSessionModel(
       routeId: routeId,
       routeName: routeName ?? 'Your Route',
       routeRemainingMeters: 300,
+      startedAt: DateTime.now(),
     );
     _status = RunStatus.running;
     _sosActive = false;
     _sosError = null;
     _sosMessage = null;
     _sosNotifiedContacts = [];
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    _lastLiveUpdateAt = null;
     notifyListeners();
+
+    if (routeId == null || routeId.trim().isEmpty) {
+      debugPrint('RunService.startRun: no route_id — skipping run-start API');
+      return true;
+    }
+
+    try {
+      final runId = await _api.startRunSession(
+        routeId: routeId,
+        latitude: latitude,
+        longitude: longitude,
+        startedAt: _session.startedAt,
+      );
+      _session = _session.copyWith(runId: runId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _apiError = e.toString();
+      debugPrint('RunService.startRun failed: $e');
+      return false;
+    }
   }
 
-  void _tick() {
-    if (_status != RunStatus.running) return;
-    final elapsed = _session.elapsed + const Duration(seconds: 1);
-    final km = _session.distanceKm + 0.0028;
-    final remaining = (_session.routeRemainingMeters - 1).clamp(0, 99999);
-    final paceMin = elapsed.inSeconds > 0 ? (elapsed.inMinutes / km).clamp(4.0, 12.0) : 5.0;
-    final paceLabel = '${paceMin.floor()}:${((paceMin % 1) * 60).round().toString().padLeft(2, '0')} min/km';
+  Future<void> syncLiveUpdate({
+    required double latitude,
+    required double longitude,
+    required double distanceKm,
+    required int durationSeconds,
+    required double speedKmh,
+    required String pace,
+    required int steps,
+  }) async {
+    final runId = _session.runId;
+    if (runId == null || _status != RunStatus.running) return;
 
-    _session = _session.copyWith(
-      elapsed: elapsed,
-      distanceKm: double.parse(km.toStringAsFixed(2)),
-      routeRemainingMeters: remaining,
-      paceLabel: paceLabel,
-      calories: (km * 72).round(),
-    );
-    notifyListeners();
+    final now = DateTime.now();
+    if (_lastLiveUpdateAt != null &&
+        now.difference(_lastLiveUpdateAt!) < const Duration(seconds: 10)) {
+      return;
+    }
+    _lastLiveUpdateAt = now;
+
+    try {
+      await _api.updateRunSession(
+        runId: runId,
+        latitude: latitude,
+        longitude: longitude,
+        distance: double.parse(distanceKm.toStringAsFixed(3)),
+        duration: durationSeconds,
+        speed: double.parse(speedKmh.toStringAsFixed(2)),
+        pace: pace,
+        steps: steps,
+      );
+    } catch (e) {
+      debugPrint('RunService.syncLiveUpdate failed: $e');
+    }
   }
 
-  void pause() {
-    if (_status != RunStatus.running) return;
+  Future<bool> pause() async {
+    if (_status != RunStatus.running) return false;
     _status = RunStatus.paused;
     notifyListeners();
+
+    final runId = _session.runId;
+    if (runId == null) return true;
+
+    try {
+      await _api.pauseRunSession(runId: runId);
+      return true;
+    } catch (e) {
+      _apiError = e.toString();
+      debugPrint('RunService.pause failed: $e');
+      return false;
+    }
   }
 
-  void resume() {
-    if (_status != RunStatus.paused) return;
+  Future<bool> resume() async {
+    if (_status != RunStatus.paused) return false;
     _status = RunStatus.running;
     notifyListeners();
+
+    final runId = _session.runId;
+    if (runId == null) return true;
+
+    try {
+      await _api.resumeRunSession(runId: runId);
+      return true;
+    } catch (e) {
+      _apiError = e.toString();
+      debugPrint('RunService.resume failed: $e');
+      return false;
+    }
   }
 
   void stop() {
-    _timer?.cancel();
     _status = RunStatus.stopped;
     _session = _session.copyWith(
       splits: _buildSplits(_session.distanceKm),
@@ -95,7 +166,6 @@ class RunService extends ChangeNotifier {
     required int secondsElapsed,
     required List<LatLng> routePath,
   }) {
-    _timer?.cancel();
     _status = RunStatus.stopped;
 
     final elapsed = Duration(seconds: secondsElapsed);
@@ -111,6 +181,99 @@ class RunService extends ChangeNotifier {
       splits: _buildSplits(distanceKm),
     );
     notifyListeners();
+  }
+
+  Future<bool> finishRunOnServer({
+    required double latitude,
+    required double longitude,
+    required List<LatLng> routePath,
+  }) async {
+    final runId = _session.runId;
+    if (runId == null) return true;
+
+    try {
+      await _api.finishRunSession(
+        runId: runId,
+        latitude: latitude,
+        longitude: longitude,
+        polyline: _encodePolyline(routePath),
+        endedAt: DateTime.now(),
+      );
+      return true;
+    } catch (e) {
+      _apiError = e.toString();
+      debugPrint('RunService.finishRunOnServer failed: $e');
+      return false;
+    }
+  }
+
+  Future<bool> loadRunSummary() async {
+    final runId = _session.runId;
+    if (runId == null) return false;
+
+    try {
+      final payload = await _api.getRunSummary(runId);
+      final summary = payload['summary'] is Map
+          ? Map<String, dynamic>.from(payload['summary'] as Map)
+          : payload;
+
+      _session = RunSessionModel.fromJson(summary).copyWith(
+        runId: runId,
+        routeId: _session.routeId ?? summary['route_id']?.toString(),
+        routeName: _session.routeName ?? summary['route_name']?.toString(),
+        routePath: _session.routePath.isNotEmpty
+            ? _session.routePath
+            : _decodePolyline(summary['polyline']),
+      );
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _apiError = e.toString();
+      debugPrint('RunService.loadRunSummary failed: $e');
+      return false;
+    }
+  }
+
+  String _encodePolyline(List<LatLng> path) {
+    if (path.isEmpty) return '[]';
+    return jsonEncode(
+      path
+          .map((p) => {'lat': p.latitude, 'lng': p.longitude})
+          .toList(growable: false),
+    );
+  }
+
+  List<LatLng> _decodePolyline(dynamic raw) {
+    if (raw == null) return const [];
+    try {
+      if (raw is String) {
+        final decoded = jsonDecode(raw);
+        if (decoded is! List) return const [];
+        return decoded
+            .map((e) {
+              final map = Map<String, dynamic>.from(e as Map);
+              return LatLng(
+                (map['lat'] as num).toDouble(),
+                (map['lng'] as num).toDouble(),
+              );
+            })
+            .toList(growable: false);
+      }
+      if (raw is List) {
+        return raw
+            .map((e) {
+              final map = Map<String, dynamic>.from(e as Map);
+              return LatLng(
+                (map['lat'] as num).toDouble(),
+                (map['lng'] as num).toDouble(),
+              );
+            })
+            .toList(growable: false);
+      }
+    } catch (e) {
+      debugPrint('RunService._decodePolyline failed: $e');
+    }
+    return const [];
   }
 
   String _formatPaceLabel(Duration elapsed, double distanceKm) {
@@ -206,24 +369,39 @@ class RunService extends ChangeNotifier {
   }
 
   Future<bool> saveActivity() async {
+    final runId = _session.runId;
+    final mood = _mood;
+    if (runId == null || runId.isEmpty) return true;
+    if (mood == null) {
+      _apiError = 'Please select how your run felt.';
+      notifyListeners();
+      return false;
+    }
+
     try {
-      await _api.submitRunSummary(_session.toSubmitJson(mood: _mood));
+      await _api.submitRunFeeling(
+        runId: runId,
+        runFeeling: mood.name,
+      );
+      _apiError = null;
       return true;
-    } catch (_) {
+    } catch (e) {
+      _apiError = e.toString();
+      debugPrint('RunService.saveActivity failed: $e');
       return false;
     }
   }
 
   Future<void> discardActivity() async {
-    _timer?.cancel();
     _status = RunStatus.idle;
     _session = const RunSessionModel();
     _mood = null;
+    _apiError = null;
+    _lastLiveUpdateAt = null;
     notifyListeners();
   }
 
   void reset() {
-    _timer?.cancel();
     _status = RunStatus.idle;
     _session = const RunSessionModel();
     _sosActive = false;
@@ -233,12 +411,8 @@ class RunService extends ChangeNotifier {
     _sosMessage = null;
     _sosNotifiedContacts = [];
     _mood = null;
+    _apiError = null;
+    _lastLiveUpdateAt = null;
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
   }
 }

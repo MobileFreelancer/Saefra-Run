@@ -839,15 +839,187 @@ class ApiService {
     }
   }
 
+  /// POST /api/v1/run-review
   Future<void> submitRunReview({
     required String runId,
+    required String routeId,
     required RunReviewFormModel form,
   }) async {
     try {
-      await _dio.post(
-        _path('/runs/$runId/review'),
-        data: _form(form.toJson()),
+      final fields = form.toApiFields(runId: runId, routeId: routeId);
+      final formData = FormData.fromMap(fields);
+
+      for (final imagePath in form.imagePaths) {
+        if (imagePath.isEmpty) continue;
+        final file = File(imagePath);
+        if (!await file.exists()) continue;
+        formData.files.add(
+          MapEntry(
+            'route_image[]',
+            await MultipartFile.fromFile(
+              imagePath,
+              filename: imagePath.split('/').last,
+            ),
+          ),
+        );
+      }
+
+      final response = await _dio.post(
+        _path('/run-review'),
+        data: formData,
       );
+      _map(response);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  String _apiDateTime(DateTime value) =>
+      DateFormat('yyyy-MM-dd HH:mm:ss').format(value);
+
+  String _parseRunId(Map<String, dynamic> payload) {
+    final runId = payload['run_id']?.toString() ??
+        payload['runId']?.toString() ??
+        payload['id']?.toString();
+    if (runId == null || runId.isEmpty) {
+      throw const ApiException('Run ID missing from server response.');
+    }
+    return runId;
+  }
+
+  /// POST /api/v1/run-start
+  Future<String> startRunSession({
+    required String routeId,
+    required double latitude,
+    required double longitude,
+    DateTime? startedAt,
+  }) async {
+    try {
+      final response = await _dio.post(
+        _path('/run-start'),
+        data: _form({
+          'route_id': routeId,
+          'latitude': latitude,
+          'longitude': longitude,
+          'started_at': _apiDateTime(startedAt ?? DateTime.now()),
+        }),
+      );
+      final map = _map(response);
+      final payload = ApiResponseParser.payload(map);
+      return _parseRunId(payload);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// POST /api/v1/run-update
+  Future<void> updateRunSession({
+    required String runId,
+    required double latitude,
+    required double longitude,
+    required double distance,
+    required int duration,
+    required double speed,
+    required String pace,
+    required int steps,
+    DateTime? timestamp,
+  }) async {
+    try {
+      await _dio.post(
+        _path('/run-update'),
+        data: _form({
+          'run_id': runId,
+          'latitude': latitude,
+          'longitude': longitude,
+          'timestamp': _apiDateTime(timestamp ?? DateTime.now()),
+          'distance': distance,
+          'duration': duration,
+          'speed': speed,
+          'pace': pace,
+          'steps': steps,
+        }),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// POST /api/v1/run-pause
+  Future<void> pauseRunSession({required String runId}) async {
+    try {
+      await _dio.post(
+        _path('/run-pause'),
+        data: _form({'run_id': runId}),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// POST /api/v1/run-resume
+  Future<void> resumeRunSession({required String runId}) async {
+    try {
+      await _dio.post(
+        _path('/run-resume'),
+        data: _form({'run_id': runId}),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// POST /api/v1/run-finish
+  Future<void> finishRunSession({
+    required String runId,
+    required double latitude,
+    required double longitude,
+    required String polyline,
+    DateTime? endedAt,
+  }) async {
+    try {
+      await _dio.post(
+        _path('/run-finish'),
+        data: _form({
+          'run_id': runId,
+          'ended_at': _apiDateTime(endedAt ?? DateTime.now()),
+          'polyline': polyline,
+          'latitude': latitude,
+          'longitude': longitude,
+        }),
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// GET /api/v1/run-summary/{run_id}
+  Future<Map<String, dynamic>> getRunSummary(String runId) async {
+    try {
+      final response = await _dio.get(
+        _path('/run-summary/$runId'),
+        queryParameters: {'run_id': runId},
+      );
+      final map = _map(response);
+      return ApiResponseParser.payload(map);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// POST /api/v1/run-feeling
+  Future<void> submitRunFeeling({
+    required String runId,
+    required String runFeeling,
+  }) async {
+    try {
+      final response = await _dio.post(
+        _path('/run-feeling'),
+        data: _form({
+          'run_id': runId,
+          'run_feeling': runFeeling,
+        }),
+      );
+      _map(response);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

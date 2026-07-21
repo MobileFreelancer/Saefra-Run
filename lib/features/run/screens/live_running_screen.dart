@@ -30,11 +30,36 @@ class LiveRunningScreen extends StatefulWidget {
 
 class _LiveRunningScreenState extends State<LiveRunningScreen> {
   bool _bootstrapped = false;
+  bool _isFinishing = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  void _bindTrackingSync() {
+    final tracking = context.read<RunningProvider>();
+    final runService = context.read<RunService>();
+    tracking.onTrackingUpdate = ({
+      required latitude,
+      required longitude,
+      required distanceKm,
+      required durationSeconds,
+      required speedKmh,
+      required steps,
+      required pace,
+    }) {
+      runService.syncLiveUpdate(
+        latitude: latitude,
+        longitude: longitude,
+        distanceKm: distanceKm,
+        durationSeconds: durationSeconds,
+        speedKmh: speedKmh,
+        pace: pace,
+        steps: steps,
+      );
+    };
   }
 
   Future<void> _bootstrap() async {
@@ -43,11 +68,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
 
     final tracking = context.read<RunningProvider>();
     final runService = context.read<RunService>();
-
-    runService.startRun(
-      routeId: widget.routeId,
-      routeName: widget.routeName,
-    );
+    _bindTrackingSync();
 
     RouteModel? route = await _resolveRoute();
     if (!mounted) return;
@@ -67,6 +88,28 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
 
     await tracking.initTracking();
     if (!mounted) return;
+
+    final lat = tracking.currentPosition?.latitude ??
+        route?.startPoint?.latitude ??
+        0.0;
+    final lng = tracking.currentPosition?.longitude ??
+        route?.startPoint?.longitude ??
+        0.0;
+
+    final started = await runService.startRun(
+      routeId: widget.routeId,
+      routeName: widget.routeName ?? route?.name,
+      latitude: lat,
+      longitude: lng,
+    );
+
+    if (!mounted) return;
+
+    if (!started && runService.apiError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(runService.apiError!)),
+      );
+    }
 
     if (tracking.destinationPosition != null && !tracking.isTracking) {
       tracking.startRunSession();
@@ -93,15 +136,42 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
     return null;
   }
 
-  void _endRunAndGoToSummary() {
+  Future<void> _endRunAndGoToSummary() async {
+    if (_isFinishing) return;
+    _isFinishing = true;
+
     final tracking = context.read<RunningProvider>();
-    context.read<RunService>().completeFromTracking(
+    final runService = context.read<RunService>();
+
+    runService.completeFromTracking(
       distanceKm: tracking.totalDistanceKm,
       steps: tracking.totalSteps,
       secondsElapsed: tracking.secondsElapsed,
       routePath: List<LatLng>.from(tracking.runningPathCoordinates),
     );
+
+    final lat = tracking.currentPosition?.latitude ?? 0.0;
+    final lng = tracking.currentPosition?.longitude ?? 0.0;
+
+    final finished = await runService.finishRunOnServer(
+      latitude: lat,
+      longitude: lng,
+      routePath: List<LatLng>.from(tracking.runningPathCoordinates),
+    );
+
+    if (!mounted) return;
+
+    if (!finished && runService.apiError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(runService.apiError!)),
+      );
+    }
+
+    await runService.loadRunSummary();
+    tracking.onTrackingUpdate = null;
     tracking.finishRun();
+
+    if (!mounted) return;
     context.pushReplacementNamed('runSummary');
   }
 
@@ -111,12 +181,18 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
       barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.75),
       builder: (ctx) => _PauseRunDialog(
-        onResume: () {
+        onResume: () async {
           Navigator.pop(ctx);
           if (!context.read<RunningProvider>().isTracking) {
             context.read<RunningProvider>().togglePauseResume();
           }
-          context.read<RunService>().resume();
+          final ok = await context.read<RunService>().resume();
+          if (!mounted) return;
+          if (!ok && context.read<RunService>().apiError != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(context.read<RunService>().apiError!)),
+            );
+          }
         },
         onEnd: () {
           Navigator.pop(ctx);
@@ -178,15 +254,29 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
     );
   }
 
-  void _onPausePressed() {
+  Future<void> _onPausePressed() async {
     final tracking = context.read<RunningProvider>();
+    final runService = context.read<RunService>();
+
     if (tracking.isTracking) {
       tracking.togglePauseResume();
-      context.read<RunService>().pause();
+      final ok = await runService.pause();
+      if (!mounted) return;
+      if (!ok && runService.apiError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(runService.apiError!)),
+        );
+      }
       _showPauseDialog();
     } else {
       tracking.togglePauseResume();
-      context.read<RunService>().resume();
+      final ok = await runService.resume();
+      if (!mounted) return;
+      if (!ok && runService.apiError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(runService.apiError!)),
+        );
+      }
     }
   }
 

@@ -25,10 +25,13 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final run = context.read<RunService>();
       if (run.mood == null) {
         run.setMood(RunMood.great);
+      }
+      if (run.session.runId != null) {
+        await run.loadRunSummary();
       }
     });
   }
@@ -39,12 +42,16 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
       _saveError = null;
     });
 
-    final ok = await context.read<RunService>().saveActivity();
+    final runService = context.read<RunService>();
+    final ok = await runService.saveActivity();
     if (!mounted) return;
 
     setState(() => _isSaving = false);
     if (!ok) {
-      setState(() => _saveError = 'Failed to save activity. Please try again.');
+      setState(
+        () => _saveError =
+            runService.apiError ?? 'Failed to save run feeling. Please try again.',
+      );
       return;
     }
 

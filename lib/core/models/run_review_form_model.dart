@@ -1,3 +1,5 @@
+import 'package:saefra_run/core/utils/api_field_mapper.dart';
+
 enum RouteFeel { openWellTraveled, balanced, quietSecluded }
 
 enum RouteSurfaceType { mostlyPaved, mixedSurfaces, mostlyUnpaved }
@@ -39,13 +41,18 @@ class RunReviewFormModel {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'route_feel': routeFeel.name,
-        'surface_type': surfaceType.name,
-        'sidewalks': sidewalks.name,
-        'star_rating': starRating,
-        'review_text': reviewText,
-        'image_paths': imagePaths,
+  Map<String, dynamic> toApiFields({
+    required String runId,
+    required String routeId,
+  }) =>
+      {
+        'run_id': runId,
+        'route_id': routeId,
+        'overall_rating': starRating,
+        'route_feel': ApiFieldMapper.routeFeelToApi(routeFeel.name),
+        'route_surface': ApiFieldMapper.routeSurfaceToApi(surfaceType.name),
+        'route_sidewalk': ApiFieldMapper.routeSidewalkToApi(sidewalks.name),
+        'comment': reviewText.trim(),
       };
 }
 
