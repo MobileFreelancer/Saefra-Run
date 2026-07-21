@@ -111,8 +111,8 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
       );
     }
 
-    if (tracking.destinationPosition != null && !tracking.isTracking) {
-      tracking.startRunSession();
+    if (!tracking.isTracking) {
+      await tracking.startRunSession();
     }
   }
 
@@ -296,7 +296,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
               context.read<DashboardServices>().applyMapStyle(controller);
             },
             polylines: Set<Polyline>.of(trackingProvider.polylines.values),
-            markers: Set<Marker>.of(trackingProvider.markers.values),
+            markers: trackingProvider.buildMarkerSet(),
             onTap: (LatLng position) {
               // if (!trackingProvider.mapController.isCompleted) {
               //   trackingProvider.mapController.complete(trackingProvider.mapController);
@@ -401,9 +401,8 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
 
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: trackingProvider.destinationPosition == null
-                                ? null
-                                : () => context.read<RunningProvider>().startRunSession(),
+                            onPressed: () =>
+                                context.read<RunningProvider>().startRunSession(),
                             style: ElevatedButton.styleFrom(
                               backgroundColor:  AppColors.primary,
                               disabledBackgroundColor: Colors.grey[800],

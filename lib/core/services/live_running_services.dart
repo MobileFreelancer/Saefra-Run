@@ -7,8 +7,14 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 
 class RunningProvider extends ChangeNotifier {
-  final Completer<GoogleMapController> _mapController = Completer();
+  Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
   Completer<GoogleMapController> get mapController => _mapController;
+  GoogleMapController? _activeMapController;
+
+  static const LocationSettings _locationSettings = LocationSettings(
+    accuracy: LocationAccuracy.bestForNavigation,
+    distanceFilter: 1,
+  );
 
   LatLng? _currentPosition;
   LatLng? get currentPosition => _currentPosition;
@@ -70,6 +76,48 @@ class RunningProvider extends ChangeNotifier {
   BitmapDescriptor? _runnerIconActive;
   BitmapDescriptor? _destinationIcon;
 
+  BitmapDescriptor get runnerMarkerIcon => _isTracking
+      ? (_runnerIconActive ??
+          BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure))
+      : (_runnerIconIdle ??
+          BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose));
+
+  BitmapDescriptor get destinationMarkerIcon =>
+      _destinationIcon ??
+      BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+
+  /// Fresh marker set each call so GoogleMap always picks up GPS moves.
+  Set<Marker> buildMarkerSet() {
+    final markers = <Marker>{};
+    if (_currentPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('runner_location'),
+          position: _currentPosition!,
+          icon: runnerMarkerIcon,
+          anchor: const Offset(0.5, 0.5),
+          zIndex: 2,
+        ),
+      );
+    }
+    if (_destinationPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('destination_location'),
+          position: _destinationPosition!,
+          icon: destinationMarkerIcon,
+          anchor: const Offset(0.5, 1.0),
+        ),
+      );
+    }
+    return markers;
+  }
+
+  void _resetMapController() {
+    _activeMapController = null;
+    _mapController = Completer<GoogleMapController>();
+  }
+
   /// Loads custom marker images from app assets.
   Future<void> _ensureRunnerIcons() async {
     try {
@@ -113,7 +161,10 @@ class RunningProvider extends ChangeNotifier {
   Future<void> initTracking() async {
     try {
       await _ensureRunnerIcons();
-      await _initLocationPermission();
+      final hasPermission = await _initLocationPermission();
+      if (hasPermission) {
+        _startLiveLocationTracking();
+      }
     } catch (e) {
       debugPrint("❌ Error inside initTracking: $e");
     }
@@ -126,6 +177,7 @@ class RunningProvider extends ChangeNotifier {
     List<LatLng>? routePolyline,
   }) {
     _locationSubscription?.cancel();
+    _locationSubscription = null;
     _runningTimer?.cancel();
     _isTracking = false;
     _isLoadingRoute = false;
@@ -136,7 +188,8 @@ class RunningProvider extends ChangeNotifier {
     _routeRemainingStr = "0m";
     _runningPathCoordinates.clear();
     _polylines.clear();
-    _markers.remove(const MarkerId('destination_location'));
+    _markers.clear();
+    _resetMapController();
 
     selectDestination(
       startPoint: startPoint,
@@ -146,21 +199,23 @@ class RunningProvider extends ChangeNotifier {
   }
 
   void onMapReady(GoogleMapController controller) {
+    _activeMapController = controller;
     if (!_mapController.isCompleted) {
       _mapController.complete(controller);
     }
-    _adjustCameraToFitRoute();
     if (_currentPosition != null) {
-      _updateRunnerMarker(_currentPosition!);
+      _followRunnerOnMap(_currentPosition!, zoom: 16);
+    } else {
+      _adjustCameraToFitRoute();
     }
     notifyListeners();
   }
 
-  Future<void> _initLocationPermission() async {
+  Future<bool> _initLocationPermission() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         debugPrint("⚠️ Location service is disabled.");
-        return;
+        return false;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -170,27 +225,18 @@ class RunningProvider extends ChangeNotifier {
       if (permission != LocationPermission.always &&
           permission != LocationPermission.whileInUse) {
         debugPrint('Location not granted — skipping live tracking init.');
-        return;
+        return false;
       }
 
       final Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: _locationSettings,
       );
 
-      final LatLng newPosition = LatLng(position.latitude, position.longitude);
-
-      if (_currentPosition != newPosition && !_isTracking) {
-        _currentPosition = newPosition;
-        _updateRunnerMarker(_currentPosition!);
-
-        if (_mapController.isCompleted) {
-          final GoogleMapController controller = await _mapController.future;
-          controller.animateCamera(CameraUpdate.newLatLngZoom(_currentPosition!, 16));
-        }
-        notifyListeners();
-      }
+      _applyGpsPosition(position, followCamera: !_isTracking);
+      return true;
     } catch (e) {
       debugPrint("❌ Error initializing location permissions: $e");
+      return false;
     }
   }
 
@@ -208,14 +254,11 @@ class RunningProvider extends ChangeNotifier {
       _secondsElapsed = 0;
       _routeRemainingStr = "0m";
 
-      _currentPosition = startPoint;
-      _updateRunnerMarker(startPoint);
+      // Prefer live GPS; fall back to route start until the stream updates.
+      _currentPosition ??= startPoint;
 
       _destinationPosition = endPoint;
       _isSafeRouteSelected = true;
-      _updateDestinationMarker(endPoint);
-
-      _adjustCameraToFitRoute();
 
       if (routePolyline != null && routePolyline.length > 1) {
         _runningPathCoordinates
@@ -223,6 +266,7 @@ class RunningProvider extends ChangeNotifier {
           ..addAll(routePolyline);
         _drawRunningPolyline(const Color(0xFFE91E63));
         _calculateRemainingDistance();
+        _adjustCameraToFitRoute();
         notifyListeners();
       } else {
         _getStandardRoute();
@@ -235,9 +279,10 @@ class RunningProvider extends ChangeNotifier {
   Future<void> _adjustCameraToFitRoute() async {
     try {
       if (_currentPosition == null || _destinationPosition == null) return;
-      if (!_mapController.isCompleted) return;
 
-      final GoogleMapController controller = await _mapController.future;
+      final controller = _activeMapController ??
+          (_mapController.isCompleted ? await _mapController.future : null);
+      if (controller == null) return;
 
       LatLngBounds bounds;
       if (_currentPosition!.latitude > _destinationPosition!.latitude) {
@@ -321,6 +366,7 @@ class RunningProvider extends ChangeNotifier {
       _calculateRemainingDistance();
     } finally {
       _isLoadingRoute = false;
+      await _adjustCameraToFitRoute();
       notifyListeners();
     }
   }
@@ -369,11 +415,22 @@ class RunningProvider extends ChangeNotifier {
     }
   }
 
-  void startRunSession() {
+  Future<void> startRunSession() async {
+    if (_isTracking) return;
+
     try {
-      if (_destinationPosition == null) return;
+      if (_currentPosition == null) {
+        try {
+          final position = await Geolocator.getCurrentPosition(
+            locationSettings: _locationSettings,
+          );
+          _applyGpsPosition(position, followCamera: true);
+        } catch (e) {
+          debugPrint('startRunSession: could not read GPS: $e');
+        }
+      }
+
       _isTracking = true;
-      _updateRunnerMarker(_currentPosition ?? _destinationPosition!);
       _startTimer();
       _startLiveLocationTracking();
       notifyListeners();
@@ -427,72 +484,93 @@ class RunningProvider extends ChangeNotifier {
     );
   }
 
-  void _startLiveLocationTracking() {
+  void _applyGpsPosition(Position position, {bool followCamera = true}) {
+    final newPos = LatLng(position.latitude, position.longitude);
+    final previous = _currentPosition;
+
+    if (_isTracking && previous != null) {
+      final distanceMovedMeters = Geolocator.distanceBetween(
+        previous.latitude,
+        previous.longitude,
+        newPos.latitude,
+        newPos.longitude,
+      );
+
+      if (distanceMovedMeters > 0.1) {
+        _totalDistanceKm += distanceMovedMeters / 1000;
+        _totalSteps += (distanceMovedMeters * 1.31).round();
+      }
+
+      _currentSpeedKmh = position.speed >= 0 ? position.speed * 3.6 : 0;
+      if (_currentSpeedKmh < 0.5) _currentSpeedKmh = 0.0;
+
+      if (_runningPathCoordinates.isNotEmpty) {
+        _trimPassedRoutePoints(newPos);
+      }
+
+      _calculateRemainingDistance();
+      _notifyTrackingUpdate(newPos);
+    }
+
+    _currentPosition = newPos;
+
+    if (followCamera && (_isTracking || previous == null)) {
+      _followRunnerOnMap(newPos);
+    }
+
+    notifyListeners();
+  }
+
+  void _trimPassedRoutePoints(LatLng newPos) {
+    int closestIndex = 0;
+    double shortestDistance = double.infinity;
+
+    for (int i = 0; i < _runningPathCoordinates.length; i++) {
+      final dist = Geolocator.distanceBetween(
+        newPos.latitude,
+        newPos.longitude,
+        _runningPathCoordinates[i].latitude,
+        _runningPathCoordinates[i].longitude,
+      );
+      if (dist < shortestDistance) {
+        shortestDistance = dist;
+        closestIndex = i;
+      }
+    }
+
+    if (closestIndex > 0) {
+      _runningPathCoordinates.removeRange(0, closestIndex);
+      _drawRunningPolyline(const Color(0xFFE91E63));
+    }
+  }
+
+  Future<void> _followRunnerOnMap(LatLng position, {double? zoom}) async {
+    final controller = _activeMapController;
+    if (controller == null) return;
+
     try {
-      _locationSubscription?.cancel();
+      if (zoom != null) {
+        await controller.animateCamera(
+          CameraUpdate.newLatLngZoom(position, zoom),
+        );
+      } else {
+        await controller.animateCamera(CameraUpdate.newLatLng(position));
+      }
+    } catch (e) {
+      debugPrint('Camera follow failed: $e');
+    }
+  }
+
+  void _startLiveLocationTracking() {
+    if (_locationSubscription != null) return;
+
+    try {
       _locationSubscription = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 2,
-        ),
+        locationSettings: _locationSettings,
       ).listen(
-            (Position position) async {
+        (position) {
           try {
-            if (!_isTracking) return;
-
-            LatLng newPos = LatLng(position.latitude, position.longitude);
-
-            if (_currentPosition != null) {
-              double distanceMovedMeters = Geolocator.distanceBetween(
-                _currentPosition!.latitude,
-                _currentPosition!.longitude,
-                newPos.latitude,
-                newPos.longitude,
-              );
-
-              if (distanceMovedMeters > 0.1) {
-                _totalDistanceKm += (distanceMovedMeters / 1000);
-                _totalSteps += (distanceMovedMeters * 1.31).round();
-              }
-
-              _currentSpeedKmh = position.speed * 3.6;
-              if (_currentSpeedKmh < 0.5) _currentSpeedKmh = 0.0;
-
-              if (_runningPathCoordinates.isNotEmpty) {
-                int closestIndex = 0;
-                double shortestDistance = double.infinity;
-
-                for (int i = 0; i < _runningPathCoordinates.length; i++) {
-                  double dist = Geolocator.distanceBetween(
-                    newPos.latitude,
-                    newPos.longitude,
-                    _runningPathCoordinates[i].latitude,
-                    _runningPathCoordinates[i].longitude,
-                  );
-                  if (dist < shortestDistance) {
-                    shortestDistance = dist;
-                    closestIndex = i;
-                  }
-                }
-
-                if (closestIndex > 0) {
-                  _runningPathCoordinates.removeRange(0, closestIndex);
-                  _drawRunningPolyline(const Color(0xFFE91E63));
-                }
-              }
-            }
-
-            _currentPosition = newPos;
-            _updateRunnerMarker(newPos);
-            _calculateRemainingDistance();
-            _notifyTrackingUpdate(newPos);
-
-            if (_mapController.isCompleted) {
-              final GoogleMapController controller = await _mapController.future;
-              controller.animateCamera(CameraUpdate.newLatLng(newPos));
-            }
-
-            notifyListeners();
+            _applyGpsPosition(position, followCamera: _isTracking);
           } catch (innerError) {
             debugPrint("❌ Tracking Update Error: $innerError");
           }
@@ -521,49 +599,13 @@ class RunningProvider extends ChangeNotifier {
     }
   }
 
-  void _updateRunnerMarker(LatLng position) {
-    final icon = _isTracking
-        ? (_runnerIconActive ??
-        BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure))
-        : (_runnerIconIdle ??
-        BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose));
-
-    MarkerId id = const MarkerId("runner_location");
-    _markers[id] = Marker(
-      markerId: id,
-      position: position,
-      icon: icon,
-      anchor: const Offset(0.5, 0.5),
-      zIndex: 2,
-    );
-  }
-
-  void _updateDestinationMarker(LatLng position) {
-    try {
-      MarkerId id = const MarkerId("destination_location");
-      _markers[id] = Marker(
-        markerId: id,
-        position: position,
-        icon: _destinationIcon ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        anchor: const Offset(0.5, 1.0),
-      );
-    } catch (e) {
-      debugPrint("❌ Error updating destination marker: $e");
-    }
-  }
-
   void togglePauseResume() {
     try {
       _isTracking = !_isTracking;
-      if (_currentPosition != null) {
-        _updateRunnerMarker(_currentPosition!);
-      }
-      if (_isTracking) {
-        _startLiveLocationTracking();
-      } else {
-        _locationSubscription?.cancel();
+      if (!_isTracking) {
         _currentSpeedKmh = 0.0;
+      } else {
+        _startLiveLocationTracking();
       }
       notifyListeners();
     } catch (e) {
@@ -589,10 +631,13 @@ class RunningProvider extends ChangeNotifier {
       _routeRemainingStr = "0m";
       _runningTimer?.cancel();
       _locationSubscription?.cancel();
+      _locationSubscription = null;
       _runningPathCoordinates.clear();
       _polylines.clear();
       _destinationPosition = null;
+      _currentPosition = null;
       _markers.clear();
+      _resetMapController();
       notifyListeners();
     } catch (e) {
       debugPrint("❌ Error during session cleanup: $e");

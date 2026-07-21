@@ -106,11 +106,11 @@ class FeatureMockData {
   );
 
   static const ratingDistribution = <int, double>{
-    5: 0.78,
-    4: 0.14,
-    3: 0.05,
+    5: 0.71,
+    4: 0.16,
+    3: 0.11,
     2: 0.02,
-    1: 0.01,
+    1: 0.0,
   };
 
   static const reviews = [
@@ -119,7 +119,7 @@ class FeatureMockData {
       userName: 'Priya S.',
       rating: 5,
       comment: 'Amazing route! Very safe and scenic.',
-      timeAgo: '3d ago',
+      timeAgo: '2d ago',
       likeCount: 12,
     ),
     ReviewModel(
