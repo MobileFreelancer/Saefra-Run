@@ -342,6 +342,13 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                                 : 'Route Remaining: ${trackingProvider.routeRemainingStr}',
                             style: TextStyle(fontSize: 15, color: Colors.grey[500]),
                           ),
+                          if (trackingProvider.isUsingStepTracking) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Indoor mode: tracking steps along route',
+                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            ),
+                          ],
                         ],
                       ),
                       // SOS EMERGENCY BUTTON
@@ -384,7 +391,13 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildMetricItem("assets/images/runicon.png", trackingProvider.totalDistanceKm.toStringAsFixed(1), "km"),
+                        _buildMetricItem(
+                          "assets/images/runicon.png",
+                          trackingProvider.totalDistanceKm < 0.1
+                              ? trackingProvider.totalDistanceKm.toStringAsFixed(2)
+                              : trackingProvider.totalDistanceKm.toStringAsFixed(1),
+                          "km",
+                        ),
                         _buildVerticalDivider(),
                         _buildMetricItem("assets/images/runicon.png", "${trackingProvider.totalSteps}", "Steps"),
                         _buildVerticalDivider(),

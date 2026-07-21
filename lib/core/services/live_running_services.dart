@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:pedometer/pedometer.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 
 class RunningProvider extends ChangeNotifier {
@@ -13,8 +17,20 @@ class RunningProvider extends ChangeNotifier {
 
   static const LocationSettings _locationSettings = LocationSettings(
     accuracy: LocationAccuracy.bestForNavigation,
-    distanceFilter: 1,
+    distanceFilter: 0,
   );
+
+  static const double _avgStrideMeters = 0.762;
+  static const double _gpsAccuracyThreshold = 35;
+  static const Duration _gpsStaleAfter = Duration(seconds: 8);
+
+  List<LatLng> _fullRoutePoints = [];
+  double _trackedDistanceMeters = 0;
+  int? _stepBaseline;
+  DateTime? _lastMeaningfulGpsUpdateAt;
+  double? _lastGpsAccuracy;
+
+  StreamSubscription<StepCount>? _pedometerSubscription;
 
   LatLng? _currentPosition;
   LatLng? get currentPosition => _currentPosition;
@@ -60,6 +76,8 @@ class RunningProvider extends ChangeNotifier {
 
   String _routeRemainingStr = "0m";
   String get routeRemainingStr => _routeRemainingStr;
+
+  bool get isUsingStepTracking => _isTracking && _shouldPreferStepTracking();
 
   void Function({
   required double latitude,
@@ -178,6 +196,7 @@ class RunningProvider extends ChangeNotifier {
   }) {
     _locationSubscription?.cancel();
     _locationSubscription = null;
+    _stopPedometerTracking();
     _runningTimer?.cancel();
     _isTracking = false;
     _isLoadingRoute = false;
@@ -186,6 +205,11 @@ class RunningProvider extends ChangeNotifier {
     _currentSpeedKmh = 0.0;
     _secondsElapsed = 0;
     _routeRemainingStr = "0m";
+    _trackedDistanceMeters = 0;
+    _fullRoutePoints = [];
+    _stepBaseline = null;
+    _lastMeaningfulGpsUpdateAt = null;
+    _lastGpsAccuracy = null;
     _runningPathCoordinates.clear();
     _polylines.clear();
     _markers.clear();
@@ -261,6 +285,7 @@ class RunningProvider extends ChangeNotifier {
       _isSafeRouteSelected = true;
 
       if (routePolyline != null && routePolyline.length > 1) {
+        _fullRoutePoints = List<LatLng>.from(routePolyline);
         _runningPathCoordinates
           ..clear()
           ..addAll(routePolyline);
@@ -353,6 +378,7 @@ class RunningProvider extends ChangeNotifier {
           _runningPathCoordinates.add(LatLng(point.latitude, point.longitude));
         }
 
+        _fullRoutePoints = List<LatLng>.from(_runningPathCoordinates);
         _drawRunningPolyline(const Color(0xFFE91E63));
         _calculateRemainingDistance();
 
@@ -431,8 +457,12 @@ class RunningProvider extends ChangeNotifier {
       }
 
       _isTracking = true;
+      _trackedDistanceMeters = 0;
+      _stepBaseline = null;
       _startTimer();
       _startLiveLocationTracking();
+      await _ensurePedometerPermission();
+      _startPedometerTracking();
       notifyListeners();
     } catch (e) {
       debugPrint("❌ Error starting run session: $e");
@@ -445,6 +475,9 @@ class RunningProvider extends ChangeNotifier {
       _runningTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (_isTracking) {
           _secondsElapsed++;
+          if (_shouldPreferStepTracking()) {
+            _currentSpeedKmh = _estimateSpeedKmh();
+          }
           notifyListeners();
         }
       });
@@ -485,10 +518,13 @@ class RunningProvider extends ChangeNotifier {
   }
 
   void _applyGpsPosition(Position position, {bool followCamera = true}) {
+    _lastGpsAccuracy = position.accuracy;
+
     final newPos = LatLng(position.latitude, position.longitude);
     final previous = _currentPosition;
+    final gpsReliable = position.accuracy <= _gpsAccuracyThreshold;
 
-    if (_isTracking && previous != null) {
+    if (_isTracking && gpsReliable && previous != null && !_shouldPreferStepTracking()) {
       final distanceMovedMeters = Geolocator.distanceBetween(
         previous.latitude,
         previous.longitude,
@@ -496,20 +532,34 @@ class RunningProvider extends ChangeNotifier {
         newPos.longitude,
       );
 
-      if (distanceMovedMeters > 0.1) {
+      if (distanceMovedMeters > 0.5) {
+        _lastMeaningfulGpsUpdateAt = DateTime.now();
+        _trackedDistanceMeters += distanceMovedMeters;
         _totalDistanceKm += distanceMovedMeters / 1000;
-        _totalSteps += (distanceMovedMeters * 1.31).round();
+
+        _currentSpeedKmh = position.speed >= 0 ? position.speed * 3.6 : 0;
+        if (_currentSpeedKmh < 0.5) {
+          _currentSpeedKmh = _estimateSpeedKmh();
+        }
+
+        _currentPosition = newPos;
+        if (_runningPathCoordinates.isNotEmpty) {
+          _trimPassedRoutePoints(newPos);
+        }
+        _calculateRemainingDistance();
+        _notifyTrackingUpdate(newPos);
+
+        if (followCamera) {
+          _followRunnerOnMap(newPos);
+        }
+        notifyListeners();
+        return;
       }
+    }
 
-      _currentSpeedKmh = position.speed >= 0 ? position.speed * 3.6 : 0;
-      if (_currentSpeedKmh < 0.5) _currentSpeedKmh = 0.0;
-
-      if (_runningPathCoordinates.isNotEmpty) {
-        _trimPassedRoutePoints(newPos);
-      }
-
-      _calculateRemainingDistance();
-      _notifyTrackingUpdate(newPos);
+    if (_isTracking && _shouldPreferStepTracking()) {
+      notifyListeners();
+      return;
     }
 
     _currentPosition = newPos;
@@ -519,6 +569,134 @@ class RunningProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  bool _shouldPreferStepTracking() {
+    if (!_isTracking) return false;
+    if (_lastMeaningfulGpsUpdateAt == null) return true;
+    if ((_lastGpsAccuracy ?? double.infinity) > _gpsAccuracyThreshold) {
+      return true;
+    }
+    return DateTime.now().difference(_lastMeaningfulGpsUpdateAt!) >
+        _gpsStaleAfter;
+  }
+
+  double _estimateSpeedKmh() {
+    if (_secondsElapsed <= 0 || _totalDistanceKm <= 0) return 0;
+    return _totalDistanceKm / (_secondsElapsed / 3600);
+  }
+
+  void _applyStepProgress(int deltaSteps) {
+    if (!_isTracking || deltaSteps <= 0) return;
+
+    final deltaMeters = deltaSteps * _avgStrideMeters;
+    _trackedDistanceMeters += deltaMeters;
+    _totalDistanceKm = _trackedDistanceMeters / 1000;
+    _currentSpeedKmh = _estimateSpeedKmh();
+
+    if (_fullRoutePoints.length > 1) {
+      final pos = _positionAtDistance(_fullRoutePoints, _trackedDistanceMeters);
+      if (pos != null) {
+        _currentPosition = pos;
+        _trimPassedRoutePoints(pos);
+        _calculateRemainingDistance();
+        _followRunnerOnMap(pos);
+        _notifyTrackingUpdate(pos);
+      }
+    } else if (_currentPosition != null) {
+      _notifyTrackingUpdate(_currentPosition!);
+    }
+
+    notifyListeners();
+  }
+
+  LatLng? _positionAtDistance(List<LatLng> points, double distanceMeters) {
+    if (points.isEmpty) return null;
+    if (distanceMeters <= 0) return points.first;
+
+    var remaining = distanceMeters;
+    for (var i = 0; i < points.length - 1; i++) {
+      final segmentMeters = Geolocator.distanceBetween(
+        points[i].latitude,
+        points[i].longitude,
+        points[i + 1].latitude,
+        points[i + 1].longitude,
+      );
+
+      if (segmentMeters <= 0) continue;
+
+      if (remaining <= segmentMeters) {
+        final t = remaining / segmentMeters;
+        return LatLng(
+          points[i].latitude +
+              (points[i + 1].latitude - points[i].latitude) * t,
+          points[i].longitude +
+              (points[i + 1].longitude - points[i].longitude) * t,
+        );
+      }
+
+      remaining -= segmentMeters;
+    }
+
+    return points.last;
+  }
+
+  Future<void> _ensurePedometerPermission() async {
+    if (!Platform.isAndroid) return;
+    try {
+      final status = await Permission.activityRecognition.status;
+      if (!status.isGranted) {
+        await Permission.activityRecognition.request();
+      }
+    } catch (e) {
+      debugPrint('Activity recognition permission request failed: $e');
+    }
+  }
+
+  void _startPedometerTracking() {
+    _pedometerSubscription?.cancel();
+    _stepBaseline = null;
+
+    try {
+      _pedometerSubscription = Pedometer.stepCountStream.listen(
+        _onPedometerStep,
+        onError: (error) => debugPrint('Pedometer stream error: $error'),
+      );
+    } catch (e) {
+      debugPrint('Pedometer setup failed: $e');
+    }
+  }
+
+  void _stopPedometerTracking() {
+    _pedometerSubscription?.cancel();
+    _pedometerSubscription = null;
+    _stepBaseline = null;
+  }
+
+  void _onPedometerStep(StepCount event) {
+    if (!_isTracking) return;
+
+    if (_stepBaseline == null) {
+      _stepBaseline = event.steps;
+      return;
+    }
+
+    var sessionSteps = event.steps - _stepBaseline!;
+    if (sessionSteps < 0) {
+      _stepBaseline = event.steps;
+      sessionSteps = 0;
+    }
+
+    if (sessionSteps <= _totalSteps) return;
+
+    final deltaSteps = sessionSteps - _totalSteps;
+    _totalSteps = sessionSteps;
+
+    if (_shouldPreferStepTracking()) {
+      _applyStepProgress(deltaSteps);
+    } else {
+      notifyListeners();
+    }
   }
 
   void _trimPassedRoutePoints(LatLng newPos) {
@@ -632,7 +810,10 @@ class RunningProvider extends ChangeNotifier {
       _runningTimer?.cancel();
       _locationSubscription?.cancel();
       _locationSubscription = null;
+      _stopPedometerTracking();
       _runningPathCoordinates.clear();
+      _fullRoutePoints = [];
+      _trackedDistanceMeters = 0;
       _polylines.clear();
       _destinationPosition = null;
       _currentPosition = null;
@@ -647,6 +828,7 @@ class RunningProvider extends ChangeNotifier {
   @override
   void dispose() {
     _locationSubscription?.cancel();
+    _stopPedometerTracking();
     _runningTimer?.cancel();
     super.dispose();
   }
