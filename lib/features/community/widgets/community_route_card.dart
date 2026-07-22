@@ -142,42 +142,42 @@ class CommunityRouteCard extends StatelessWidget {
                 ),
               ],
             ),
-            //SizedBox(height: 12.h),
-            // Row(
-            //   children: [
-            //     GestureDetector(
-            //       onTap: onLike,
-            //       child: Row(
-            //         children: [
-            //           Icon(Icons.favorite, color: AppColors.primary, size: 16.sp),
-            //           SizedBox(width: 4.w),
-            //           Text('${route.likeCount}', style: bodyStyle),
-            //         ],
-            //       ),
-            //     ),
-            //     SizedBox(width: 16.w),
-            //     Row(
-            //       children: [
-            //         Icon(
-            //           Icons.chat_bubble_outline,
-            //           color: const Color(0xFFE5BDBE),
-            //           size: 16.sp,
-            //         ),
-            //         SizedBox(width: 4.w),
-            //         Text(
-            //           '${route.commentCount}',
-            //           style: bodyStyle.copyWith(color: AppColors.textMuted),
-            //         ),
-            //       ],
-            //     ),
-            //     const Spacer(),
-            //     Icon(
-            //       Icons.bookmark_border,
-            //       color: const Color(0xFFE5BDBE),
-            //       size: 18.sp,
-            //     ),
-            //   ],
-            // ),
+            SizedBox(height: 12.h),
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: onLike,
+                  child: Row(
+                    children: [
+                      Icon(Icons.favorite, color: AppColors.primary, size: 16.sp),
+                      SizedBox(width: 4.w),
+                      Text('${route.likeCount}', style: bodyStyle),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 16.w),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      color: const Color(0xFFE5BDBE),
+                      size: 16.sp,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      '${route.commentCount}',
+                      style: bodyStyle.copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.bookmark_border,
+                  color: const Color(0xFFE5BDBE),
+                  size: 18.sp,
+                ),
+              ],
+            ),
           ],
         ),
       ),
