@@ -36,6 +36,7 @@ dependencies:
   googleapis_auth: ^2.3.3
   http: ^1.2.1
   pedometer: ^4.2.0
+  shimmer_animation: ^2.2.2+1
 
 dev_dependencies:
   flutter_test:

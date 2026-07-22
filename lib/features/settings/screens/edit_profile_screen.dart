@@ -300,21 +300,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ],
                             ),
                             child:CircleAvatar(
-                              radius: 56.r,
-                              backgroundColor: AppColors.surfaceLight,
-                              backgroundImage: _selectedProfileImagePath != null
-                                  ? FileImage(File(_selectedProfileImagePath!))
-                                  : (user?.profileImage != null && user!.profileImage!.isNotEmpty
-                                  ? NetworkImage(user.profileImage!)
-                                  : null) as ImageProvider?,
-                              child: (_selectedProfileImagePath == null &&
-                                  (user?.profileImage == null || user!.profileImage!.isEmpty))
-                                  ? Icon(
-                                Icons.person,
-                                size: 48.sp,
-                                color: AppColors.textMuted,
-                              )
-                                  : null,
+                              radius: 60.r,
+                              backgroundColor: AppColors.white,
+                              child: CircleAvatar(
+                                radius: 56.r, // Inner radius
+                                backgroundColor: AppColors.surfaceLight,
+                                backgroundImage: _selectedProfileImagePath != null
+                                    ? FileImage(File(_selectedProfileImagePath!))
+                                    : (user?.profileImage != null &&
+                                    user!.profileImage!.isNotEmpty
+                                    ? NetworkImage(user.profileImage!)
+                                    : null) as ImageProvider?,
+                                child: (_selectedProfileImagePath == null &&
+                                    (user?.profileImage == null ||
+                                        user!.profileImage!.isEmpty))
+                                    ? Icon(
+                                  Icons.person,
+                                  size: 48.sp,
+                                  color: AppColors.textMuted,
+                                )
+                                    : null,
+                              ),
                             ),
                           ),
                           Positioned(

@@ -10,6 +10,8 @@ import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
 import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/generated/assets.dart';
 
+import '../../../core/widgets/activity_shimmer_screen.dart';
+
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
 
@@ -48,9 +50,17 @@ class _ActivityScreenState extends State<ActivityScreen> {
       body: SafeArea(
         bottom: false,
         child: activity.isLoading && activity.recentRuns.isEmpty
-            ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
+            ? ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 10,
+          itemBuilder: (context, index) {
+            return   const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: ActivityCardShimmer(isActivity: true,),
+            );
+          },
+        )
             : RefreshIndicator(
                 color: AppColors.primary,
                 onRefresh: () =>

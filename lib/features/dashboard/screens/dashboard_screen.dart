@@ -12,6 +12,7 @@ import '../../../core/models/route_model.dart';
 import '../../../core/services/dashboard_services.dart';
 import '../../../core/utils/app_tost.dart';
 import 'package:saefra_run/core/utils/navigation_utils.dart';
+import '../../../core/widgets/activity_shimmer_screen.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/show_bottom_sheet.dart';
 import '../../../generated/assets.dart';
@@ -163,17 +164,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               child: const Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  CircularProgressIndicator(
-                                    color: AppColors.primary,
-                                  ),
-                                  SizedBox(height: 12),
-                                  Text(
-                                    'Generating safest route...',
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
+                                  ActivityCardShimmer()
                                 ],
                               ),
                             ),
@@ -273,10 +264,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(height: 6),
                           if (services.isRouteLoading) ...[
-                            const Center(
+                            Center(
                               child: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 20),
-                                child: CircularProgressIndicator(color: AppColors.primary),
+                                padding: const EdgeInsets.symmetric(vertical: 20),
+                                child: ListView.builder(
+                                   shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: 3,
+                                  itemBuilder: (context, index) {
+                                    return   const Padding(
+                                      padding: EdgeInsets.only(bottom: 12),
+                                      child: ActivityCardShimmer(),
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                           ]

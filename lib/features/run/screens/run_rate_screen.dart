@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
@@ -80,19 +81,58 @@ class _RunRateScreenState extends State<RunRateScreen> {
 
   Future<void> _addImage() async {
     final review = context.read<RunReviewService>();
-    if (review.form.imagePaths.length >= 3) {
-      setState(() => _submitError = 'You can upload up to 3 images');
-      return;
+    try {
+      final currentCount = review.form.imagePaths.length;
+      if (currentCount >= 3) {
+        setState(() => _submitError = 'You can upload up to 3 images');
+        return;
+      }
+
+      // Allow multi-image selection so users can add multiple at once.
+      final pickedList = await ImagePicker().pickMultiImage(imageQuality: 85);
+
+      // If nothing selected, fall back to single picker
+      if (pickedList.isEmpty) {
+        // Try single image pick
+        final single = await ImagePicker().pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 85,
+        );
+        if (single == null) return;
+        // validate file
+        final file = File(single.path);
+        if (!await file.exists()) {
+          setState(() => _submitError = 'Selected image is not available');
+          return;
+        }
+        setState(() => _submitError = null);
+        review.addImage(single.path);
+        return;
+      }
+
+      // Add up to remaining slots (max 3)
+      final remaining = 3 - currentCount;
+      final toAdd = pickedList.take(remaining).toList();
+      var addedAny = false;
+      for (final p in toAdd) {
+        final file = File(p.path);
+        if (!await file.exists()) continue;
+        review.addImage(p.path);
+        addedAny = true;
+      }
+      if (!addedAny) {
+        setState(() => _submitError = 'No valid images were selected');
+      } else {
+        setState(() => _submitError = null);
+      }
+      // If there were more selected than we could add, inform the user
+      if (pickedList.length > remaining) {
+        setState(() => _submitError = 'Only $remaining more image(s) were added (max 3)');
+      }
+    } catch (e) {
+      debugPrint('Image pick failed: $e');
+      setState(() => _submitError = 'Failed to pick image(s). Please try again.');
     }
-
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
-    if (picked == null) return;
-
-    setState(() => _submitError = null);
-    review.addImage(picked.path);
   }
 
   @override
@@ -257,12 +297,59 @@ class _RunRateScreenState extends State<RunRateScreen> {
                           ),
                           if (form.imagePaths.isNotEmpty) ...[
                             SizedBox(height: 8.h),
-                            Text(
-                              '${form.imagePaths.length} image(s) added',
-                              style: textTheme.bodySmall?.copyWith(
-                                color: AppColors.primary,
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w600,
+                            SizedBox(
+                              height: 92.h,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                padding: EdgeInsets.symmetric(horizontal: 12.w),
+                                itemBuilder: (ctx, idx) {
+                                  final path = form.imagePaths[idx];
+                                  return Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12.r),
+                                        child: Container(
+                                          width: 92.w,
+                                          height: 92.h,
+                                          color: AppColors.surfaced2C,
+                                          child: Image.file(
+                                            File(path),
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, st) => Center(
+                                              child: Icon(
+                                                Icons.broken_image,
+                                                color: AppColors.searchColors,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        right: 2, top: 2,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            // remove image
+                                            review.removeImage(path);
+                                          },
+                                          child: Container(
+                                            decoration: const BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Color(0x99000000),
+                                            ),
+                                            padding: EdgeInsets.all(4.w),
+                                            child: Icon(
+                                              Icons.close,
+                                              size: 16.sp,
+                                              color: AppColors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                                separatorBuilder: (_, __) => SizedBox(width: 8.w),
+                                itemCount: form.imagePaths.length,
                               ),
                             ),
                           ],

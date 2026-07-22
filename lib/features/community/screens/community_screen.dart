@@ -9,6 +9,8 @@ import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
 import 'package:saefra_run/core/widgets/search_route_bar.dart';
 import 'package:saefra_run/features/community/widgets/community_route_card.dart';
 
+import '../../../core/widgets/activity_shimmer_screen.dart';
+
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
 
@@ -47,9 +49,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
       body: SafeArea(
         bottom: false,
         child: community.isLoading && community.popularRoutes.isEmpty
-            ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
+            ?   ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 10,
+          itemBuilder: (context, index) {
+            return   const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: ActivityCardShimmer(),
+            );
+          },
+        )
             : RefreshIndicator(
                 color: AppColors.primary,
                 onRefresh: () =>
