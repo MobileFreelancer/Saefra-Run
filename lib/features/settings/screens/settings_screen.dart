@@ -164,11 +164,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: () => context.pushNamed('safetySettings'),
                       ),
                       //_SettingsDivider(),
-                      SettingsTile(
-                        label: 'Notification',
-                        fallbackIcon: Icons.notifications_none,
-                        onTap: () => context.pushNamed('notificationSettings'),
-                      ),
+                      // SettingsTile(
+                      //   label: 'Notification',
+                      //   fallbackIcon: Icons.notifications_none,
+                      //   onTap: () => context.pushNamed('notificationSettings'),
+                      // ),
                      // _SettingsDivider(),
                       SettingsTile(
                         dividerColors: Colors.transparent,

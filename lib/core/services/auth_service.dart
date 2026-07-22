@@ -245,6 +245,7 @@ class AuthService extends ChangeNotifier {
       await FcmService.syncToken();
       return true;
     } catch (e) {
+      log("Error--> $e");
       _setError(e.toString());
       return false;
     } finally {
@@ -374,20 +375,32 @@ class AuthService extends ChangeNotifier {
     _pendingSignupPassword = null;
   }
 
-void googleLogin( )async{
-  try {
-    final userCredential = await GoogleAuthService.signIn();
-    if (userCredential != null) {
-      log("------User Data In Google Side-------");
-      log(userCredential.user?.displayName.toString()??"no data");
-      log(userCredential.user?.email.toString()??"no data");
-      log(userCredential.user?.uid.toString()??"no data");
+
+
+  void googleLogin() async {
+    try {
+      final UserCredential? userCredential = await GoogleAuthService.signIn();
+
+      if (userCredential != null) {
+        final user = userCredential.user;
+
+        log("------ User Data -------");
+        log("Name: ${user?.displayName}");
+        log("Email: ${user?.email}");
+        log("UID: ${user?.uid}");
+        final idToken = await user?.getIdToken(true);
+        log("Firebase ID Token:");
+        log(idToken ?? "No ID Token");
+
+        // Refresh Token
+        log("Refresh Token:");
+        log(user?.refreshToken ?? "No Refresh Token");
+      }
+    } catch (e, l) {
+      log(e.toString());
+      log(l.toString());
     }
-  } catch (e,l) {
-    log(e.toString());
-    log(l.toString());
   }
-}
 
 
   Future<UserCredential?> signInWithApple() async {
