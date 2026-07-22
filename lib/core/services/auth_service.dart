@@ -97,6 +97,7 @@ class AuthService extends ChangeNotifier {
       if (_sessionToken == null || _sessionToken!.trim().isEmpty) {
         _sessionToken = null;
         _currentUser = null;
+        await _restorePendingSignup();
         notifyListeners();
         return;
       }
@@ -212,13 +213,29 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Saves signup credentials locally; registration API runs after onboarding.
-  void startSignup({
+  Future<void> startSignup({
     required String email,
     required String password,
-  }) {
+  }) async {
     _pendingSignupEmail = email.trim();
     _pendingSignupPassword = password;
     _setError(null);
+    try {
+      await _storage.write(
+        key: ApiConfig.storageKeyUserEmail,
+        value: _pendingSignupEmail,
+      );
+      await _storage.write(
+        key: ApiConfig.storageKeyUserPassword,
+        value: password,
+      );
+      await _storage.write(
+        key: ApiConfig.storageKeyPendingSignup,
+        value: 'true',
+      );
+    } catch (e) {
+      debugPrint('startSignup persist failed: $e');
+    }
     notifyListeners();
   }
 
@@ -241,7 +258,9 @@ class AuthService extends ChangeNotifier {
       await _persistSession(response);
       await _storage.write(key: ApiConfig.storageKeyUserEmail, value: email);
       await _storage.write(key: ApiConfig.storageKeyUserPassword, value: password);
-      _clearPendingSignup();
+      await _storage.delete(key: ApiConfig.storageKeyPendingSignup);
+      _pendingSignupEmail = null;
+      _pendingSignupPassword = null;
       await FcmService.syncToken();
       return true;
     } catch (e) {
@@ -370,9 +389,33 @@ class AuthService extends ChangeNotifier {
     _sessionToken = null;
   }
 
+  Future<void> _restorePendingSignup() async {
+    try {
+      final pending =
+          await _storage.read(key: ApiConfig.storageKeyPendingSignup);
+      if (pending != 'true') {
+        _clearPendingSignup();
+        return;
+      }
+
+      _pendingSignupEmail =
+          await _storage.read(key: ApiConfig.storageKeyUserEmail);
+      _pendingSignupPassword =
+          await _storage.read(key: ApiConfig.storageKeyUserPassword);
+
+      if (_pendingSignupEmail == null || _pendingSignupPassword == null) {
+        _clearPendingSignup();
+      }
+    } catch (e) {
+      debugPrint('restorePendingSignup failed: $e');
+      _clearPendingSignup();
+    }
+  }
+
   void _clearPendingSignup() {
     _pendingSignupEmail = null;
     _pendingSignupPassword = null;
+    _storage.delete(key: ApiConfig.storageKeyPendingSignup);
   }
 
 

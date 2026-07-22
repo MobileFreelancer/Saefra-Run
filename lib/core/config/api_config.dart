@@ -96,6 +96,9 @@ class ApiConfig {
   static const String storageKeyUserEmail = 'user_email';
   static const String storageKeyUserPassword = 'user_password';
   static const String storageKeyOnboardingComplete = 'onboarding_complete';
+  static const String storageKeyOnboardingDraft = 'onboarding_draft';
+  static const String storageKeyOnboardingRoute = 'onboarding_last_route';
+  static const String storageKeyPendingSignup = 'pending_signup';
   static const String storageKeyEmergencyContacts = 'emergency_contacts_local';
   static const String storageKeySafetySettings = 'safety_settings_local';
 }

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/features/auth/screens/forgot_password_screen.dart';
 import 'package:saefra_run/features/auth/screens/login_screen.dart';
 import 'package:saefra_run/features/auth/screens/password_reset_success_screen.dart';
@@ -62,17 +63,21 @@ class AppRouter {
     refreshListenable: refreshListenable,
     redirect: (context, state) {
       final auth = context.read<AuthService>();
+      final onboarding = context.read<OnboardingService>();
       final isLoggedIn = auth.isLoggedIn;
       final location = state.matchedLocation;
 
       if (location == '/splash') return null;
 
-      // 1. User agar logged in NAHI hai:
       if (!isLoggedIn) {
         if (location == '/onboarding/intro') return null;
         if (location.startsWith('/auth')) return null;
-        if (location.startsWith('/onboarding') && auth.hasPendingSignup) {
-          return null;
+        if (auth.hasPendingSignup) {
+          if (location.startsWith('/onboarding') ||
+              location == '/auth/signup') {
+            return null;
+          }
+          return onboarding.resumeRoute;
         }
         if (location.startsWith('/onboarding')) {
           return '/auth/login';
@@ -80,12 +85,13 @@ class AppRouter {
         return '/onboarding/intro';
       }
 
-      // 2. User agar logged in HAI:
-      // Password reset screens ko access karne dein bina interrupt kiye
       if (_isPasswordResetRoute(location)) return null;
 
-      // Agar user logged in hai aur login/signup paths par jaane ki koshish kare,
-      // ya fir kisi onboarding screen par ho, toh directly bina conditions ke dashboard bhej do.
+      if (!onboarding.isComplete) {
+        if (location.startsWith('/onboarding')) return null;
+        return onboarding.resumeRoute;
+      }
+
       if (location.startsWith('/auth') || location.startsWith('/onboarding')) {
         return '/dashboard';
       }

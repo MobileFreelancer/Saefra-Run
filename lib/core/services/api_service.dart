@@ -256,19 +256,23 @@ class ApiService {
   }) async {
     AppLoader.show();
     try {
+      final payload = <String, dynamic>{
+        'first_name': firstName,
+        'last_name': lastName,
+        'email': email,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+        'gender': gender,
+        'visit_reason': visitReason,
+        'run_preference': runPreference,
+      };
+      if (birthdate.trim().isNotEmpty) {
+        payload['birthdate'] = birthdate.trim();
+      }
+
       final response = await _dio.post(
         _path('/auth/register'),
-        data: _form({
-          'first_name':firstName,
-          'last_name':lastName,
-          'email': email,
-          'password': password,
-          'password_confirmation': passwordConfirmation,
-          'gender': gender,
-          'birthdate': birthdate,
-          'visit_reason': visitReason,
-          'run_preference': runPreference,
-        }),
+        data: _form(payload),
       );
       AppLoader.hide();
       return AuthResponseModel.fromJson(_map(response));
@@ -289,15 +293,20 @@ class ApiService {
       onboarding: onboarding,
     );
     return register(
-      firstName: fields['first_name'] as String,
-      lastName: fields['last_name'] as String,
-      email: fields['email'] as String,
-      password: fields['password'] as String,
-      passwordConfirmation: fields['password_confirmation'] as String,
-      gender: fields['gender'] as String,
-      birthdate: fields['birthdate'] as String,
-      visitReason: fields['visit_reason'] as String,
-      runPreference: fields['run_preference'] as String,
+      firstName: ApiFieldMapper.formString(
+        fields,
+        'first_name',
+        fallback: email.split('@').first,
+      ),
+      lastName: ApiFieldMapper.formString(fields, 'last_name', fallback: 'User'),
+      email: ApiFieldMapper.formString(fields, 'email'),
+      password: ApiFieldMapper.formString(fields, 'password'),
+      passwordConfirmation:
+          ApiFieldMapper.formString(fields, 'password_confirmation'),
+      gender: ApiFieldMapper.formString(fields, 'gender'),
+      birthdate: ApiFieldMapper.formString(fields, 'birthdate'),
+      visitReason: ApiFieldMapper.formString(fields, 'visit_reason'),
+      runPreference: ApiFieldMapper.formString(fields, 'run_preference'),
     );
   }
 
@@ -400,38 +409,16 @@ class ApiService {
     String? profileImagePath,
   }) async {
     try {
-      DateTime parsed;
-      if (birthdate.contains('.')) {
-        // Handle DD.MM.YYYY
-        final parts = birthdate.split('.');
-        parsed = DateTime(
-          int.parse(parts[2]),
-          int.parse(parts[1]),
-          int.parse(parts[0]),
-        );
-      } else if (birthdate.contains('-') && birthdate.split('-').first.length == 4) {
-        // Handle YYYY-MM-DD
-        parsed = DateTime.parse(birthdate);
-      } else if (birthdate.contains('-')) {
-        // Handle MM-DD-YYYY or DD-MM-YYYY (assume MM-DD-YYYY based on existing code logic)
-        final parts = birthdate.split('-');
-        parsed = DateTime(
-          int.parse(parts[2]),
-          int.parse(parts[0]),
-          int.parse(parts[1]),
-        );
-      } else {
-        parsed = DateTime.parse(birthdate);
-      }
-
-      final formatted = DateFormat('yyyy-MM-dd').format(parsed);
       final Map<String, dynamic> dataMap = {
         'first_name': firstName,
         'last_name': lastName,
         'phone': mobileNumber,
         'gender': gender,
-        'birthdate': formatted,
       };
+
+      if (birthdate.trim().isNotEmpty) {
+        dataMap['birthdate'] = _formatProfileBirthdate(birthdate.trim());
+      }
 
       if (profileImagePath != null && profileImagePath.isNotEmpty) {
         dataMap['profile_image'] = await MultipartFile.fromFile(
@@ -452,14 +439,40 @@ class ApiService {
     }
   }
 
+  String _formatProfileBirthdate(String birthdate) {
+    DateTime parsed;
+    if (birthdate.contains('.')) {
+      final parts = birthdate.split('.');
+      parsed = DateTime(
+        int.parse(parts[2]),
+        int.parse(parts[1]),
+        int.parse(parts[0]),
+      );
+    } else if (birthdate.contains('-') &&
+        birthdate.split('-').first.length == 4) {
+      parsed = DateTime.parse(birthdate);
+    } else if (birthdate.contains('-')) {
+      final parts = birthdate.split('-');
+      parsed = DateTime(
+        int.parse(parts[2]),
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
+    } else {
+      parsed = DateTime.parse(birthdate);
+    }
+
+    return DateFormat('yyyy-MM-dd').format(parsed);
+  }
+
   Future<UserModel> updateProfileFromOnboarding(OnboardingModel onboarding) {
     final fields = ApiFieldMapper.profileFormFromOnboarding(onboarding);
     return updateProfile(
-      gender: fields['gender'] as String,
-      birthdate: fields['birthdate'] as String,
-      firstName: fields['first_name'] as String,
-      lastName: fields['last_name'] as String,
-      mobileNumber: fields['phone'] as String,
+      gender: ApiFieldMapper.formString(fields, 'gender'),
+      birthdate: ApiFieldMapper.formString(fields, 'birthdate'),
+      firstName: ApiFieldMapper.formString(fields, 'first_name'),
+      lastName: ApiFieldMapper.formString(fields, 'last_name'),
+      mobileNumber: ApiFieldMapper.formString(fields, 'phone'),
     );
   }
 

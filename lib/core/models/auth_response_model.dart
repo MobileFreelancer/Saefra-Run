@@ -17,11 +17,14 @@ class AuthResponseModel {
     final userJson = ApiResponseParser.userFromPayload(data);
 
     return AuthResponseModel(
-      accessToken: data['token'] as String? ??
-          data['access_token'] as String? ??
-          data['accessToken'] as String? ??
-          '',
+      accessToken: _readToken(data),
       user: UserModel.fromJson(userJson),
     );
+  }
+
+  static String _readToken(Map<String, dynamic> data) {
+    final token = data['token'] ?? data['access_token'] ?? data['accessToken'];
+    if (token == null) return '';
+    return token.toString();
   }
 }

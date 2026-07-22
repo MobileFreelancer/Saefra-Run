@@ -119,7 +119,7 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                   route.name,
                   style: bodyStyle.copyWith(
                     fontWeight: FontWeight.w700,
-                    fontSize: 22.sp,
+                    fontSize: 16.sp,
                   ),
                 ),
               ),
@@ -135,7 +135,7 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                           route.location,
                           style: bodyStyle.copyWith(
                             color: AppColors.textMuted,
-                            fontSize: 13.sp,
+                            fontSize: 12.sp,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),

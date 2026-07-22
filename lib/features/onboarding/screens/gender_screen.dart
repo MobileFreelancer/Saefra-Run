@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
+import 'package:saefra_run/core/utils/onboarding_navigation.dart';
 import 'package:saefra_run/core/widgets/onboarding_progress_widgets.dart';
 import 'package:saefra_run/core/widgets/option_tile.dart';
 
@@ -139,8 +140,8 @@ class _GenderScreenState extends State<GenderScreen> {
             ),
             OnboardingContinueBar(
               isEnabled: selected != null && selected.isNotEmpty,
-              onContinue: () => context.go('/onboarding/basic-info'),
-              onSkip: () => context.go('/onboarding/basic-info'),
+              onContinue: () => goOnboarding(context, '/onboarding/basic-info'),
+              onSkip: () => goOnboarding(context, '/onboarding/basic-info'),
             ),
           ],
         ),

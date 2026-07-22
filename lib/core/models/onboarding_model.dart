@@ -65,6 +65,30 @@ class OnboardingModel {
     );
   }
 
+  factory OnboardingModel.fromJson(Map<String, dynamic> json) {
+    DateTime? dateOfBirth;
+    final dobRaw = json['date_of_birth'] as String?;
+    if (dobRaw != null && dobRaw.isNotEmpty) {
+      dateOfBirth = DateTime.tryParse(dobRaw);
+    }
+
+    return OnboardingModel(
+      gender: json['gender'] as String?,
+      activityLevel: json['activity_level'] as String?,
+      goal: json['goal'] as String?,
+      goalTrainingTarget: json['goal_training_target'] as String?,
+      dateOfBirth: dateOfBirth,
+      age: json['age'] as int?,
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name'] as String?,
+      locationEnabled: json['location_enabled'] as bool? ?? false,
+      pushNotificationsEnabled:
+          json['push_notifications_enabled'] as bool? ?? false,
+      emailNotificationsEnabled:
+          json['email_notifications_enabled'] as bool? ?? false,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         if (gender != null) 'gender': gender,
         if (activityLevel != null) 'activity_level': activityLevel,

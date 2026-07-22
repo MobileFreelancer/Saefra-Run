@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
+import 'package:saefra_run/core/utils/onboarding_navigation.dart';
 import 'package:saefra_run/core/widgets/goal_training_target_row.dart';
 import 'package:saefra_run/core/widgets/onboarding_progress_widgets.dart';
 import 'package:saefra_run/core/widgets/option_tile.dart';
@@ -123,8 +124,8 @@ class _GoalScreenState extends State<GoalScreen> {
             OnboardingContinueBar(
               isEnabled: selected != null &&
                   (selected != _trainingForAGoal || selectedTarget != null),
-              onContinue: () => context.go('/onboarding/location'),
-              onSkip: () => context.go('/onboarding/location'),
+              onContinue: () => goOnboarding(context, '/onboarding/location'),
+              onSkip: () => goOnboarding(context, '/onboarding/location'),
             ),
           ],
         ),

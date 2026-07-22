@@ -60,6 +60,14 @@ class ApiFieldMapper {
    // return '$mm-$dd-${date.year}';
   }
 
+  static String formString(Map<String, dynamic> fields, String key,
+      {String fallback = ''}) {
+    final value = fields[key];
+    if (value == null) return fallback;
+    final text = value.toString().trim();
+    return text.isEmpty ? fallback : text;
+  }
+
   static Map<String, dynamic> registerFormFromOnboarding({
     required String email,
     required String password,

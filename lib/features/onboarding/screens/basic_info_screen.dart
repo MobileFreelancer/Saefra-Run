@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
+import 'package:saefra_run/core/utils/onboarding_navigation.dart';
 import 'package:saefra_run/core/widgets/onboarding_progress_widgets.dart';
 import 'package:saefra_run/features/onboarding/widgets/onboarding_input_field.dart';
 import 'package:saefra_run/generated/assets.dart';
@@ -77,7 +78,7 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
     onboarding.setFirstName(_firstNameController.text.trim());
     onboarding.setLastName(_lastNameController.text.trim());
     if (onboarding.data.dateOfBirth == null) return;
-    context.go('/onboarding/activity-level');
+    goOnboarding(context, '/onboarding/activity-level');
   }
 
   @override
@@ -254,7 +255,7 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
             OnboardingContinueBar(
               isEnabled: canContinue,
               onContinue: () => _continue(onboarding),
-              onSkip: () => context.go('/onboarding/activity-level'),
+              onSkip: () => goOnboarding(context, '/onboarding/activity-level'),
             ),
           ],
         ),

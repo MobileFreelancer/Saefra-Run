@@ -39,10 +39,20 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (auth.isLoggedIn) {
-      await onboarding.markCompleteLocally();
-      await FcmService.requestPermissionAndSync();
-      if (!mounted) return;
-      context.go('/dashboard');
+      onboarding.applyUserProfile(auth.currentUser);
+      if (onboarding.isComplete) {
+        await FcmService.requestPermissionAndSync();
+        if (!mounted) return;
+        context.go('/dashboard');
+      } else {
+        if (!mounted) return;
+        context.go(onboarding.resumeRoute);
+      }
+      return;
+    }
+
+    if (auth.hasPendingSignup) {
+      context.go(onboarding.resumeRoute);
       return;
     }
 

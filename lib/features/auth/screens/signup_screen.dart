@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/onboarding_service.dart';
+import 'package:saefra_run/core/utils/onboarding_navigation.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import '../../../core/utils/app_tost.dart';
 import '../../../core/utils/app_validators.dart';
@@ -46,13 +48,15 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    auth.startSignup(
+    await auth.startSignup(
       email: _nameController.text.trim(),
       password: _passwordController.text,
     );
 
     if (!mounted) return;
-    context.go('/onboarding/gender');
+    await context.read<OnboardingService>().resetForNewSignup();
+    if (!mounted) return;
+    goOnboarding(context, '/onboarding/gender');
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
+import 'package:saefra_run/core/utils/onboarding_navigation.dart';
 import 'package:saefra_run/core/widgets/photo_permission_scaffold.dart';
 import 'package:saefra_run/generated/assets.dart';
 
@@ -21,12 +22,12 @@ class _EnableLocationScreenState extends State<EnableLocationScreen> {
     final granted = await PermissionService.requestLocationPermission();
     if (!mounted) return;
     context.read<OnboardingService>().setLocationEnabled(granted);
-    context.go('/onboarding/notifications');
+    goOnboarding(context, '/onboarding/notifications');
   }
 
   void _skipLocation() {
     context.read<OnboardingService>().setLocationEnabled(false);
-    context.go('/onboarding/notifications');
+    goOnboarding(context, '/onboarding/notifications');
   }
   // void _continue({required bool enabled})async{
   //   final granted = await PermissionService.requestLocationPermission();
