@@ -842,7 +842,9 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                 children: [
                   PrimaryButton(
                     label: 'Share Live Notification',
-                    onPressed: () {},
+                    onPressed: () {
+
+                    },
                   ),
                   SizedBox(height: 8.h),
                   SecondaryButton(

@@ -143,21 +143,21 @@ class RunningProvider extends ChangeNotifier {
 
       _runnerIconIdle ??= await BitmapDescriptor.asset(
         imageConfig,
-        'assets/images/startrun.png',
+        'assets/images/endimage.png',
           width: 25.w,
           height: 25.h
       );
 
       _runnerIconActive ??= await BitmapDescriptor.asset(
         imageConfig,
-        'assets/images/startrun.png',
+        'assets/images/endimage.png',
           width: 25.w,
           height: 25.h
       );
 
       _destinationIcon ??= await BitmapDescriptor.asset(
         imageConfig,
-        'assets/images/endimage.png',
+        'assets/images/startrun.png',
         width: 25.w,
         height: 25.h
       );

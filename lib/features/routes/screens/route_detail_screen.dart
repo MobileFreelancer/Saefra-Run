@@ -392,7 +392,7 @@ class _SaefraScoreCard extends StatelessWidget {
                       ),
 
                       Positioned(
-                        left: 53,
+                        left: 40,
                           child: Text("%",style: textTheme.displayLarge?.copyWith(fontSize: 20.sp, fontWeight: FontWeight.w800, color: AppColors.primary),)
                       )
                     ],

@@ -40,25 +40,33 @@ void showMapStyleBottomSheet(BuildContext context) {
                 ],
               ),
               SizedBox(height: 22.h),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _MapStyleOption(
-                    label: 'Park',
-                    imageAsset: Assets.prrakImage,
-                    onTap: () => _selectTheme(sheetContext, MapTheme.park),
-                  ),
-                  _MapStyleOption(
-                    label: 'Light',
-                    imageAsset: Assets.lightMapImage,
-                    onTap: () => _selectTheme(sheetContext, MapTheme.light),
-                  ),
-                  _MapStyleOption(
-                    label: 'Dark',
-                    imageAsset: Assets.darkMapImage,
-                    onTap: () => _selectTheme(sheetContext, MapTheme.dark),
-                  ),
-                ],
+              Consumer<DashboardServices>(
+                builder: (context, services, child) {
+                  final currentTheme = services.mapTheme;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _MapStyleOption(
+                        label: 'Park',
+                        imageAsset: Assets.prrakImage,
+                        isSelected: currentTheme == MapTheme.park,
+                        onTap: () => _selectTheme(sheetContext, MapTheme.park),
+                      ),
+                      _MapStyleOption(
+                        label: 'Light',
+                        imageAsset: Assets.lightMapImage,
+                        isSelected: currentTheme == MapTheme.light,
+                        onTap: () => _selectTheme(sheetContext, MapTheme.light),
+                      ),
+                      _MapStyleOption(
+                        label: 'Dark',
+                        imageAsset: Assets.darkMapImage,
+                        isSelected: currentTheme == MapTheme.dark,
+                        onTap: () => _selectTheme(sheetContext, MapTheme.dark),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -78,11 +86,13 @@ class _MapStyleOption extends StatelessWidget {
     required this.label,
     required this.imageAsset,
     required this.onTap,
+    required this.isSelected,
   });
 
   final String label;
   final String imageAsset;
   final VoidCallback onTap;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -90,13 +100,32 @@ class _MapStyleOption extends StatelessWidget {
       onTap: onTap,
       child: Column(
         children: [
-          Image.asset(imageAsset, scale: 3.3),
+          Container(
+            width: 80.w,
+            height: 80.w,
+            margin: EdgeInsets.symmetric(horizontal: 10.w),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30.r),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.borderColor,
+                width: isSelected ? 2 : 1,
+              ),
+              image: DecorationImage(
+                image:AssetImage(imageAsset),
+               fit: BoxFit.cover
+              )
+            ),
+          ),
           SizedBox(height: 10.h),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
+                  color: isSelected 
+                      ? AppColors.primary 
+                      : AppColors.textPrimary,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w700,
                   fontSize: 12.sp,
                 ),
           ),
