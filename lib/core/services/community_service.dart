@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:saefra_run/core/mock/feature_mock_data.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
+import 'package:saefra_run/core/models/route_review_list_result.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 
 class CommunityService extends ChangeNotifier {
@@ -16,7 +17,9 @@ class CommunityService extends ChangeNotifier {
   List<CommunityRouteModel> _popularRoutes = [];
   List<CommunityRouteModel> _topRatedRoutes = [];
   CommunityRouteModel? _selectedRoute;
+  RouteReviewStatistics? _reviewStatistics;
   List<ReviewModel> _reviews = [];
+  List<String> _reviewPhotos = [];
   bool _isLoading = false;
   bool _isLoadingMoreReviews = false;
   bool _hasLoaded = false;
@@ -33,12 +36,22 @@ class CommunityService extends ChangeNotifier {
   List<CommunityRouteModel> get popularRoutes => _popularRoutes;
   List<CommunityRouteModel> get topRatedRoutes => _topRatedRoutes;
   CommunityRouteModel? get selectedRoute => _selectedRoute;
+  RouteReviewStatistics? get reviewStatistics => _reviewStatistics;
+  Map<int, double> get ratingDistribution =>
+      _reviewStatistics?.ratingDistribution ?? const {};
   List<ReviewModel> get reviews => _reviews;
+  List<String> get reviewPhotos => _reviewPhotos;
   bool get isLoading => _isLoading;
   bool get isLoadingMoreReviews => _isLoadingMoreReviews;
   bool get hasMore => _hasMore;
   bool get hasMoreReviews => _hasMoreReviews;
   String? get error => _error;
+
+  double get selectedRouteRating =>
+      _reviewStatistics?.averageRating ?? _selectedRoute?.rating ?? 0;
+
+  int get selectedRouteReviewCount =>
+      _reviewStatistics?.totalReviews ?? _selectedRoute?.reviewCount ?? 0;
 
   Future<void> load({bool refresh = false, String? search}) async {
     if (!refresh && _hasLoaded && _popularRoutes.isNotEmpty) return;
@@ -80,8 +93,8 @@ class CommunityService extends ChangeNotifier {
   Future<void> loadRouteDetail(String routeId, {bool refresh = false}) async {
     if (!refresh &&
         _activeReviewsRouteId == routeId &&
-        _reviews.isNotEmpty &&
-        _selectedRoute != null) {
+        _selectedRoute != null &&
+        !_isLoading) {
       return;
     }
 
@@ -92,13 +105,15 @@ class CommunityService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _selectedRoute = await _api.getCommunityRouteDetail(routeId);
       await _loadReviews(routeId, page: 1, append: false);
     } catch (e) {
       _error = e.toString();
-      _applyMockReviews();
+      _selectedRoute = null;
+      _reviewStatistics = null;
+      _reviews = [];
+      _reviewPhotos = [];
+      _hasMoreReviews = false;
     } finally {
-      if (_selectedRoute == null) _applyMockReviews();
       _isLoading = false;
       notifyListeners();
     }
@@ -137,6 +152,17 @@ class CommunityService extends ChangeNotifier {
       perPage: _perPage,
     );
 
+    if (!append) {
+      _selectedRoute = result.route ??
+          CommunityRouteModel(
+            id: routeId,
+            name: 'Route',
+            location: '',
+          );
+      _reviewStatistics = result.statistics;
+      _reviewPhotos = result.photos;
+    }
+
     _reviews = append ? [..._reviews, ...result.reviews] : result.reviews;
     _reviewsPage = result.currentPage;
     _hasMoreReviews = result.hasMore;
@@ -145,12 +171,6 @@ class CommunityService extends ChangeNotifier {
   void _applyMockRoutes() {
     _popularRoutes = FeatureMockData.popularRoutes;
     _topRatedRoutes = FeatureMockData.recentRoutes;
-  }
-
-  void _applyMockReviews() {
-    _selectedRoute = FeatureMockData.reviewRoute;
-    _reviews = FeatureMockData.reviews;
-    _hasMoreReviews = false;
   }
 
   void toggleLike(String routeId) {

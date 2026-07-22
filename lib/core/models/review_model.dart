@@ -6,6 +6,7 @@ class ReviewModel {
   final String comment;
   final String? timeAgo;
   final int likeCount;
+  final List<String> photos;
 
   const ReviewModel({
     required this.id,
@@ -15,17 +16,26 @@ class ReviewModel {
     required this.comment,
     this.timeAgo,
     this.likeCount = 0,
+    this.photos = const [],
   });
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
+    final user = json['user'];
+    final userMap = user is Map ? Map<String, dynamic>.from(user) : null;
+
     return ReviewModel(
       id: '${json['id'] ?? json['review_id'] ?? ''}',
-      userName: json['user_name'] as String? ??
+      userName: userMap?['name'] as String? ??
+          json['user_name'] as String? ??
           json['username'] as String? ??
           json['name'] as String? ??
           'User',
       avatarUrl: _nullableString(
-        json['avatar'] ?? json['avatar_url'] ?? json['profile_image'],
+        userMap?['profile_image'] ??
+            userMap?['avatar'] ??
+            json['avatar'] ??
+            json['avatar_url'] ??
+            json['profile_image'],
       ),
       rating: _toDouble(
         json['rating'] ?? json['overall_rating'] ?? json['stars'],
@@ -38,7 +48,23 @@ class ReviewModel {
           json['date'] as String? ??
           json['created_at'] as String?,
       likeCount: _toInt(json['like_count'] ?? json['likes']),
+      photos: _parsePhotos(json['photos']),
     );
+  }
+
+  static List<String> _parsePhotos(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .map((item) {
+          if (item is String) return item.trim();
+          if (item is Map) {
+            final url = item['url'] ?? item['image'] ?? item['photo'];
+            return url == null ? '' : '$url'.trim();
+          }
+          return '';
+        })
+        .where((url) => url.isNotEmpty)
+        .toList();
   }
 
   static String? _nullableString(dynamic value) {

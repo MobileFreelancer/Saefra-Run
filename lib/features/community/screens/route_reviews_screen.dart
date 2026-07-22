@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
-import 'package:saefra_run/core/mock/feature_mock_data.dart';
 import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/services/community_service.dart';
 import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
-import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/generated/assets.dart';
 
 class RouteReviewsScreen extends StatefulWidget {
@@ -41,7 +38,10 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
     });
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommunityService>().loadRouteDetail(widget.routeId);
+      context.read<CommunityService>().loadRouteDetail(
+            widget.routeId,
+            refresh: true,
+          );
     });
   }
 
@@ -101,6 +101,9 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
     final community = context.watch<CommunityService>();
     final route = community.selectedRoute;
     final bodyStyle = _body(context);
+    final averageRating = community.selectedRouteRating;
+    final reviewCount = community.selectedRouteReviewCount;
+    final distribution = community.ratingDistribution;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -124,26 +127,28 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                 padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
                 child: Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 16.sp, color: AppColors.textMuted),
-                    SizedBox(width: 4.w),
-                    Flexible(
-                      child: Text(
-                        route.location,
-                        style: bodyStyle.copyWith(
-                          color: AppColors.textMuted,
-                          fontSize: 13.sp,
+                    if (route.location.isNotEmpty) ...[
+                      Icon(Icons.location_on_outlined, size: 16.sp, color: AppColors.textMuted),
+                      SizedBox(width: 4.w),
+                      Flexible(
+                        child: Text(
+                          route.location,
+                          style: bodyStyle.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 13.sp,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w),
-                      child: Text('|', style: bodyStyle.copyWith(color: AppColors.textMuted)),
-                    ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10.w),
+                        child: Text('|', style: bodyStyle.copyWith(color: AppColors.textMuted)),
+                      ),
+                    ],
                     Icon(Icons.star_rounded, color: _starOrange, size: 16.sp),
                     SizedBox(width: 4.w),
                     Text(
-                      '${route.rating.toStringAsFixed(1)} (${route.reviewCount} Reviews)',
+                      '${averageRating.toStringAsFixed(1)} ($reviewCount Reviews)',
                       style: bodyStyle.copyWith(
                         color: _starOrange,
                         fontSize: 13.sp,
@@ -160,7 +165,20 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                   ? const Center(
                       child: CircularProgressIndicator(color: AppColors.primary),
                     )
-                  : ListView(
+                  : community.error != null &&
+                          route == null &&
+                          community.reviews.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 24.w),
+                            child: Text(
+                              community.error!,
+                              textAlign: TextAlign.center,
+                              style: bodyStyle.copyWith(color: AppColors.textMuted),
+                            ),
+                          ),
+                        )
+                      : ListView(
                       controller: _scrollController,
                       padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
                       children: [
@@ -169,10 +187,10 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                             routeName: route.name,
                             location: route.location,
                             distanceKm: route.distanceKm,
-                            rating: route.rating,
-                            reviewCount: route.reviewCount,
-                            imageAsset: route.imageAsset,
-                            distribution: FeatureMockData.ratingDistribution,
+                            rating: averageRating,
+                            reviewCount: reviewCount,
+                            imageUrl: route.imageAsset,
+                            distribution: distribution,
                             bodyStyle: bodyStyle,
                             starOrange: _starOrange,
                           ),
@@ -185,26 +203,39 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                         ),
                         SizedBox(height: 20.h),
                         if (_selectedTab == 0) ...[
-                          ...community.reviews.map(
-                            (review) => Padding(
-                              padding: EdgeInsets.only(bottom: 20.h),
-                              child: _ReviewTile(
-                                review: review,
-                                bodyStyle: bodyStyle,
-                                starOrange: _starOrange,
-                                isLiked: _likedReviewIds.contains(review.id),
-                                onLikeToggle: () {
-                                  setState(() {
-                                    if (_likedReviewIds.contains(review.id)) {
-                                      _likedReviewIds.remove(review.id);
-                                    } else {
-                                      _likedReviewIds.add(review.id);
-                                    }
-                                  });
-                                },
+                          if (community.reviews.isEmpty)
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 32.h),
+                              child: Center(
+                                child: Text(
+                                  'No reviews yet',
+                                  style: bodyStyle.copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            ...community.reviews.map(
+                              (review) => Padding(
+                                padding: EdgeInsets.only(bottom: 20.h),
+                                child: _ReviewTile(
+                                  review: review,
+                                  bodyStyle: bodyStyle,
+                                  starOrange: _starOrange,
+                                  isLiked: _likedReviewIds.contains(review.id),
+                                  onLikeToggle: () {
+                                    setState(() {
+                                      if (_likedReviewIds.contains(review.id)) {
+                                        _likedReviewIds.remove(review.id);
+                                      } else {
+                                        _likedReviewIds.add(review.id);
+                                      }
+                                    });
+                                  },
+                                ),
                               ),
                             ),
-                          ),
                           if (community.isLoadingMoreReviews)
                             Padding(
                               padding: EdgeInsets.symmetric(vertical: 12.h),
@@ -214,7 +245,7 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                                 ),
                               ),
                             ),
-                        ] else
+                        ] else if (community.reviewPhotos.isEmpty)
                           Padding(
                             padding: EdgeInsets.symmetric(vertical: 48.h),
                             child: Center(
@@ -223,6 +254,10 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                                 style: bodyStyle.copyWith(color: AppColors.textMuted),
                               ),
                             ),
+                          )
+                        else
+                          _ReviewPhotosGrid(
+                            photos: community.reviewPhotos,
                           ),
                         SizedBox(height: 8.h),
                         _AddReviewSection(
@@ -253,7 +288,7 @@ class _RatingSummaryCard extends StatelessWidget {
     required this.distanceKm,
     required this.rating,
     required this.reviewCount,
-    required this.imageAsset,
+    required this.imageUrl,
     required this.distribution,
     required this.bodyStyle,
     required this.starOrange,
@@ -264,10 +299,37 @@ class _RatingSummaryCard extends StatelessWidget {
   final double distanceKm;
   final double rating;
   final int reviewCount;
-  final String? imageAsset;
+  final String? imageUrl;
   final Map<int, double> distribution;
   final TextStyle bodyStyle;
   final Color starOrange;
+
+  Widget _buildRouteImage() {
+    final fallback = Container(
+      color: AppColors.surfaced2C,
+      child: Icon(Icons.route, color: AppColors.primary, size: 28),
+    );
+    final url = imageUrl?.trim();
+    if (url != null && url.isNotEmpty) {
+      if (url.startsWith('http')) {
+        return Image.network(
+          url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => fallback,
+        );
+      }
+      return Image.asset(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+      );
+    }
+    return Image.asset(
+      Assets.background,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => fallback,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -285,16 +347,10 @@ class _RatingSummaryCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10.r),
-                child: SizedBox(
+                  child: SizedBox(
                   width: 72.w,
                   height: 72.w,
-                  child: AssetOrFallback(
-                    assetPath: imageAsset ?? Assets.background,
-                    fallback: Container(
-                      color: AppColors.surfaced2C,
-                      child: Icon(Icons.route, color: AppColors.primary, size: 28.sp),
-                    ),
-                  ),
+                  child: _buildRouteImage(),
                 ),
               ),
               SizedBox(width: 12.w),
@@ -309,14 +365,16 @@ class _RatingSummaryCard extends StatelessWidget {
                         fontSize: 15.sp,
                       ),
                     ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      location,
-                      style: bodyStyle.copyWith(
-                        color: AppColors.textMuted,
-                        fontSize: 12.sp,
+                    if (location.isNotEmpty) ...[
+                      SizedBox(height: 4.h),
+                      Text(
+                        location,
+                        style: bodyStyle.copyWith(
+                          color: AppColors.textMuted,
+                          fontSize: 12.sp,
+                        ),
                       ),
-                    ),
+                    ],
                     SizedBox(height: 6.h),
                     Text(
                       '${distanceKm.toStringAsFixed(2)} km',
@@ -756,6 +814,40 @@ class _AddReviewSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ReviewPhotosGrid extends StatelessWidget {
+  const _ReviewPhotosGrid({required this.photos});
+
+  final List<String> photos;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8.w,
+        mainAxisSpacing: 8.h,
+      ),
+      itemCount: photos.length,
+      itemBuilder: (context, index) {
+        final url = photos[index];
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10.r),
+          child: Image.network(
+            url,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: AppColors.surfaced2C,
+              child: const Icon(Icons.broken_image_outlined),
+            ),
+          ),
+        );
+      },
     );
   }
 }
