@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/run_session_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
@@ -23,6 +25,12 @@ class RunService extends ChangeNotifier {
   List<EmergencyContactModel> _sosNotifiedContacts = [];
   RunMood? _mood;
   String? _apiError;
+  
+  // Location sharing state
+  bool _isShareLocationLoading = false;
+  String? _shareLocationError;
+  bool _emergencyCallLoading = false;
+  String? _emergencyCallError;
 
   RunStatus get status => _status;
   RunSessionModel get session => _session;
@@ -34,6 +42,10 @@ class RunService extends ChangeNotifier {
   List<EmergencyContactModel> get sosNotifiedContacts => _sosNotifiedContacts;
   RunMood? get mood => _mood;
   String? get apiError => _apiError;
+  bool get isShareLocationLoading => _isShareLocationLoading;
+  String? get shareLocationError => _shareLocationError;
+  bool get emergencyCallLoading => _emergencyCallLoading;
+  String? get emergencyCallError => _emergencyCallError;
   bool get isRunning => _status == RunStatus.running;
   bool get isPaused => _status == RunStatus.paused;
   bool get hasRunId => _session.runId != null && _session.runId!.isNotEmpty;
@@ -401,6 +413,92 @@ class RunService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> shareUpdatedLocationWithEmergencyContact({
+    required double latitude,
+    required double longitude,
+  }) async {
+    _isShareLocationLoading = true;
+    _shareLocationError = null;
+    notifyListeners();
+    try {
+      final googleMapsLink =
+          'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+      final message = '''
+🚨 My Live Location
+Please track my current location using the link below:
+
+$googleMapsLink
+''';
+
+      await Share.share(
+        message,
+        subject: 'My Live Location',
+      );
+      _shareLocationError = null;
+      return true;
+    } catch (e) {
+      _shareLocationError = e.toString();
+      debugPrint(
+        'RunService.shareUpdatedLocationWithEmergencyContact failed: $e',
+      );
+      return false;
+    } finally {
+      _isShareLocationLoading = false;
+      notifyListeners();
+    }
+  }
+
+
+  Future<bool> callEmergencyContact(EmergencyContactModel? contact) async {
+    _emergencyCallLoading = true;
+    _emergencyCallError = null;
+    notifyListeners();
+
+    try {
+      final contactToCall = contact ??
+          (_sosNotifiedContacts.isNotEmpty
+              ? _sosNotifiedContacts.first
+              : null);
+
+      if (contactToCall == null) {
+        _emergencyCallError = 'No emergency contact selected.';
+        return false;
+      }
+
+      String phoneNumber = contactToCall.phone.trim();
+
+      if (phoneNumber.isEmpty) {
+        _emergencyCallError = 'Invalid phone number.';
+        return false;
+      }
+
+      phoneNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+
+      final Uri uri = Uri.parse('tel:$phoneNumber');
+
+      debugPrint('Calling: $phoneNumber');
+
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        _emergencyCallError = 'Unable to open the phone dialer.';
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      _emergencyCallError = e.toString();
+      debugPrint('Call error: $e');
+      return false;
+    } finally {
+      _emergencyCallLoading = false;
+      notifyListeners();
+    }
+  }
+
   void reset() {
     _status = RunStatus.idle;
     _session = const RunSessionModel();
@@ -413,6 +511,10 @@ class RunService extends ChangeNotifier {
     _mood = null;
     _apiError = null;
     _lastLiveUpdateAt = null;
+    _isShareLocationLoading = false;
+    _shareLocationError = null;
+    _emergencyCallLoading = false;
+    _emergencyCallError = null;
     notifyListeners();
   }
 }

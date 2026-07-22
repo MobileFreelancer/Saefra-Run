@@ -37,6 +37,8 @@ dependencies:
   http: ^1.2.1
   pedometer: ^4.2.0
   shimmer_animation: ^2.2.2+1
+  url_launcher: ^6.3.0
+  share_plus:
 
 dev_dependencies:
   flutter_test:
