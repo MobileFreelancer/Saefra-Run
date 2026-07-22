@@ -29,10 +29,12 @@ class ActivityService extends ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
+
     try {
-      _summary = await _api.getActivitySummary(_period);
-      _recentRuns = await _api.getRecentActivities();
-      _lifetime = await _api.getLifetimeStats();
+      final dashboard = await _api.getActivityDashboard();
+      _recentRuns = dashboard.recentRuns;
+      _lifetime = dashboard.lifetime;
+      _summary = dashboard.summary;
     } catch (e) {
       _error = e.toString();
       _applyMockData();
@@ -58,17 +60,6 @@ class ActivityService extends ChangeNotifier {
   Future<void> setPeriod(ActivityPeriod period) async {
     _period = period;
     notifyListeners();
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-    try {
-      _summary = await _api.getActivitySummary(period);
-    } catch (e) {
-      _error = e.toString();
-      _summary = null;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    await load(refresh: true);
   }
 }

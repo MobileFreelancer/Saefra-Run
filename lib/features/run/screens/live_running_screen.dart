@@ -11,6 +11,7 @@ import 'package:saefra_run/core/services/run_service.dart';
 import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/emergency_contact_avatar.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/core/widgets/secondary_button.dart';
@@ -701,7 +702,7 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
     if (!mounted) return;
 
     if (ok) {
-      context.pop();
+      safePop(context, fallback: '/run/live');
       return;
     }
 

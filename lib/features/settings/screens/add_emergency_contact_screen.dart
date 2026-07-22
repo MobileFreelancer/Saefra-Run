@@ -9,6 +9,7 @@ import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/contact_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/utils/app_validators.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
@@ -190,7 +191,7 @@ class _AddEmergencyContactScreenState extends State<AddEmergencyContactScreen> {
           ],
         ),
       );
-      if (mounted) context.pop();
+      if (mounted) safePop(context, fallback: '/settings/emergency-contacts');
     } else {
       setState(() {
         _apiError = settings.error ?? 'Failed to add contact';

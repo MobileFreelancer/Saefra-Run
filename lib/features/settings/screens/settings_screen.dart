@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
 import 'package:saefra_run/core/widgets/settings_tile.dart';
 import 'package:saefra_run/features/settings/widgets/logout_dialog.dart';
@@ -63,7 +64,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ? settings.email
         : user?.email ?? '';
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) handleRootBack(context);
+      },
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
@@ -228,6 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       bottomNavigationBar: const AppBottomNav(activeIndex: 3),
+    ),
     );
   }
 }

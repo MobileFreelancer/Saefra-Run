@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:saefra_run/core/mock/feature_mock_data.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
@@ -18,33 +19,56 @@ class CommunityService extends ChangeNotifier {
   List<ReviewModel> _reviews = [];
   bool _isLoading = false;
   bool _hasLoaded = false;
+  bool _hasMore = false;
+  int _currentPage = 1;
   String? _error;
+  Timer? _searchDebounce;
+
+  static const int _perPage = 20;
 
   List<CommunityRouteModel> get popularRoutes => _popularRoutes;
   List<CommunityRouteModel> get topRatedRoutes => _topRatedRoutes;
   CommunityRouteModel? get selectedRoute => _selectedRoute;
   List<ReviewModel> get reviews => _reviews;
   bool get isLoading => _isLoading;
+  bool get hasMore => _hasMore;
   String? get error => _error;
 
-  Future<void> load({bool refresh = false}) async {
+  Future<void> load({bool refresh = false, String? search}) async {
     if (!refresh && _hasLoaded && _popularRoutes.isNotEmpty) return;
 
     _isLoading = true;
     _error = null;
+    _currentPage = 1;
     notifyListeners();
+
     try {
-      _popularRoutes = await _api.getPopularRoutes();
-      _topRatedRoutes = await _api.getTopRatedRoutes();
+      final result = await _api.getCommunityRoutes(
+        page: _currentPage,
+        perPage: _perPage,
+        search: search ?? searchController.text.trim(),
+      );
+      _popularRoutes = result.popularRoutes;
+      _topRatedRoutes = result.recentRoutes;
+      _hasMore = result.hasMore;
     } catch (e) {
       _error = e.toString();
       _applyMockRoutes();
     } finally {
-      if (_popularRoutes.isEmpty) _applyMockRoutes();
+      if (_popularRoutes.isEmpty && _topRatedRoutes.isEmpty) {
+        _applyMockRoutes();
+      }
       _hasLoaded = true;
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void search(String query) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 450), () {
+      load(refresh: true, search: query.trim());
+    });
   }
 
   Future<void> loadRouteDetail(String routeId) async {

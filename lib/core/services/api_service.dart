@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/activity_model.dart';
 import 'package:saefra_run/core/models/auth_response_model.dart';
+import 'package:saefra_run/core/models/community_route_list_result.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
+import 'package:saefra_run/core/models/community_routes_result.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/notification_model.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
@@ -709,6 +711,96 @@ class ApiService {
 
   // ─── Community ──────────────────────────────────────────────────────────────
 
+  Future<CommunityRoutesResult> getCommunityRoutes({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+  }) async {
+    try {
+      final fields = <String, dynamic>{
+        'page': page,
+        'perPage': perPage,
+      };
+      final query = search?.trim();
+      if (query != null && query.isNotEmpty) {
+        fields['search'] = query;
+      }
+
+      final response = await _dio.post(
+        _path('/community-routes'),
+        data: _form(fields),
+      );
+      final map = _map(response);
+      final payload = ApiResponseParser.payload(map);
+      return CommunityRoutesResult.fromPayload(
+        payload,
+        page: page,
+        perPage: perPage,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<CommunityRouteListResult> getPopularRoutesList({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+  }) async {
+    return _fetchCommunityRouteList(
+      endpoint: '/popular-routes-list',
+      page: page,
+      perPage: perPage,
+      search: search,
+    );
+  }
+
+  Future<CommunityRouteListResult> getRecentRoutesList({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+  }) async {
+    return _fetchCommunityRouteList(
+      endpoint: '/recent-routes-list',
+      page: page,
+      perPage: perPage,
+      search: search,
+    );
+  }
+
+  Future<CommunityRouteListResult> _fetchCommunityRouteList({
+    required String endpoint,
+    required int page,
+    required int perPage,
+    String? search,
+  }) async {
+    try {
+      final fields = <String, dynamic>{
+        'page': page,
+        'perPage': perPage,
+      };
+      final query = search?.trim();
+      if (query != null && query.isNotEmpty) {
+        fields['search'] = query;
+      }
+
+      final response = await _dio.post(
+        _path(endpoint),
+        data: _form(fields),
+      );
+      final map = _map(response);
+      final payload = ApiResponseParser.payload(map);
+      return CommunityRouteListResult.fromPayload(
+        payload,
+        page: page,
+        perPage: perPage,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  @Deprecated('Use getCommunityRoutes instead')
   Future<List<CommunityRouteModel>> getPopularRoutes() async {
     final response = await _dio.get(_path('/community/routes/popular'));
     final map = _map(response);
@@ -768,6 +860,18 @@ class ApiService {
 
   // ─── Activity ───────────────────────────────────────────────────────────────
 
+  Future<ActivityDashboardResult> getActivityDashboard() async {
+    try {
+      final response = await _dio.get(_path('/activity-dashboard'));
+      final map = _map(response);
+      final payload = ApiResponseParser.payload(map);
+      return ActivityDashboardResult.fromPayload(payload);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  @Deprecated('Use getActivityDashboard instead')
   Future<ActivitySummaryModel> getActivitySummary(ActivityPeriod period) async {
     final response = await _dio.get(
       _path('/activity/summary'),

@@ -11,6 +11,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/models/route_model.dart';
 import '../../../core/services/dashboard_services.dart';
 import '../../../core/utils/app_tost.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/show_bottom_sheet.dart';
 import '../../../generated/assets.dart';
@@ -62,7 +63,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final userProFileImage=user?.profileImage.toString();
     print("+++++++++++++++");
     print(userProFileImage);
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) handleRootBack(context);
+      },
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
@@ -421,6 +427,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
       bottomNavigationBar: const AppBottomNav(activeIndex: 0),
+    ),
     );
   }
 }

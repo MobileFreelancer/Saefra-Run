@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 
@@ -24,7 +25,7 @@ class _NotificationSettingsScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(ok ? 'Notification settings saved' : 'Save failed')),
     );
-    if (ok) context.pop();
+    if (ok) safePop(context, fallback: '/settings');
   }
 
   @override

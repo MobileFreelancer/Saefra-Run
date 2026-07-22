@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 
 class AuthBackButton extends StatelessWidget {
   const AuthBackButton({
@@ -17,11 +17,7 @@ class AuthBackButton extends StatelessWidget {
     BuildContext context, {
     String fallback = '/onboarding/intro',
   }) {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go(fallback);
-    }
+    safePop(context, fallback: fallback);
   }
 
   @override

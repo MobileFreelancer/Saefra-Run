@@ -20,7 +20,9 @@ import 'package:saefra_run/features/notifications/screens/notifications_inbox_sc
 import 'package:saefra_run/features/onboarding/screens/onboarding_intro_screen.dart';
 import 'package:saefra_run/features/onboarding/screens/splash_screen.dart';
 import 'package:saefra_run/features/community/screens/community_route_detail_screen.dart';
+import 'package:saefra_run/features/community/screens/community_routes_list_screen.dart';
 import 'package:saefra_run/features/community/screens/community_screen.dart';
+import 'package:saefra_run/core/services/community_route_list_service.dart';
 import 'package:saefra_run/features/community/screens/route_reviews_screen.dart';
 import 'package:saefra_run/features/activity/screens/activity_screen.dart';
 import 'package:saefra_run/features/routes/screens/generate_route_screen.dart';
@@ -263,6 +265,17 @@ class AppRouter {
         path: '/settings/about',
         name: 'aboutUs',
         builder: (context, state) => const AboutUsScreen(),
+      ),
+      GoRoute(
+        path: '/community/routes-list',
+        name: 'communityRoutesList',
+        builder: (context, state) {
+          final type = state.uri.queryParameters['type'] ?? 'popular';
+          final kind = type == 'recent'
+              ? CommunityRouteListKind.recent
+              : CommunityRouteListKind.popular;
+          return CommunityRoutesListScreen(kind: kind);
+        },
       ),
       GoRoute(
         path: '/community',

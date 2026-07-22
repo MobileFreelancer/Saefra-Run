@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import 'package:saefra_run/core/utils/app_validators.dart';
@@ -156,7 +157,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     // Clear the selected image after successful upload
     _selectedProfileImagePath = null;
 
-    context.pop();
+    safePop(context, fallback: '/settings');
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -447,7 +448,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-                      onPressed: () => context.pop(),
+                      onPressed: () => safePop(context, fallback: '/settings'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.white,
                         side: const BorderSide(color: AppColors.white),

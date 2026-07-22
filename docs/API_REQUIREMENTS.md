@@ -63,12 +63,32 @@ Toggle mock data locally with `USE_MOCK_API=true` in `.env` — no backend neede
 
 | Method | Path | Params |
 |--------|------|--------|
-| GET | `/api/community/routes/popular` | — |
-| GET | `/api/community/routes/top-rated` | — |
+| POST | `/api/v1/community-routes` | `page`, `perPage`, `search` (optional) |
+| POST | `/api/v1/popular-routes-list` | `page`, `perPage`, `search` (optional) |
+| POST | `/api/v1/recent-routes-list` | `page`, `perPage`, `search` (optional) |
 | GET | `/api/community/routes/{id}` | Path: route id |
 | GET | `/api/community/routes/{id}/reviews` | Path: route id |
 | POST | `/api/community/routes/{id}/reviews` | `rating`, `comment` |
-| POST | `/api/community/routes/{id}/like` | — (optional) |
+
+**Community routes response (`POST /api/v1/community-routes`):**
+```json
+{
+  "status": "success",
+  "data": {
+    "popular_routes": [ { "...Community route object..." } ],
+    "recent_routes": [ { "...Community route object..." } ],
+    "total": 50,
+    "last_page": 3
+  }
+}
+```
+
+Legacy endpoints (deprecated):
+
+| Method | Path |
+|--------|------|
+| GET | `/api/community/routes/popular` |
+| GET | `/api/community/routes/top-rated` |
 
 **Community route object:**
 ```json
@@ -92,6 +112,37 @@ Toggle mock data locally with `USE_MOCK_API=true` in `.env` — no backend neede
 ---
 
 ## Activity / stats
+
+| Method | Path | Params |
+|--------|------|--------|
+| GET | `/api/v1/activity-dashboard` | — |
+
+**Activity dashboard response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "recent_runs": [ { "id": "1", "route_name": "...", "distance_km": 5.02, "date": "..." } ],
+    "lifetime": {
+      "total_distance_km": 120.5,
+      "total_hours": 10,
+      "total_minutes_remainder": 30,
+      "total_steps": 150000,
+      "total_calories": 12000,
+      "avg_pace": 5.8,
+      "pace_trend": [5.2, 5.5, 5.8]
+    },
+    "summary": {
+      "total_distance_km": 18.4,
+      "total_minutes": 142,
+      "total_calories": 980,
+      "avg_pace_min_per_km": 6.2
+    }
+  }
+}
+```
+
+Legacy endpoints (deprecated):
 
 | Method | Path | Params |
 |--------|------|--------|

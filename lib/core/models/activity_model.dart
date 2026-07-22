@@ -62,13 +62,32 @@ class RecentActivityModel {
 
   factory RecentActivityModel.fromJson(Map<String, dynamic> json) {
     return RecentActivityModel(
-      id: '${json['id'] ?? ''}',
-      name: json['name'] as String? ?? json['route_name'] as String? ?? 'Run',
-      dateLabel: json['date_label'] as String? ?? json['date'] as String? ?? '',
-      distanceKm: ActivitySummaryModel._toDouble(json['distance_km']),
-      durationMinutes: ActivitySummaryModel._toInt(json['duration_minutes']),
-      paceLabel: json['pace'] as String? ?? '',
-      mapImageAsset: json['map_image'] as String?,
+      id: '${json['id'] ?? json['run_id'] ?? ''}',
+      name: json['name'] as String? ??
+          json['route_name'] as String? ??
+          json['title'] as String? ??
+          'Run',
+      dateLabel: json['date_label'] as String? ??
+          json['date'] as String? ??
+          json['started_at'] as String? ??
+          json['created_at'] as String? ??
+          '',
+      distanceKm: ActivitySummaryModel._toDouble(
+        json['distance_km'] ?? json['distance'],
+      ),
+      durationMinutes: ActivitySummaryModel._toInt(
+        json['duration_minutes'] ?? json['duration'] ?? json['elapsed_minutes'],
+      ),
+      paceLabel: json['pace'] as String? ??
+          json['pace_label'] as String? ??
+          json['avg_pace'] as String? ??
+          '',
+      mapImageAsset: json['map_image'] as String? ??
+          json['route_image'] as String? ??
+          json['image'] as String?,
+      difficulty: json['difficulty'] as String?,
+      location: json['location'] as String?,
+      safetyScore: ActivitySummaryModel._toInt(json['safety_score']),
     );
   }
 }
@@ -107,11 +126,33 @@ class LifetimeStatsModel {
   }
 
   factory LifetimeStatsModel.fromJson(Map<String, dynamic> json) {
+    final totalMinutes = ActivitySummaryModel._toInt(
+      json['total_minutes'] ?? json['duration_minutes'],
+    );
+    final parsedHours = ActivitySummaryModel._toInt(json['total_hours']);
+    final parsedMinutesRemainder = ActivitySummaryModel._toInt(
+      json['total_minutes_remainder'] ?? json['minutes_remainder'],
+    );
+
     return LifetimeStatsModel(
-      totalDistanceKm: ActivitySummaryModel._toDouble(json['total_distance_km']),
-      totalHours: ActivitySummaryModel._toInt(json['total_hours']),
-      totalCalories: ActivitySummaryModel._toInt(json['total_calories']),
-      avgPaceMinPerKm: ActivitySummaryModel._toDouble(json['avg_pace']),
+      totalDistanceKm: ActivitySummaryModel._toDouble(
+        json['total_distance_km'] ?? json['distance_km'] ?? json['distance'],
+      ),
+      totalHours: parsedHours > 0 ? parsedHours : totalMinutes ~/ 60,
+      totalMinutesRemainder: parsedMinutesRemainder > 0
+          ? parsedMinutesRemainder
+          : totalMinutes % 60,
+      totalCalories: ActivitySummaryModel._toInt(
+        json['total_calories'] ?? json['calories'],
+      ),
+      totalSteps: ActivitySummaryModel._toInt(
+        json['total_steps'] ?? json['steps'],
+      ),
+      avgPaceMinPerKm: ActivitySummaryModel._toDouble(
+        json['avg_pace'] ??
+            json['avg_pace_min_per_km'] ??
+            json['average_pace'],
+      ),
       paceTrend: (json['pace_trend'] as List<dynamic>?)
               ?.map((e) => (e as num).toDouble())
               .toList() ??

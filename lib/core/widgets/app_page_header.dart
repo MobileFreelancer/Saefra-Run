@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_asset_icon.dart';
 
 class AppPageHeader extends StatelessWidget {
@@ -11,20 +11,27 @@ class AppPageHeader extends StatelessWidget {
     this.onBack,
     this.trailing,
     this.backAssetPath,
+    this.fallbackRoute = '/dashboard',
   });
 
   final String title;
   final VoidCallback? onBack;
   final Widget? trailing;
   final String? backAssetPath;
+  final String fallbackRoute;
 
+  @override
   Widget build(BuildContext context) {
+    final trailingWidget = trailing ??
+        SizedBox(width: 48.w);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(8.w, 8.h, 16.w, 8.h),
       child: Row(
         children: [
           IconButton(
-            onPressed: onBack ?? () => context.pop(),
+            onPressed: onBack ??
+                () => safePop(context, fallback: fallbackRoute),
             icon: backAssetPath != null
                 ? AppAssetIcon(
                     assetPath: backAssetPath!,
@@ -43,7 +50,7 @@ class AppPageHeader extends StatelessWidget {
                   ),
             ),
           ),
-          trailing ?? const SizedBox.shrink(),
+          trailingWidget,
         ],
       ),
     );

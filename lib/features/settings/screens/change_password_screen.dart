@@ -6,6 +6,7 @@ import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/utils/app_validators.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/auth_header.dart';
 import 'package:saefra_run/features/onboarding/widgets/common_app_button.dart';
 import 'package:saefra_run/features/settings/widgets/password_changed_dialog.dart';
@@ -64,7 +65,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       builder: (ctx) => PasswordChangedDialog(
         onDone: () {
           Navigator.pop(ctx);
-          if (mounted) context.pop();
+          if (mounted) safePop(context, fallback: '/settings');
         },
       ),
     );

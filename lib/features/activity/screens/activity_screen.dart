@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/activity_model.dart';
 import 'package:saefra_run/core/services/activity_service.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
 import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/generated/assets.dart';
@@ -38,7 +38,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
     final activity = context.watch<ActivityService>();
     final lifetime = activity.lifetime;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) handleRootBack(context);
+      },
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
@@ -120,6 +125,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
             ),
       ),
       bottomNavigationBar: const AppBottomNav(activeIndex: 2),
+    ),
     );
   }
 

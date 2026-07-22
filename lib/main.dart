@@ -11,6 +11,7 @@ import 'package:saefra_run/core/router/app_router.dart';
 import 'package:saefra_run/core/services/activity_service.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/contact_service.dart';
+import 'package:saefra_run/core/services/community_route_list_service.dart';
 import 'package:saefra_run/core/services/community_service.dart';
 import 'package:saefra_run/core/services/generate_route_service.dart';
 import 'package:saefra_run/core/services/notification_inbox_service.dart';
@@ -89,6 +90,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => SearchFilterService()),
         ChangeNotifierProvider(create: (_) => SafetyCheckInService()),
         ChangeNotifierProvider(create: (_) => CommunityService()),
+        ChangeNotifierProvider(create: (_) => CommunityRouteListService()),
         ChangeNotifierProvider(create: (_) => ActivityService()),
         ChangeNotifierProvider(create: (_) => RunService()),
         ChangeNotifierProvider(create: (_) => RunReviewService()),

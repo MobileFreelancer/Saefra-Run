@@ -7,6 +7,7 @@ import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/run_review_form_model.dart';
 import 'package:saefra_run/core/services/run_review_service.dart';
 import 'package:saefra_run/core/services/run_service.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_route_map.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
@@ -355,7 +356,7 @@ class _RunRateScreenState extends State<RunRateScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-                      onPressed: review.isSubmitting ? null : () => context.pop(),
+                      onPressed: review.isSubmitting ? null : () => safePop(context, fallback: '/dashboard'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.white,
                         side: const BorderSide(color: AppColors.border),

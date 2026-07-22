@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
@@ -71,7 +72,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
       builder: (ctx) => ContactSentDialog(
         onDone: () {
           Navigator.pop(ctx);
-          if (mounted) context.pop();
+          if (mounted) safePop(context, fallback: '/settings');
         },
       ),
     );
@@ -163,7 +164,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-                      onPressed: _isSending ? null : () => context.pop(),
+                      onPressed: _isSending ? null : () => safePop(context, fallback: '/settings'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.white,
                         side: const BorderSide(color: AppColors.white),
