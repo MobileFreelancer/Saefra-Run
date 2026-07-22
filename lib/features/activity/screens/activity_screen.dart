@@ -277,7 +277,7 @@ class _RecentRunCard extends StatelessWidget {
                   child: _RunStatTile(
                     icon: Assets.route,
                     label: 'Distance',
-                    value: '${run.distanceKm.toStringAsFixed(2)} km',
+                    value: run.formattedDistance,
                     bodyStyle: bodyStyle,
                   ),
                 ),
@@ -286,7 +286,7 @@ class _RecentRunCard extends StatelessWidget {
                   child: _RunStatTile(
                     icon: Assets.time,
                     label: 'Est. Time',
-                    value: '${run.durationMinutes} min',
+                    value: run.formattedDuration,
                     bodyStyle: bodyStyle,
                   ),
                 ),

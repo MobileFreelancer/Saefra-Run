@@ -38,13 +38,15 @@ class CommunityRouteModel {
       id: '${json['id'] ?? json['route_id'] ?? ''}',
       name: json['name'] as String? ?? json['route_name'] as String? ?? 'Route',
       location: json['location'] as String? ?? '',
-      distanceKm: _toDouble(json['distance_km'] ?? json['distance']),
+      distanceKm: _parseDistanceKm(json['distance_km'] ?? json['distance']),
       durationMinutes: _toInt(json['duration'] ?? json['estimated_duration']),
       rating: _toDouble(json['rating'] ?? json['community_rating']),
-      reviewCount: _toInt(json['review_count'] ?? json['reviews_count']),
+      reviewCount: _toInt(
+        json['review_count'] ?? json['reviews_count'] ?? json['reviews'],
+      ),
       likeCount: _toInt(json['like_count'] ?? json['likes']),
       commentCount: _toInt(json['comment_count'] ?? json['comments']),
-      imageAsset: json['image'] as String? ?? json['route_image'] as String?,
+      imageAsset: _nullableImage(json['image'] ?? json['route_image']),
       difficultyTag: json['difficulty'] as String? ?? json['difficulty_tag'] as String?,
       tags: (json['tags'] as List<dynamic>?)
               ?.map((e) => '$e')
@@ -57,6 +59,21 @@ class CommunityRouteModel {
               .toList() ??
           const [],
     );
+  }
+
+  static double _parseDistanceKm(dynamic v) {
+    if (v is num) return v.toDouble();
+    if (v is String) {
+      final cleaned = v.replaceAll(RegExp(r'[^0-9.]'), '');
+      return double.tryParse(cleaned) ?? 0;
+    }
+    return 0;
+  }
+
+  static String? _nullableImage(dynamic v) {
+    if (v == null) return null;
+    final value = '$v'.trim();
+    return value.isEmpty ? null : value;
   }
 
   static double _toDouble(dynamic v) {

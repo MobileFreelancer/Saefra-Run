@@ -122,22 +122,25 @@ Legacy endpoints (deprecated):
 {
   "status": "success",
   "data": {
-    "recent_runs": [ { "id": "1", "route_name": "...", "distance_km": 5.02, "date": "..." } ],
-    "lifetime": {
-      "total_distance_km": 120.5,
-      "total_hours": 10,
-      "total_minutes_remainder": 30,
-      "total_steps": 150000,
-      "total_calories": 12000,
-      "avg_pace": 5.8,
-      "pace_trend": [5.2, 5.5, 5.8]
+    "statistics": {
+      "total_distance": "0.1 km",
+      "total_running_time": "0h 5m",
+      "total_steps": 130,
+      "average_pace": "56:13/km",
+      "total_runs": 12
     },
-    "summary": {
-      "total_distance_km": 18.4,
-      "total_minutes": 142,
-      "total_calories": 980,
-      "avg_pace_min_per_km": 6.2
-    }
+    "activities": [
+      {
+        "run_id": 16,
+        "route_name": "ShreePad Residency...",
+        "location": "Santa Monica, CA",
+        "image": "",
+        "date": "Yesterday, 12:28 PM",
+        "distance": "0.06 km",
+        "duration": "1 min",
+        "calories": "12"
+      }
+    ]
   }
 }
 ```

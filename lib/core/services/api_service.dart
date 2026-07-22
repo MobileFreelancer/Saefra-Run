@@ -717,18 +717,18 @@ class ApiService {
     String? search,
   }) async {
     try {
-      final fields = <String, dynamic>{
+      final queryParameters = <String, dynamic>{
         'page': page,
         'perPage': perPage,
       };
       final query = search?.trim();
       if (query != null && query.isNotEmpty) {
-        fields['search'] = query;
+        queryParameters['search'] = query;
       }
 
       final response = await _dio.post(
         _path('/community-routes'),
-        data: _form(fields),
+        queryParameters: queryParameters,
       );
       final map = _map(response);
       final payload = ApiResponseParser.payload(map);
@@ -775,18 +775,18 @@ class ApiService {
     String? search,
   }) async {
     try {
-      final fields = <String, dynamic>{
+      final queryParameters = <String, dynamic>{
         'page': page,
         'perPage': perPage,
       };
       final query = search?.trim();
       if (query != null && query.isNotEmpty) {
-        fields['search'] = query;
+        queryParameters['search'] = query;
       }
 
       final response = await _dio.post(
         _path(endpoint),
-        data: _form(fields),
+        queryParameters: queryParameters,
       );
       final map = _map(response);
       final payload = ApiResponseParser.payload(map);

@@ -37,9 +37,8 @@ class ActivityService extends ChangeNotifier {
       _summary = dashboard.summary;
     } catch (e) {
       _error = e.toString();
-      _applyMockData();
-    } finally {
       if (_recentRuns.isEmpty) _applyMockData();
+    } finally {
       _hasLoaded = true;
       _isLoading = false;
       notifyListeners();
