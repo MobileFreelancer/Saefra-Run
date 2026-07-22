@@ -13,6 +13,7 @@ import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/notification_model.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
+import 'package:saefra_run/core/models/route_review_list_result.dart';
 import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/models/run_review_form_model.dart';
 import 'package:saefra_run/core/models/sos_response_model.dart';
@@ -832,27 +833,81 @@ class ApiService {
     );
   }
 
-  Future<List<ReviewModel>> getRouteReviews(String routeId) async {
-    final response =
-        await _dio.get(_path('/community/routes/$routeId/reviews'));
-    final map = _map(response);
-    final payload = ApiResponseParser.payload(map);
-    final list = payload['reviews'] as List<dynamic>? ?? [];
-    return list
-        .map((e) => ReviewModel.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
+  Future<RouteReviewListResult> getRouteReviewList({
+    required String routeId,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    try {
+      final response = await _dio.post(
+        _path('/route-review-list'),
+        queryParameters: {
+          'route_id': routeId,
+          'page': page,
+          'perPage': perPage,
+        },
+      );
+      final map = _map(response);
+      final payload = ApiResponseParser.payload(map);
+      return RouteReviewListResult.fromPayload(
+        payload,
+        page: page,
+        perPage: perPage,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
   }
 
+  @Deprecated('Use getRouteReviewList instead')
+  Future<List<ReviewModel>> getRouteReviews(String routeId) async {
+    final result = await getRouteReviewList(routeId: routeId);
+    return result.reviews;
+  }
+
+  /// POST /api/v1/route-review — one review per user per route.
   Future<void> submitRouteReview({
     required String routeId,
     required double rating,
     required String comment,
+    String? runId,
   }) async {
     try {
-      await _dio.post(
-        _path('/community/routes/$routeId/reviews'),
-        data: _form({'rating': '$rating', 'comment': comment}),
+      final fields = <String, dynamic>{
+        'route_id': routeId,
+        'overall_rating': rating.round(),
+        'comment': comment.trim(),
+      };
+      if (runId != null && runId.trim().isNotEmpty) {
+        fields['run_id'] = runId.trim();
+      }
+
+      final response = await _dio.post(
+        _path('/route-review'),
+        data: _form(fields),
       );
+      _map(response);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  /// POST /api/v1/contact-us
+  Future<void> submitContactUs({
+    required String name,
+    required String email,
+    required String message,
+  }) async {
+    try {
+      final response = await _dio.post(
+        _path('/contact-us'),
+        queryParameters: {
+          'name': name.trim(),
+          'email': email.trim(),
+          'message': message.trim(),
+        },
+      );
+      _map(response);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -951,14 +1006,14 @@ class ApiService {
     }
   }
 
-  /// POST /api/v1/run-review
+  /// POST /api/v1/route-review
   Future<void> submitRunReview({
-    required String runId,
+    String? runId,
     required String routeId,
     required RunReviewFormModel form,
   }) async {
     try {
-      final fields = form.toApiFields(runId: runId, routeId: routeId);
+      final fields = form.toApiFields(routeId: routeId, runId: runId);
       final formData = FormData.fromMap(fields);
 
       for (final imagePath in form.imagePaths) {
@@ -977,7 +1032,7 @@ class ApiService {
       }
 
       final response = await _dio.post(
-        _path('/run-review'),
+        _path('/route-review'),
         data: formData,
       );
       _map(response);

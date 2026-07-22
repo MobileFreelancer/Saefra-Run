@@ -42,18 +42,22 @@ class RunReviewFormModel {
   }
 
   Map<String, dynamic> toApiFields({
-    required String runId,
     required String routeId,
-  }) =>
-      {
-        'run_id': runId,
-        'route_id': routeId,
-        'overall_rating': starRating,
-        'route_feel': ApiFieldMapper.routeFeelToApi(routeFeel.name),
-        'route_surface': ApiFieldMapper.routeSurfaceToApi(surfaceType.name),
-        'route_sidewalk': ApiFieldMapper.routeSidewalkToApi(sidewalks.name),
-        'comment': reviewText.trim(),
-      };
+    String? runId,
+  }) {
+    final fields = <String, dynamic>{
+      'route_id': routeId,
+      'overall_rating': starRating,
+      'route_feel': ApiFieldMapper.routeFeelToApi(routeFeel.name),
+      'route_surface': ApiFieldMapper.routeSurfaceToApi(surfaceType.name),
+      'route_sidewalk': ApiFieldMapper.routeSidewalkToApi(sidewalks.name),
+      'comment': reviewText.trim(),
+    };
+    if (runId != null && runId.trim().isNotEmpty) {
+      fields['run_id'] = runId.trim();
+    }
+    return fields;
+  }
 }
 
 extension RouteFeelLabel on RouteFeel {

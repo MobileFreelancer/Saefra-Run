@@ -60,9 +60,23 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSending = true);
-    await Future<void>.delayed(const Duration(milliseconds: 800));
+    final settings = context.read<SettingsService>();
+    final ok = await settings.submitContactUs(
+      name: _name.text.trim(),
+      email: _email.text.trim(),
+      message: _message.text.trim(),
+    );
     if (!mounted) return;
     setState(() => _isSending = false);
+
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(settings.error ?? 'Failed to send message.'),
+        ),
+      );
+      return;
+    }
 
     await showDialog<void>(
       context: context,

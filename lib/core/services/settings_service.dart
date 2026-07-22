@@ -369,4 +369,28 @@ class SettingsService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> submitContactUs({
+    required String name,
+    required String email,
+    required String message,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _api.submitContactUs(
+        name: name,
+        email: email,
+        message: message,
+      );
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

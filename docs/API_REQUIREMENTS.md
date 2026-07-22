@@ -177,7 +177,9 @@ Legacy endpoints (deprecated):
 | POST | `/api/v1/run-resume` | `run_id` |
 | POST | `/api/v1/run-finish` | `run_id`, `ended_at` (Y-m-d H:i:s), `polyline`, `latitude`, `longitude` |
 | GET | `/api/v1/run-summary/{run_id}` | Query: `run_id` |
-| POST | `/api/v1/run-review` | `run_id`, `route_id`, `overall_rating`, `route_feel`, `route_surface`, `route_sidewalk`, `route_image[]`, `comment` |
+| POST | `/api/v1/route-review` | `route_id`, `overall_rating`, `comment`, optional `run_id`, optional `route_feel`, `route_surface`, `route_sidewalk`, `route_image[]` |
+| POST | `/api/v1/route-review-list` | `route_id`, `page`, `perPage` |
+| POST | `/api/v1/contact-us` | `name`, `email`, `message` |
 | POST | `/api/v1/run-feeling` | `run_id`, `run_feeling` (`great`, `good`, `okay`, `tough`, `exhausted`) |
 | POST | `/api/v1/sos-activate` | `latitude` (optional), `longitude` (optional), `address_link` (optional URL) |
 | POST | `/api/v1/sos-cancel` | — |
@@ -197,17 +199,50 @@ Legacy endpoints (deprecated):
 }
 ```
 
-**Run review payload (`POST /api/v1/run-review`):**
+**Route review payload (`POST /api/v1/route-review`):**
 ```json
 {
-  "run_id": "12",
   "route_id": "2",
+  "run_id": "12",
   "overall_rating": 5,
   "route_feel": "balanced",
   "route_surface": "mixed_surfaces",
   "route_sidewalk": "some_sections",
   "comment": "Great route!",
   "route_image[]": ["file uploads"]
+}
+```
+
+`run_id` is optional. One review per user per route.
+
+**Route review list (`POST /api/v1/route-review-list`):**
+```json
+{
+  "status": "success",
+  "data": {
+    "reviews": [
+      {
+        "id": 1,
+        "user_name": "Jane",
+        "overall_rating": 5,
+        "comment": "Great route",
+        "created_at": "2 days ago"
+      }
+    ],
+    "currentPage": 1,
+    "totalPage": 1,
+    "perPage": 20,
+    "totalRecords": 1
+  }
+}
+```
+
+**Contact us (`POST /api/v1/contact-us`):**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "message": "Need help with my account"
 }
 ```
 
@@ -297,11 +332,11 @@ Errors: HTTP 4xx/5xx with `message` and optional `errors` object.
 | `RouteSearchService` | `route_search_service.dart` | `searchRoutes` |
 | `GenerateRouteService` | `generate_route_service.dart` | `generateRoute` |
 | `RouteDetailService` | `route_detail_service.dart` | `getRouteDetail` |
-| `CommunityService` | `community_service.dart` | `getPopularRoutes`, `getTopRatedRoutes`, `getCommunityRouteDetail`, `getRouteReviews` |
+| `CommunityService` | `community_service.dart` | `getCommunityRoutes`, `getRouteReviewList`, `submitRouteReview` |
 | `ActivityService` | `activity_service.dart` | `getActivitySummary`, `getRecentActivities`, `getLifetimeStats` |
 | `RunService` | `run_service.dart` | `startRunSession`, `updateRunSession`, `pauseRunSession`, `resumeRunSession`, `finishRunSession`, `getRunSummary`, `submitRunFeeling`, `activateSos`, `cancelSos` |
-| `RunReviewService` | `run_review_service.dart` | `submitRunReview` (`/api/v1/run-review`) |
-| `SettingsService` | `settings_service.dart` | `getCurrentUser`, `getPreferences`, `updateProfile`, `getEmergencyContacts`, etc. |
+| `RunReviewService` | `run_review_service.dart` | `submitRunReview` (`/api/v1/route-review`) |
+| `SettingsService` | `settings_service.dart` | `getCurrentUser`, `updateProfile`, `submitContactUs`, etc. |
 | `NotificationInboxService` | `notification_inbox_service.dart` | `getNotifications`, `markNotificationRead`, `deleteNotification`, `clearAllNotifications` |
 | `FcmService` | `fcm_service.dart` | `updateFcmToken` |
 | `DashboardServices` | `dashboard_services.dart` | `generateSafeRoute` |

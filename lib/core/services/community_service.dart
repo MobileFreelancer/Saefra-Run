@@ -18,9 +18,13 @@ class CommunityService extends ChangeNotifier {
   CommunityRouteModel? _selectedRoute;
   List<ReviewModel> _reviews = [];
   bool _isLoading = false;
+  bool _isLoadingMoreReviews = false;
   bool _hasLoaded = false;
   bool _hasMore = false;
+  bool _hasMoreReviews = false;
   int _currentPage = 1;
+  int _reviewsPage = 1;
+  String? _activeReviewsRouteId;
   String? _error;
   Timer? _searchDebounce;
 
@@ -31,7 +35,9 @@ class CommunityService extends ChangeNotifier {
   CommunityRouteModel? get selectedRoute => _selectedRoute;
   List<ReviewModel> get reviews => _reviews;
   bool get isLoading => _isLoading;
+  bool get isLoadingMoreReviews => _isLoadingMoreReviews;
   bool get hasMore => _hasMore;
+  bool get hasMoreReviews => _hasMoreReviews;
   String? get error => _error;
 
   Future<void> load({bool refresh = false, String? search}) async {
@@ -71,13 +77,23 @@ class CommunityService extends ChangeNotifier {
     });
   }
 
-  Future<void> loadRouteDetail(String routeId) async {
+  Future<void> loadRouteDetail(String routeId, {bool refresh = false}) async {
+    if (!refresh &&
+        _activeReviewsRouteId == routeId &&
+        _reviews.isNotEmpty &&
+        _selectedRoute != null) {
+      return;
+    }
+
     _isLoading = true;
     _error = null;
+    _reviewsPage = 1;
+    _activeReviewsRouteId = routeId;
     notifyListeners();
+
     try {
       _selectedRoute = await _api.getCommunityRouteDetail(routeId);
-      _reviews = await _api.getRouteReviews(routeId);
+      await _loadReviews(routeId, page: 1, append: false);
     } catch (e) {
       _error = e.toString();
       _applyMockReviews();
@@ -88,6 +104,44 @@ class CommunityService extends ChangeNotifier {
     }
   }
 
+  Future<void> loadMoreReviews() async {
+    final routeId = _activeReviewsRouteId;
+    if (routeId == null ||
+        _isLoading ||
+        _isLoadingMoreReviews ||
+        !_hasMoreReviews) {
+      return;
+    }
+
+    _isLoadingMoreReviews = true;
+    notifyListeners();
+
+    try {
+      await _loadReviews(routeId, page: _reviewsPage + 1, append: true);
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoadingMoreReviews = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadReviews(
+    String routeId, {
+    required int page,
+    required bool append,
+  }) async {
+    final result = await _api.getRouteReviewList(
+      routeId: routeId,
+      page: page,
+      perPage: _perPage,
+    );
+
+    _reviews = append ? [..._reviews, ...result.reviews] : result.reviews;
+    _reviewsPage = result.currentPage;
+    _hasMoreReviews = result.hasMore;
+  }
+
   void _applyMockRoutes() {
     _popularRoutes = FeatureMockData.popularRoutes;
     _topRatedRoutes = FeatureMockData.recentRoutes;
@@ -96,6 +150,7 @@ class CommunityService extends ChangeNotifier {
   void _applyMockReviews() {
     _selectedRoute = FeatureMockData.reviewRoute;
     _reviews = FeatureMockData.reviews;
+    _hasMoreReviews = false;
   }
 
   void toggleLike(String routeId) {
@@ -125,14 +180,16 @@ class CommunityService extends ChangeNotifier {
     required String routeId,
     required double rating,
     required String comment,
+    String? runId,
   }) async {
     try {
       await _api.submitRouteReview(
         routeId: routeId,
         rating: rating,
         comment: comment,
+        runId: runId,
       );
-      _reviews = await _api.getRouteReviews(routeId);
+      await _loadReviews(routeId, page: 1, append: false);
       notifyListeners();
       return true;
     } catch (e) {

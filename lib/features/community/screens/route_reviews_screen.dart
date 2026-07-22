@@ -25,6 +25,7 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
   static const _starOrange = Color(0xFFFF9800);
 
   final _comment = TextEditingController();
+  final _scrollController = ScrollController();
   final Set<String> _likedReviewIds = {};
 
   double _rating = 0;
@@ -38,14 +39,26 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
     _comment.addListener(() {
       setState(() => _commentLength = _comment.text.length);
     });
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CommunityService>().loadRouteDetail(widget.routeId);
     });
   }
 
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 200) {
+      context.read<CommunityService>().loadMoreReviews();
+    }
+  }
+
   @override
   void dispose() {
     _comment.dispose();
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     super.dispose();
   }
 
@@ -148,6 +161,7 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                       child: CircularProgressIndicator(color: AppColors.primary),
                     )
                   : ListView(
+                      controller: _scrollController,
                       padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
                       children: [
                         if (route != null) ...[
@@ -170,7 +184,7 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                           onChanged: (index) => setState(() => _selectedTab = index),
                         ),
                         SizedBox(height: 20.h),
-                        if (_selectedTab == 0)
+                        if (_selectedTab == 0) ...[
                           ...community.reviews.map(
                             (review) => Padding(
                               padding: EdgeInsets.only(bottom: 20.h),
@@ -190,8 +204,17 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                                 },
                               ),
                             ),
-                          )
-                        else
+                          ),
+                          if (community.isLoadingMoreReviews)
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12.h),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                        ] else
                           Padding(
                             padding: EdgeInsets.symmetric(vertical: 48.h),
                             child: Center(
