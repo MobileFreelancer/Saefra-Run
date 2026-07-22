@@ -915,7 +915,7 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                           ),
                         ),
                         child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16.w, ),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 10.w,vertical: 8.h),
                           leading: EmergencyContactAvatar(
                             contact: c,
                             radius: 20.r,
