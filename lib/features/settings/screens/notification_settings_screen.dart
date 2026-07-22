@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
-import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
-import 'package:saefra_run/core/widgets/primary_button.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -18,16 +15,6 @@ class NotificationSettingsScreen extends StatefulWidget {
 
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
-  Future<void> _save() async {
-    final settings = context.read<SettingsService>();
-    final ok = await settings.saveNotificationSettings();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? 'Notification settings saved' : 'Save failed')),
-    );
-    if (ok) safePop(context, fallback: '/settings');
-  }
-
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsService>();
@@ -40,32 +27,135 @@ class _NotificationSettingsScreenState
             const AppPageHeader(title: 'Notifications'),
             Expanded(
               child: ListView(
-                padding: EdgeInsets.all(16.w),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                 children: [
-                  _ToggleRow(
-                    title: 'Push Notifications',
-                    value: settings.pushNotifications,
-                    onChanged: settings.setPushNotifications,
+                  // Allow Push Notifications - Master Toggle
+                  Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaced1B,
+                      borderRadius: BorderRadius.circular(16.r),
+                      boxShadow: [ BoxShadow( color: AppColors.orangeShadow.withValues(alpha: 0.15), blurRadius: 20 ) ],
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: _NotificationToggleRow(
+                      title: 'Allow Push Notifications',
+                      value: settings.pushNotifications,
+                      onChanged: settings.setPushNotifications,
+                    ),
                   ),
-                  _ToggleRow(
-                    title: 'Email Notifications',
-                    value: settings.emailNotifications,
-                    onChanged: settings.setEmailNotifications,
+                  SizedBox(height: 24.h),
+
+                  // Notify Me About Section
+                  Text(
+                    'Notify Me About',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                  _ToggleRow(
-                    title: 'SMS Notifications',
-                    value: settings.smsNotifications,
-                    onChanged: settings.setSmsNotifications,
+                  SizedBox(height: 12.h),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaced1B,
+                      borderRadius: BorderRadius.circular(16.r),
+                      boxShadow: [ BoxShadow( color: AppColors.orangeShadow.withValues(alpha: 0.15), blurRadius: 20 ) ],
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        _NotificationToggleRow(
+                          title: 'Run Reminders',
+                          value: settings.pushNotifications,
+                          onChanged: (v) => settings.setPushNotifications(v),
+                        ),
+
+                        Divider(
+                          height: 0.5,
+                          thickness: 1.2,
+                          color: AppColors.border,
+                          indent: 16.w,
+                          endIndent: 16.w,
+                        ),
+                        _NotificationToggleRow(
+                          title: 'Safety Alerts',
+                          value: settings.emergencyAlerts,
+                          onChanged: settings.setEmergencyAlerts,
+                        ),
+
+                        Divider(
+                          height: 0.5,
+                          thickness: 1.2,
+                          color: AppColors.border,
+                          indent: 16.w,
+                          endIndent: 16.w,
+                        ),
+                        _NotificationToggleRow(
+                          title: 'Route Updates',
+                          value: settings.routeSafetyAlerts,
+                          onChanged: settings.setRouteSafetyAlerts,
+                        ),
+
+                        Divider(
+                          height: 0.5,
+                          thickness: 1.2,
+                          color: AppColors.border,
+                          indent: 16.w,
+                          endIndent: 16.w,
+                        ),
+                        _NotificationToggleRow(
+                          title: 'Community Updates',
+                          value: settings.pushNotifications,
+                          onChanged: (v) => settings.setPushNotifications(v),
+                        ),
+
+                        Divider(
+                          height: 0.5,
+                          thickness: 1.2,
+                          color: AppColors.border,
+                          indent: 16.w,
+                          endIndent: 16.w,
+                        ),
+                        _NotificationToggleRow(
+                          title: 'Activity Settings',
+                          value: settings.pushNotifications,
+                          onChanged: (v) => settings.setPushNotifications(v),
+                        ),
+
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 32.h),
+
+                  // Info Text
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8.w),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 16.sp,
+                          color: AppColors.textMuted,
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            'You can manage notification preferences at any time.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textMuted,
+                              fontSize: 12.sp,
+                              height: 1.4,
+                              fontWeight: FontWeight.w500
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(16.w),
-              child: PrimaryButton(
-                label: 'Save Changes',
-                isLoading: settings.isLoading,
-                onPressed: _save,
               ),
             ),
           ],
@@ -75,8 +165,8 @@ class _NotificationSettingsScreenState
   }
 }
 
-class _ToggleRow extends StatelessWidget {
-  const _ToggleRow({
+class _NotificationToggleRow extends StatelessWidget {
+  const _NotificationToggleRow({
     required this.title,
     required this.value,
     required this.onChanged,
@@ -88,30 +178,32 @@ class _ToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14.r),
-      ),
+    return Padding(
+      padding:   EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
       child: Row(
         children: [
           Expanded(
             child: Text(
               title,
-              style: TextStyle(
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.white,
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.white,
-            activeTrackColor: AppColors.primary,
+          Transform.scale(
+            scale: 0.8,
+            child: Switch(
+              value: value,
+              padding: EdgeInsets.zero,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              onChanged: onChanged,
+              activeThumbColor: AppColors.white,
+              activeTrackColor: AppColors.primary,
+              inactiveThumbColor: Colors.grey[600],
+              inactiveTrackColor: Colors.grey[800],
+            ),
           ),
         ],
       ),

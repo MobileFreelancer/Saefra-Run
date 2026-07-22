@@ -110,8 +110,10 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                     'Please enter your information for query to the admin',
                     textAlign: TextAlign.center,
                     style: textTheme.bodyMedium?.copyWith(
-                      fontSize: 14.sp,
+                      fontSize: 16.sp,
                       height: 1.45,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.white
                     ),
                   ),
                   SizedBox(height: 24.h),
@@ -166,7 +168,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                       onPressed: _isSending ? null : () => safePop(context, fallback: '/settings'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.white,
-                        side: const BorderSide(color: AppColors.white),
+                        side:   BorderSide(color: Color(0xFF9C858A)),
                         padding: EdgeInsets.symmetric(vertical: 14.h),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(28.r),
@@ -174,7 +176,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                       ),
                       child: Text(
                         'Cancel',
-                        style: textTheme.labelLarge?.copyWith(fontSize: 14.sp),
+                        style: textTheme.bodyMedium?.copyWith(fontSize: 14.sp,color: Color(0xFF9C858A),fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
