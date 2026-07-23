@@ -59,6 +59,7 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
+
     super.dispose();
   }
 
@@ -245,7 +246,8 @@ class _RouteReviewsScreenState extends State<RouteReviewsScreen> {
                                 ),
                               ),
                             ),
-                        ] else if (community.reviewPhotos.isEmpty)
+                        ]
+                        else if (community.reviewPhotos.isEmpty)
                           Padding(
                             padding: EdgeInsets.symmetric(vertical: 48.h),
                             child: Center(
@@ -825,6 +827,7 @@ class _ReviewPhotosGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('ReviewPhotosGrid: photos length = ${photos.length}');
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),

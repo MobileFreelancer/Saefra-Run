@@ -1,14 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:in_app_review/in_app_review.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
+import 'package:share_plus/share_plus.dart';
 
-class AboutUsScreen extends StatelessWidget {
+class AboutUsScreen extends StatefulWidget {
   const AboutUsScreen({super.key});
+
+  @override
+  State<AboutUsScreen> createState() => _AboutUsScreenState();
+}
+
+class _AboutUsScreenState extends State<AboutUsScreen> {
+
+
+
+  @override
+  void initState() {
+    getAppVersion();
+    super.initState();
+  }
+
+  String _getAppVersion="";
+  String _getAppID="";
+
+  Future<void> getAppVersion() async {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+
+    print("App Name: ${packageInfo.appName}");
+    print("Package Name: ${packageInfo.packageName}");
+    print("Version: ${packageInfo.version}");
+    print("Build Number: ${packageInfo.buildNumber}");
+    _getAppVersion = packageInfo.version;
+    _getAppID=packageInfo.packageName;
+    setState(() {});
+  }
+  final InAppReview inAppReview = InAppReview.instance;
+
+  Future<void> requestReview() async {
+    if (await inAppReview.isAvailable()) {
+      await inAppReview.requestReview();
+    } else {
+      await inAppReview.openStoreListing(
+        appStoreId: _getAppID, // Required for iOS
+      );
+    }
+  }
+
+
+  Future<void> shareApp() async {
+    const String appName = "Your App Name";
+    final String playStoreUrl =
+        "https://play.google.com/store/apps/details?id=$_getAppID";
+
+    final String appStoreUrl =
+        "https://apps.apple.com/app/$_getAppID";
+
+    await SharePlus.instance.share(
+      ShareParams(
+        text: '''
+Check out $appName!
+
+📱 Android:
+$playStoreUrl
+
+🍎 iPhone:
+$appStoreUrl
+''',
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +111,7 @@ class AboutUsScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 10.h,),
                     Text(
-                      'Version 1.0.0',
+                      _getAppVersion,
                       style: TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 13.sp,
@@ -84,7 +152,7 @@ class AboutUsScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text("Version", style: TextStyle(color: AppColors.white, fontSize: 14.sp,fontWeight: FontWeight.w500),),
-                              Text("1.0.0", style: TextStyle(color: AppColors.white, fontSize: 14.sp,fontWeight: FontWeight.w500),),
+                              Text(_getAppVersion, style: TextStyle(color: AppColors.white, fontSize: 14.sp,fontWeight: FontWeight.w500),),
                             ],
                           ),
                           SizedBox(height: 12.h,),
@@ -96,12 +164,17 @@ class AboutUsScreen extends StatelessWidget {
                             endIndent: 16.w,
                           ),
                           SizedBox(height: 12.h,),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("Rate App", style: TextStyle(color: AppColors.white, fontSize: 14.sp,fontWeight: FontWeight.w500),),
-                              Icon(Icons.arrow_forward_ios, color: AppColors.white, size: 14.sp,),
-                            ],
+                          InkWell(
+                            onTap: (){
+                              requestReview();
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("Rate App", style: TextStyle(color: AppColors.white, fontSize: 14.sp,fontWeight: FontWeight.w500),),
+                                Icon(Icons.arrow_forward_ios, color: AppColors.white, size: 14.sp,),
+                              ],
+                            ),
                           ),
                           SizedBox(height: 12.h,),
                           Divider(
@@ -112,25 +185,23 @@ class AboutUsScreen extends StatelessWidget {
                             endIndent: 16.w,
                           ),
                           SizedBox(height: 12.h,),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("Share App", style: TextStyle(color: AppColors.white, fontSize: 14.sp,fontWeight: FontWeight.w500),),
-                              Icon(Icons.arrow_forward_ios, color: AppColors.white, size: 14.sp,),
-                            ],
+                          InkWell(
+                            onTap: (){
+                              shareApp();
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("Share App", style: TextStyle(color: AppColors.white, fontSize: 14.sp,fontWeight: FontWeight.w500),),
+                                Icon(Icons.arrow_forward_ios, color: AppColors.white, size: 14.sp,),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     )
                   ],
                 ),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(16.w),
-              child: PrimaryButton(
-                label: 'Back',
-                onPressed: () => safePop(context, fallback: '/settings'),
               ),
             ),
           ],

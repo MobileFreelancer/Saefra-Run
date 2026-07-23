@@ -73,12 +73,15 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                               children: [
                                 Icon(Icons.location_on_outlined,color: AppColors.white,),
 
-                                Text(
-                                  '${route.routeTypeLabel} • ${route.lightingLevel ?? 'Well-lit'}',
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: AppColors.white,
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w500
+                                Expanded(
+                                  child: Text(
+                                    '${route.routeTypeLabel} • ${route.lightingLevel ?? 'Well-lit'}',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: AppColors.white,
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                                 Container(
