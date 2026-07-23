@@ -16,7 +16,11 @@ import 'onboarding_service.dart';
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
-  AuthService._internal();
+  AuthService._internal() {
+    ApiService.onUnauthorized = () {
+      forceLogout();
+    };
+  }
 
   final ApiService _apiService = ApiService();
   final FlutterSecureStorage _storage = SecureStorageService.instance;
@@ -206,6 +210,9 @@ class AuthService extends ChangeNotifier {
         value: password,
       );
       await FcmService.syncToken();
+      if (response.needsOnboarding != null) {
+        await OnboardingService().handleNeedsOnboarding(response.needsOnboarding!);
+      }
       await OnboardingService().syncFromServer();
       return true;
     } catch (e) {
@@ -373,6 +380,26 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<void> forceLogout() async {
+    if (_sessionToken == null && _currentUser == null) return;
+    _setLoading(true);
+    try {
+      await _storage.deleteAll();
+      await OnboardingService().resetOnLogout();
+      _currentUser = null;
+      _sessionToken = null;
+      _sessionLoaded = false;
+      _pendingResetEmail = null;
+      _pendingResetOtp = null;
+      _clearPendingSignup();
+    } catch (e) {
+      debugPrint('forceLogout failed: $e');
+    } finally {
+      _setLoading(false);
+      notifyListeners();
+    }
+  }
+
   Future<void> _persistSession(dynamic response) async {
     await _storage.write(
       key: ApiConfig.storageKeyAccessToken,
@@ -520,6 +547,9 @@ class AuthService extends ChangeNotifier {
       await _storage.delete(key: ApiConfig.storageKeyUserPassword);
       await _storage.delete(key: ApiConfig.storageKeyPendingSignup);
       await FcmService.syncToken();
+      if (response.needsOnboarding != null) {
+        await OnboardingService().handleNeedsOnboarding(response.needsOnboarding!);
+      }
       await OnboardingService().syncFromServer();
       return true;
     } catch (e) {

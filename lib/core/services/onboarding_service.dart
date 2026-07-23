@@ -142,6 +142,29 @@ class OnboardingService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> handleNeedsOnboarding(bool needsOnboarding) async {
+    if (needsOnboarding) {
+      _isComplete = false;
+      _serverProfileComplete = false;
+      _lastRoute = null;
+      try {
+        await _storage.delete(key: ApiConfig.storageKeyOnboardingComplete);
+        await _clearProgress();
+      } catch (e) {
+        debugPrint('Onboarding handleNeedsOnboarding failed: $e');
+      }
+    } else {
+      _isComplete = true;
+      _serverProfileComplete = true;
+      try {
+        await _persistCompleteLocally();
+      } catch (e) {
+        debugPrint('Onboarding handleNeedsOnboarding complete failed: $e');
+      }
+    }
+    notifyListeners();
+  }
+
   Future<void> saveProgress(String route) async {
     if (!onboardingRoutes.contains(route)) return;
     _lastRoute = route;

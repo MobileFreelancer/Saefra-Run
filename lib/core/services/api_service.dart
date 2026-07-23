@@ -35,6 +35,8 @@ class ApiService {
     _setupDio();
   }
 
+  static void Function()? onUnauthorized;
+
   late final Dio _dio;
   final FlutterSecureStorage _storage = SecureStorageService.instance;
 
@@ -105,6 +107,14 @@ class ApiService {
                 '=================================',
           );
 
+          final path = response.requestOptions.path;
+          final isAuthRoute = path.contains('/auth/login') ||
+              path.contains('/auth/register') ||
+              path.contains('/auth/social-login');
+          if (response.statusCode == 401 && !isAuthRoute) {
+            onUnauthorized?.call();
+          }
+
           handler.next(response);
         },
 
@@ -117,6 +127,14 @@ class ApiService {
                 'Message: ${e.message}\n'
                 '===============================',
           );
+
+          final path = e.requestOptions.path;
+          final isAuthRoute = path.contains('/auth/login') ||
+              path.contains('/auth/register') ||
+              path.contains('/auth/social-login');
+          if (e.response?.statusCode == 401 && !isAuthRoute) {
+            onUnauthorized?.call();
+          }
 
           handler.next(e);
         },
