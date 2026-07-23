@@ -1,3 +1,5 @@
+import 'package:saefra_run/core/utils/api_field_mapper.dart';
+
 class OnboardingModel {
   final String? gender;
   final String? activityLevel;
@@ -62,6 +64,32 @@ class OnboardingModel {
           pushNotificationsEnabled ?? this.pushNotificationsEnabled,
       emailNotificationsEnabled:
           emailNotificationsEnabled ?? this.emailNotificationsEnabled,
+    );
+  }
+
+  factory OnboardingModel.fromServerJson(Map<String, dynamic> json) {
+    final birthRaw = json['birthdate'] ?? json['birth_date'];
+    final dateOfBirth = birthRaw is String
+        ? ApiFieldMapper.parseBirthdate(birthRaw)
+        : null;
+
+    final goal = ApiFieldMapper.visitReasonFromApi(
+      json['visit_reason']?.toString(),
+    );
+    final trainingGoal = ApiFieldMapper.trainingGoalFromApi(
+      json['training_goal']?.toString(),
+    );
+
+    return OnboardingModel(
+      gender: ApiFieldMapper.genderFromApi(json['gender']?.toString()),
+      activityLevel: ApiFieldMapper.runPreferenceFromApi(
+        json['run_preference']?.toString(),
+      ),
+      goal: goal,
+      goalTrainingTarget: trainingGoal,
+      dateOfBirth: dateOfBirth,
+      firstName: json['first_name']?.toString(),
+      lastName: json['last_name']?.toString(),
     );
   }
 

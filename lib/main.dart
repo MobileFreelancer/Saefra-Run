@@ -57,6 +57,11 @@ Future<void> main() async {
   final onboardingService = OnboardingService();
   await authService.initialize();
   await onboardingService.initialize();
+
+  if (authService.isLoggedIn) {
+    await onboardingService.syncFromServer();
+  }
+
   final authStateNotifier = _AuthStateNotifier(
     authService,
     onboardingService,

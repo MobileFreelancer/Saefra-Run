@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
+import 'package:saefra_run/core/utils/auth_navigation.dart';
 import 'package:saefra_run/core/utils/onboarding_navigation.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import '../../../core/utils/app_tost.dart';
@@ -57,6 +58,19 @@ class _SignupScreenState extends State<SignupScreen> {
     await context.read<OnboardingService>().resetForNewSignup();
     if (!mounted) return;
     goOnboarding(context, '/onboarding/gender');
+  }
+
+  Future<void> _handleSocialLogin(Future<bool> Function() login) async {
+    final auth = context.read<AuthService>();
+    final success = await login();
+    if (!mounted) return;
+
+    if (success) {
+      if (!mounted) return;
+      await navigateAfterAuth(context);
+    } else if (auth.error != null) {
+      AppToast.error(auth.error!);
+    }
   }
 
   @override
@@ -196,11 +210,19 @@ class _SignupScreenState extends State<SignupScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       InkWell(
-                        onTap: (){
-                          //auth.googleLogin();
-                        },
-                          child: Image.asset(Assets.googleLogo,scale: 2.6,)),
-                     Platform.isIOS?Image.asset(Assets.aapleLogo,scale: 2.6,):SizedBox.shrink()
+                        onTap: auth.isLoading
+                            ? null
+                            : () => _handleSocialLogin(auth.loginWithGoogle),
+                        child: Image.asset(Assets.googleLogo,scale: 2.6,)),
+                      if (Platform.isIOS)
+                        InkWell(
+                          onTap: auth.isLoading
+                              ? null
+                              : () => _handleSocialLogin(auth.loginWithApple),
+                          child: Image.asset(Assets.aapleLogo,scale: 2.6,),
+                        )
+                      else
+                        const SizedBox.shrink()
                     ],
                   ),
                   SizedBox(height: 5.h,),

@@ -2,11 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:saefra_run/core/config/api_config.dart';
-import 'package:saefra_run/core/models/onboarding_model.dart';
+import 'package:saefra_run/core/utils/api_field_mapper.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/secure_storage_service.dart';
+
+import '../models/onboarding_model.dart';
 
 class OnboardingService extends ChangeNotifier {
   static final OnboardingService _instance = OnboardingService._internal();
@@ -18,6 +20,7 @@ class OnboardingService extends ChangeNotifier {
 
   OnboardingModel _data = const OnboardingModel();
   bool _isComplete = false;
+  bool _serverProfileComplete = false;
   bool _isLoading = false;
   String? _error;
   String? _lastRoute;
@@ -66,9 +69,53 @@ class OnboardingService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> syncFromServer() async {
+    try {
+      final result = await _apiService.getOnboarding();
+      _data = _mergeWithLocal(_data, result.data);
+      _serverProfileComplete = result.isComplete;
+
+      if (result.isComplete) {
+        await _persistCompleteLocally();
+      } else if (_isComplete && !_hasFinishedClientFlow()) {
+        _isComplete = false;
+        await _storage.delete(key: ApiConfig.storageKeyOnboardingComplete);
+      }
+
+      await _storage.write(
+        key: ApiConfig.storageKeyOnboardingDraft,
+        value: jsonEncode(_data.toJson()),
+      );
+    } catch (e) {
+      debugPrint('Onboarding syncFromServer failed: $e');
+    }
+    notifyListeners();
+  }
+
+  OnboardingModel _mergeWithLocal(OnboardingModel local, OnboardingModel server) {
+    return OnboardingModel(
+      gender: server.gender ?? local.gender,
+      activityLevel: server.activityLevel ?? local.activityLevel,
+      goal: server.goal ?? local.goal,
+      goalTrainingTarget: server.goalTrainingTarget ?? local.goalTrainingTarget,
+      dateOfBirth: server.dateOfBirth ?? local.dateOfBirth,
+      age: server.age ?? local.age,
+      firstName: server.firstName ?? local.firstName,
+      lastName: server.lastName ?? local.lastName,
+      locationEnabled: local.locationEnabled,
+      pushNotificationsEnabled: local.pushNotificationsEnabled,
+      emailNotificationsEnabled: local.emailNotificationsEnabled,
+    );
+  }
+
+  bool _hasFinishedClientFlow() {
+    return _lastRoute == '/onboarding/notifications' || _isComplete;
+  }
+
   Future<void> resetForNewSignup() async {
     _data = const OnboardingModel();
     _isComplete = false;
+    _serverProfileComplete = false;
     _error = null;
     _lastRoute = null;
     try {
@@ -76,6 +123,21 @@ class OnboardingService extends ChangeNotifier {
       await _clearProgress();
     } catch (e) {
       debugPrint('Onboarding resetForNewSignup failed: $e');
+    }
+    notifyListeners();
+  }
+
+  Future<void> resetOnLogout() async {
+    _data = const OnboardingModel();
+    _isComplete = false;
+    _serverProfileComplete = false;
+    _error = null;
+    _lastRoute = null;
+    try {
+      await _storage.delete(key: ApiConfig.storageKeyOnboardingComplete);
+      await _clearProgress();
+    } catch (e) {
+      debugPrint('Onboarding resetOnLogout failed: $e');
     }
     notifyListeners();
   }
@@ -122,16 +184,36 @@ class OnboardingService extends ChangeNotifier {
     if (model.gender == null || model.gender!.isEmpty) {
       return '/onboarding/gender';
     }
+    if (_shouldShowBasicInfo(model)) {
+      return '/onboarding/basic-info';
+    }
     if (model.activityLevel == null || model.activityLevel!.isEmpty) {
       return '/onboarding/activity-level';
     }
     if (model.goal == null || model.goal!.isEmpty) {
       return '/onboarding/goal';
     }
-    if (!model.locationEnabled) {
+    if (model.goal == trainingForAGoal &&
+        (model.goalTrainingTarget == null ||
+            model.goalTrainingTarget!.isEmpty)) {
+      return '/onboarding/goal';
+    }
+    if (!_hasPassedLocationStep()) {
       return '/onboarding/location';
     }
     return '/onboarding/notifications';
+  }
+
+  bool _shouldShowBasicInfo(OnboardingModel model) {
+    final hasName = (model.firstName?.trim().isNotEmpty ?? false) ||
+        (model.lastName?.trim().isNotEmpty ?? false);
+    final hasBirthdate = model.dateOfBirth != null;
+    return !hasName && !hasBirthdate;
+  }
+
+  bool _hasPassedLocationStep() {
+    return _lastRoute == '/onboarding/notifications' ||
+        _lastRoute == '/onboarding/location';
   }
 
   void applyUserProfile(UserModel? user) {
@@ -139,9 +221,13 @@ class OnboardingService extends ChangeNotifier {
     _data = _data.copyWith(
       firstName: user.firstName ?? _data.firstName,
       lastName: user.lastName ?? _data.lastName,
-      gender: user.gender ?? _data.gender,
+      gender: ApiFieldMapper.genderFromApi(user.gender) ?? _data.gender,
       dateOfBirth: user.birthdate ?? _data.dateOfBirth,
       age: user.age ?? _data.age,
+      activityLevel:
+          ApiFieldMapper.runPreferenceFromApi(user.runPreference) ??
+              _data.activityLevel,
+      goal: ApiFieldMapper.visitReasonFromApi(user.visitReason) ?? _data.goal,
     );
     notifyListeners();
   }
@@ -209,8 +295,7 @@ class OnboardingService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> markCompleteLocally() async {
-    if (_isComplete) return;
+  Future<void> _persistCompleteLocally() async {
     try {
       await _storage.write(
         key: ApiConfig.storageKeyOnboardingComplete,
@@ -218,10 +303,15 @@ class OnboardingService extends ChangeNotifier {
       );
       _isComplete = true;
       await _clearProgress();
-      notifyListeners();
     } catch (e) {
-      debugPrint('Onboarding markCompleteLocally failed: $e');
+      debugPrint('Onboarding _persistCompleteLocally failed: $e');
     }
+  }
+
+  Future<void> markCompleteLocally() async {
+    if (_isComplete) return;
+    await _persistCompleteLocally();
+    notifyListeners();
   }
 
   Future<bool> completeOnboarding(AuthService auth) async {
@@ -236,19 +326,19 @@ class OnboardingService extends ChangeNotifier {
           _error = auth.error ?? 'Registration failed.';
           return false;
         }
+        try {
+          await _apiService.updateOnboarding(_data);
+        } catch (e) {
+          debugPrint('Post-register onboarding sync failed: $e');
+        }
       } else if (auth.isLoggedIn) {
-        await _apiService.syncOnboardingForLoggedInUser(_data);
+        await _apiService.updateOnboarding(_data);
       } else {
         _error = 'Please log in or sign up to continue.';
         return false;
       }
 
-      await _storage.write(
-        key: ApiConfig.storageKeyOnboardingComplete,
-        value: 'true',
-      );
-      _isComplete = true;
-      await _clearProgress();
+      await _persistCompleteLocally();
       return true;
     } catch (e) {
       _error = e.toString();

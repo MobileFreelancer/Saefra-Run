@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
@@ -41,6 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onConfirm: () async {
               setDialogState(() => isLoading = true);
               await context.read<AuthService>().logout();
+              await context.read<OnboardingService>().resetOnLogout();
               if (!ctx.mounted) return;
               Navigator.pop(ctx);
               if (mounted) context.goNamed('login');

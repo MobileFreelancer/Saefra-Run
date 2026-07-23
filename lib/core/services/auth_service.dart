@@ -11,6 +11,8 @@ import 'package:saefra_run/core/services/fcm_service.dart';
 import 'package:saefra_run/core/services/social_auth_services.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import 'onboarding_service.dart';
+
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
@@ -108,6 +110,7 @@ class AuthService extends ChangeNotifier {
       await _restoreUserProfile();
       notifyListeners();
       await FcmService.requestPermissionAndSync();
+      // Onboarding sync will be handled in main.dart or after login
     } catch (e, s) {
       debugPrint('AUTH initialize failed: $e');
       debugPrint('$s');
@@ -203,6 +206,7 @@ class AuthService extends ChangeNotifier {
         value: password,
       );
       await FcmService.syncToken();
+      await OnboardingService().syncFromServer();
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -262,6 +266,7 @@ class AuthService extends ChangeNotifier {
       _pendingSignupEmail = null;
       _pendingSignupPassword = null;
       await FcmService.syncToken();
+      await OnboardingService().syncFromServer();
       return true;
     } catch (e) {
       log("Error--> $e");
@@ -357,6 +362,7 @@ class AuthService extends ChangeNotifier {
       return true;
     } finally {
       await _clearTokens();
+      await OnboardingService().resetOnLogout();
       _currentUser = null;
       _sessionToken = null;
       _sessionLoaded = false;
@@ -420,33 +426,36 @@ class AuthService extends ChangeNotifier {
 
 
 
-  void googleLogin() async {
+  Future<bool> loginWithGoogle() async {
+    _setLoading(true);
+    _setError(null);
     try {
-      final UserCredential? userCredential = await GoogleAuthService.signIn();
+      final userCredential = await GoogleAuthService.signIn();
+      if (userCredential?.user == null) return false;
 
-      if (userCredential != null) {
-        final user = userCredential.user;
-
-        log("------ User Data -------");
-        log("Name: ${user?.displayName}");
-        log("Email: ${user?.email}");
-        log("UID: ${user?.uid}");
-        final idToken = await user?.getIdToken(true);
-        log("Firebase ID Token:");
-        log(idToken ?? "No ID Token");
-
-        // Refresh Token
-        log("Refresh Token:");
-        log(user?.refreshToken ?? "No Refresh Token");
+      final user = userCredential!.user!;
+      final email = user.email?.trim();
+      if (email == null || email.isEmpty) {
+        _setError('Email not available from your Google account.');
+        return false;
       }
-    } catch (e, l) {
-      log(e.toString());
-      log(l.toString());
+
+      return _completeSocialLogin(
+        email: email,
+        uuid: user.uid,
+        provider: 'google',
+      );
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
     }
   }
 
-
-  Future<UserCredential?> signInWithApple() async {
+  Future<bool> loginWithApple() async {
+    _setLoading(true);
+    _setError(null);
     try {
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
@@ -455,18 +464,73 @@ class AuthService extends ChangeNotifier {
         ],
       );
 
-      final oauthCredential = OAuthProvider("apple.com").credential(
+      final oauthCredential = OAuthProvider('apple.com').credential(
         idToken: appleCredential.identityToken,
         accessToken: appleCredential.authorizationCode,
       );
 
-      return await FirebaseAuth.instance.signInWithCredential(
-        oauthCredential,
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      final firebaseUser = userCredential.user;
+      if (firebaseUser == null) return false;
+
+      // Apple only sends email/name on the FIRST login.
+      // We check firebaseUser.email first, then fallback to appleCredential.email.
+      var email = firebaseUser.email?.trim();
+      if (email == null || email.isEmpty) {
+        email = appleCredential.email?.trim();
+      }
+
+      // If we STILL don't have an email (happens on repeat logins if not cached),
+      // we might need to rely on the UUID for the backend or ask the user.
+      // But for now, we pass what we have.
+      return _completeSocialLogin(
+        email: email ?? '',
+        uuid: firebaseUser.uid,
+        provider: 'apple',
       );
     } catch (e) {
-      print(e);
-      return null;
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
     }
+  }
+
+  Future<bool> _completeSocialLogin({
+    required String email,
+    required String uuid,
+    required String provider,
+  }) async {
+    _clearPendingSignup();
+    try {
+      final response = await _apiService.socialLogin(
+        email: email,
+        uuid: uuid,
+        provider: provider,
+      );
+
+      if (response.accessToken.trim().isEmpty) {
+        _setError('Social login failed. Please try again.');
+        return false;
+      }
+
+      await _persistSession(response);
+      await _storage.write(key: ApiConfig.storageKeyUserEmail, value: email);
+      await _storage.delete(key: ApiConfig.storageKeyUserPassword);
+      await _storage.delete(key: ApiConfig.storageKeyPendingSignup);
+      await FcmService.syncToken();
+      await OnboardingService().syncFromServer();
+      return true;
+    } catch (e) {
+      log('Social login error --> $e');
+      _setError(e.toString());
+      return false;
+    }
+  }
+
+  void googleLogin() async {
+    await loginWithGoogle();
   }
 
 

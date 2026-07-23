@@ -11,7 +11,7 @@ import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/models/community_routes_result.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/notification_model.dart';
-import 'package:saefra_run/core/models/onboarding_model.dart';
+import 'package:saefra_run/core/models/onboarding_api_result.dart';
 import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/models/route_review_list_result.dart';
 import 'package:saefra_run/core/models/route_model.dart';
@@ -23,6 +23,7 @@ import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/utils/api_response_parser.dart';
 import 'package:saefra_run/core/utils/formatters.dart';
 import 'dart:developer' as developer;
+import '../models/onboarding_model.dart';
 import '../models/user_preferences_model.dart';
 import '../utils/api_field_mapper.dart';
 import '../utils/app_loader.dart';
@@ -239,6 +240,50 @@ class ApiService {
       return AuthResponseModel.fromJson(_map(response));
     } on DioException catch (e) {
       AppLoader.hide();
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<AuthResponseModel> socialLogin({
+    required String email,
+    required String uuid,
+    required String provider,
+  }) async {
+    AppLoader.show();
+    try {
+      final response = await _dio.post(
+        _path('/auth/social-login'),
+        data: _form({
+          'email': email,
+          'uuid': uuid,
+          'provider': provider,
+        }),
+      );
+      AppLoader.hide();
+      return AuthResponseModel.fromJson(_map(response));
+    } on DioException catch (e) {
+      AppLoader.hide();
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<OnboardingApiResult> getOnboarding() async {
+    try {
+      final response = await _dio.get(_path('/onboarding'));
+      return OnboardingApiResult.fromResponse(_map(response));
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<OnboardingApiResult> updateOnboarding(OnboardingModel onboarding) async {
+    try {
+      final response = await _dio.post(
+        _path('/onboarding'),
+        data: _form(ApiFieldMapper.onboardingFormFromModel(onboarding)),
+      );
+      return OnboardingApiResult.fromResponse(_map(response));
+    } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
@@ -511,11 +556,7 @@ class ApiService {
 
 
   Future<void> syncOnboardingForLoggedInUser(OnboardingModel onboarding) async {
-    await updateProfileFromOnboarding(onboarding);
-    await updatePreferences(
-      visitReason: ApiFieldMapper.visitReasonToApi(onboarding.goal),
-      runPreference: ApiFieldMapper.runPreferenceToApi(onboarding.activityLevel),
-    );
+    await updateOnboarding(onboarding);
   }
 
   Future<Map<String, dynamic>> generateSafeRoute({

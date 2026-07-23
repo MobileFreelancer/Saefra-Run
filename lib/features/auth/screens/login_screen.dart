@@ -7,8 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
-import 'package:saefra_run/core/services/onboarding_service.dart';
-import 'package:saefra_run/core/services/dashboard_services.dart';
+import 'package:saefra_run/core/utils/auth_navigation.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
 import '../../../core/utils/app_validators.dart';
 import '../../../core/widgets/auth_header.dart';
@@ -38,8 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthService>();
-    final onboarding = context.read<OnboardingService>();
-    final dashboard = context.read<DashboardServices>();
 
     final success = await auth.login(
       identifier: _identifierController.text.trim(),
@@ -49,10 +46,21 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      await onboarding.markCompleteLocally();
-      dashboard.resetHomeRoutes();
-      if (!mounted) return;
-      context.goNamed('dashboard');
+      await navigateAfterAuth(context);
+    } else if (auth.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.error!)),
+      );
+    }
+  }
+
+  Future<void> _handleSocialLogin(Future<bool> Function() login) async {
+    final auth = context.read<AuthService>();
+    final success = await login();
+    if (!mounted) return;
+
+    if (success) {
+      await navigateAfterAuth(context);
     } else if (auth.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(auth.error!)),
@@ -140,21 +148,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       InkWell(
-                        onTap: (){
-                          auth.googleLogin();
-                        },
-                          child: Image.asset(Assets.googleLogo,scale: 2.6,)
+                        onTap: auth.isLoading
+                            ? null
+                            : () => _handleSocialLogin(auth.loginWithGoogle),
+                        child: Image.asset(Assets.googleLogo,scale: 2.6,)
                       ),
                       if (Platform.isIOS) InkWell(
-                        onTap: ()async{
-                          final user = await auth.signInWithApple();
-
-                          if (user != null) {
-                            print(user.user?.uid);
-                            print(user.user?.email);
-                            print(user.user?.displayName);
-                          }
-                        },
+                        onTap: auth.isLoading
+                            ? null
+                            : () => _handleSocialLogin(auth.loginWithApple),
                           child: Image.asset(Assets.aapleLogo, scale: 2.6)
                       ) else const SizedBox.shrink()
                     ],
