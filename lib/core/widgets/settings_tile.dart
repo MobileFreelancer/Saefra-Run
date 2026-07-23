@@ -37,10 +37,10 @@ class SettingsTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Column(
-        spacing: 5.h,
+        //spacing: 5.h,
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

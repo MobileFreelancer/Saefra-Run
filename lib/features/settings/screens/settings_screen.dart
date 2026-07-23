@@ -44,7 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               await context.read<AuthService>().logout();
               await context.read<OnboardingService>().resetOnLogout();
               if (!ctx.mounted) return;
-              Navigator.pop(ctx);
+             // Navigator.pop(ctx);
               if (mounted) context.goNamed('login');
             },
           );

@@ -5,7 +5,6 @@ import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/utils/onboarding_navigation.dart';
 import 'package:saefra_run/core/widgets/photo_permission_scaffold.dart';
 import 'package:saefra_run/generated/assets.dart';
-
 import '../../../core/services/permission_service.dart';
 
 class EnableLocationScreen extends StatefulWidget {
@@ -29,6 +28,7 @@ class _EnableLocationScreenState extends State<EnableLocationScreen> {
     context.read<OnboardingService>().setLocationEnabled(false);
     goOnboarding(context, '/onboarding/notifications');
   }
+
   // void _continue({required bool enabled})async{
   //   final granted = await PermissionService.requestLocationPermission();
   //   if (granted) {

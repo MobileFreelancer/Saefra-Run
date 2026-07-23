@@ -103,6 +103,7 @@ class Assets {
   static const String time = '${mainImageUrl}time.png';
   static const String verifaction = '${mainImageUrl}verifaction.png';
   static const String locations = '${mainImageUrl}locations.png';
+  static const String aboutlogo = '${mainImageUrl}aboutlogo.png';
 
 
   static const String saefraRun = '.env';
