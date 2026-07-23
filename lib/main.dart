@@ -37,8 +37,6 @@ import 'core/services/live_running_services.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  const storage = FlutterSecureStorage();
-  await storage.deleteAll();
   await FirebaseConfig.initialize();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

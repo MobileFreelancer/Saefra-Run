@@ -63,48 +63,50 @@ class RouteReviewListResult {
   final bool hasMorePhotos;
 
   factory RouteReviewListResult.fromPayload(
-    Map<String, dynamic> payload, {
-    required int page,
-    required int perPage,
-  }) {
+      Map<String, dynamic> payload, {
+        required int page,
+        required int perPage,
+      }) {
     final routeRaw = payload['route'];
     final statisticsRaw = payload['statistics'];
-    final reviewsRaw = payload['reviews'] ?? payload['route_reviews'];
+    final reviewsRaw = payload['reviews'];
     final photosRaw = payload['photos'];
 
-    final route = routeRaw is Map
-        ? CommunityRouteModel.fromJson(Map<String, dynamic>.from(routeRaw))
-        : null;
-
-    final statistics = statisticsRaw is Map
-        ? RouteReviewStatistics.fromJson(
-            Map<String, dynamic>.from(statisticsRaw),
-          )
-        : null;
-
-    final reviews = _parseReviews(reviewsRaw);
-    final photos = _parsePhotos(photosRaw);
-
-    final reviewPagination = reviewsRaw is Map
-        ? Map<String, dynamic>.from(reviewsRaw)
-        : payload;
-    final photoPagination =
-        photosRaw is Map ? Map<String, dynamic>.from(photosRaw) : payload;
-
-    final currentPage = _toInt(
-      reviewPagination['currentPage'] ??
-          reviewPagination['current_page'] ??
-          page,
-    );
-
     return RouteReviewListResult(
-      route: route,
-      statistics: statistics,
-      reviews: reviews,
-      photos: photos,
-      currentPage: currentPage > 0 ? currentPage : page,
-      hasMore: _hasMorePages(reviewPagination, page: page, perPage: perPage, itemCount: reviews.length),
-      hasMorePhotos: _hasMorePages(photoPagination, page: 1, perPage: perPage, itemCount: photos.length),
+      route: routeRaw is Map
+          ? CommunityRouteModel.fromJson(
+        Map<String, dynamic>.from(routeRaw),
+      )
+          : null,
+      statistics: statisticsRaw is Map
+          ? RouteReviewStatistics.fromJson(
+        Map<String, dynamic>.from(statisticsRaw),
+      )
+          : null,
+      reviews: _parseReviews(reviewsRaw),
+      photos: _parsePhotos(photosRaw),
+      currentPage: _toInt(
+        (reviewsRaw as Map?)?['currentPage'] ??
+            (reviewsRaw as Map?)?['current_page'],
+      ) ==
+          0
+          ? page
+          : _toInt(
+        (reviewsRaw as Map)['currentPage'] ??
+            reviewsRaw['current_page'],
+      ),
+      hasMore: _hasMorePages(
+        reviewsRaw is Map ? Map<String, dynamic>.from(reviewsRaw) : {},
+        page: page,
+        perPage: perPage,
+        itemCount: _parseReviews(reviewsRaw).length,
+      ),
+      hasMorePhotos: _hasMorePages(
+        photosRaw is Map ? Map<String, dynamic>.from(photosRaw) : {},
+        page: 1,
+        perPage: perPage,
+        itemCount: _parsePhotos(photosRaw).length,
+      ),
     );
   }
 
@@ -154,13 +156,19 @@ class RouteReviewListResult {
 
   static String _photoUrlFromItem(dynamic item) {
     if (item is String) return item.trim();
+
     if (item is Map) {
-      final url = item['url'] ??
-          item['image'] ??
-          item['photo'] ??
-          item['path'];
-      return url == null ? '' : '$url'.trim();
+      final map = Map<String, dynamic>.from(item);
+
+      final url = map['image_url'] ??
+          map['url'] ??
+          map['image'] ??
+          map['photo'] ??
+          map['path'];
+
+      return url?.toString().trim() ?? '';
     }
+
     return '';
   }
 
