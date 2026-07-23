@@ -60,73 +60,76 @@ print("++/////////////////$success");
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 10.w),
-          child: Column(
-            children: [
-              AuthHeader(
-                title: 'Reset Password',
-                subtitle: 'Enter your new password to reset the password',
-                fallbackRoute: '/auth/verification',
-              ),
-            Form(
-              key: _formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  AppTextField(
-                    controller: _newPasswordController,
-                    hint: "Password",
-                    obscureText: auth.obscurePassword,
-                    prefixIcon: AppFieldPrefixIcon(
-                      icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
-                    ),
-                    suffixIcon: IconButton(
-                      onPressed: auth.togglePasswordVisibility,
-                      icon: Icon(
-                        auth.obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: Colors.white,
+          child: SingleChildScrollView(
+            physics: NeverScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                AuthHeader(
+                  title: 'Reset Password',
+                  subtitle: 'Enter your new password to reset the password',
+                  fallbackRoute: '/auth/verification',
+                ),
+              Form(
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppTextField(
+                      controller: _newPasswordController,
+                      hint: "Password",
+                      obscureText: auth.obscurePassword,
+                      prefixIcon: AppFieldPrefixIcon(
+                        icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
                       ),
-                    ),
-                    validator: AppValidators.password,
-                  ),
-                  SizedBox(height: 15.h),
-                  AppTextField(
-                    controller: _confirmPasswordController,
-                    hint: "Confirm Password",
-                    obscureText: auth.obscureConfirmPassword,
-                    prefixIcon: AppFieldPrefixIcon(
-                      icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
-                    ),
-                    suffixIcon: IconButton(
-                      onPressed: auth.toggleConfirmPasswordVisibility,
-                      icon: Icon(
-                        auth.obscureConfirmPassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: Colors.white,
+                      suffixIcon: IconButton(
+                        onPressed: auth.togglePasswordVisibility,
+                        icon: Icon(
+                          auth.obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.white,
+                        ),
                       ),
+                      validator: AppValidators.password,
                     ),
-                    validator: (value){
-                      if(value==null||value.trim().isEmpty){
-                        return "Please enter confirm password";
-                      }
-                      else if(_newPasswordController.text.trim()!=_confirmPasswordController.text.trim()){
-                        return "Password don't matched";
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 22.h,),
-                  AppPrimaryButton(
-                    label: 'Submit',
-                    onTap: _submit,
-                  ),
-                ],
-              ),
-            )
-            ],
+                    SizedBox(height: 15.h),
+                    AppTextField(
+                      controller: _confirmPasswordController,
+                      hint: "Confirm Password",
+                      obscureText: auth.obscureConfirmPassword,
+                      prefixIcon: AppFieldPrefixIcon(
+                        icon: Image.asset(Assets.imagesPassword,scale: 2.5,),
+                      ),
+                      suffixIcon: IconButton(
+                        onPressed: auth.toggleConfirmPasswordVisibility,
+                        icon: Icon(
+                          auth.obscureConfirmPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.white,
+                        ),
+                      ),
+                      validator: (value){
+                        if(value==null||value.trim().isEmpty){
+                          return "Please enter confirm password";
+                        }
+                        else if(_newPasswordController.text.trim()!=_confirmPasswordController.text.trim()){
+                          return "Password don't matched";
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 22.h,),
+                    AppPrimaryButton(
+                      label: 'Submit',
+                      onTap: _submit,
+                    ),
+                  ],
+                ),
+              )
+              ],
+            ),
           ),
         ),
       ),

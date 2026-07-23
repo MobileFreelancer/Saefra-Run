@@ -396,7 +396,7 @@ class ApiService {
     AppLoader.show();
     try {
       final response = await _dio.post(
-        _path('/auth/varify-otp'),
+        _path('/auth/verify-otp'),
         data: _form({
           'email': email,
           'otp': otp,

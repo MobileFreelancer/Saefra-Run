@@ -51,40 +51,43 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            AuthHeader(
-              title: 'Forgot Password?',
-              subtitle: 'Enter your registered email id to reset the password',
-              fallbackRoute: '/auth/login',
-            ),
-          Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Padding(
-              padding:   EdgeInsets.symmetric(horizontal: 10.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  AppTextField(
-                    keyboardType: TextInputType.emailAddress,
-                    controller: _identifierController,
-                    hint: "testel@gmail.com",
-                    prefixIcon: AppFieldPrefixIcon(
-                      icon: Image.asset(Assets.imagesEmail,scale: 2.5,),
+        child:SingleChildScrollView(
+          physics: NeverScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              AuthHeader(
+                title: 'Forgot Password?',
+                subtitle: 'Enter your registered email id to reset the password',
+                fallbackRoute: '/auth/login',
+              ),
+            Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Padding(
+                padding:   EdgeInsets.symmetric(horizontal: 10.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppTextField(
+                      keyboardType: TextInputType.emailAddress,
+                      controller: _identifierController,
+                      hint: "testel@gmail.com",
+                      prefixIcon: AppFieldPrefixIcon(
+                        icon: Image.asset(Assets.imagesEmail,scale: 2.5,),
+                      ),
+                      validator: AppValidators.email,
                     ),
-                    validator: AppValidators.email,
-                  ),
-                    SizedBox(height: 24.h),
-                  AppPrimaryButton(
-                    label: 'Submit',
-                    onTap: _send,
-                  ),
-                ],
+                      SizedBox(height: 24.h),
+                    AppPrimaryButton(
+                      label: 'Submit',
+                      onTap: _send,
+                    ),
+                  ],
+                ),
               ),
             ),
+            ],
           ),
-          ],
         ),
       ),
     );

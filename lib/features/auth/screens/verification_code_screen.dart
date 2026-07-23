@@ -122,62 +122,65 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 10.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AuthHeader(
-                title: 'Verification Code',
-                subtitle:
-                    'We have sent a code for verification to your email $masked',
-                fallbackRoute: '/auth/forgot-password',
+          child: SingleChildScrollView(
+            physics: NeverScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AuthHeader(
+                  title: 'Verification Code',
+                  subtitle:
+                      'We have sent a code for verification to your email $masked',
+                  fallbackRoute: '/auth/forgot-password',
+                ),
+                SizedBox(height: 22.h),
+              OtpInput(
+                controllers: _controllers,
+                focusNodes: _focusNodes,
+                onCompleted: (code) => setState(() => _code = code),
               ),
-              SizedBox(height: 22.h),
-            OtpInput(
-              controllers: _controllers,
-              focusNodes: _focusNodes,
-              onCompleted: (code) => setState(() => _code = code),
-            ),
-            SizedBox(height: 8.h,),
-            Padding(
-              padding:   EdgeInsets.symmetric(horizontal: 10.w),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (!_canResend)
-                    Text(
-                      '${_secondsRemaining.toString().padLeft(2, '0')} seconds',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.primaryDark,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14.sp,
+              SizedBox(height: 8.h,),
+              Padding(
+                padding:   EdgeInsets.symmetric(horizontal: 10.w),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (!_canResend)
+                      Text(
+                        '${_secondsRemaining.toString().padLeft(2, '0')} seconds',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.primaryDark,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.sp,
+                        ),
                       ),
-                    ),
-                  SizedBox(height: 8.h,),
-                  if (_canResend)
+                    SizedBox(height: 8.h,),
+                    if (_canResend)
 
-                  TextButton(
-                    onPressed: (auth.isLoading || !_canResend) ? null : _resend,
-                    child: Text(
-                      'Resend OTP',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color:  AppColors.textPrimary ,
-                        fontWeight: FontWeight.w400,
-                        fontSize: 14.sp,
-                        decoration: TextDecoration.underline,
-                        decorationColor: AppColors.white,
-                        //backgroundColor: AppColors.textPrimary
+                    TextButton(
+                      onPressed: (auth.isLoading || !_canResend) ? null : _resend,
+                      child: Text(
+                        'Resend OTP',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color:  AppColors.textPrimary ,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 14.sp,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.white,
+                          //backgroundColor: AppColors.textPrimary
+                        ),
                       ),
-                    ),
-                  )
-                ],
+                    )
+                  ],
+                ),
               ),
+              const SizedBox(height: 24),
+                _code.length != 6?SizedBox.shrink():AppPrimaryButton(
+                label: 'Verify',
+                onTap: _verify,
+              ),
+              ],
             ),
-            const SizedBox(height: 24),
-              _code.length != 6?SizedBox.shrink():AppPrimaryButton(
-              label: 'Verify',
-              onTap: _verify,
-            ),
-            ],
           ),
         ),
       ),
