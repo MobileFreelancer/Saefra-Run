@@ -40,7 +40,12 @@ class FcmService {
 
       final token = await messaging.getToken();
       _logToken(token);
-
+     /*FirebaseMessaging messaging = FirebaseMessaging.instance;
+      String? apnsToken = await messaging.getAPNSToken();
+      print("APNS Token: $apnsToken");
+      String? fcmToken = await messaging.getToken();
+      print("FCM Token: $fcmToken");
+       */
       messaging.onTokenRefresh.listen((token) {
         _logToken(token, refreshed: true);
         syncToken(token);

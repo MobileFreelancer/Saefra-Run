@@ -217,7 +217,10 @@ class _SafetySettingsScreenState extends State<SafetySettingsScreen> {
                         subtitle: 'Choose specific contacts',
                         trailing: '$contactCount Contacts >',
                         textTheme: textTheme,
-                        onTap: () => context.pushNamed('emergencyContacts'),
+                        onTap: () {
+
+                        },
+                        //onTap: () => context.pushNamed('emergencyContacts'),
                       ),
                     ],
                   ),
