@@ -12,7 +12,8 @@ import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
 
 class RunSummaryScreen extends StatefulWidget {
-  const RunSummaryScreen({super.key});
+  final String? runId;
+  const RunSummaryScreen({super.key, this.runId});
 
   @override
   State<RunSummaryScreen> createState() => _RunSummaryScreenState();
@@ -30,7 +31,10 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
       if (run.mood == null) {
         run.setMood(RunMood.great);
       }
-      if (run.session.runId != null) {
+      
+      if (widget.runId != null) {
+        await run.loadRunSummary(runId: widget.runId);
+      } else if (run.session.runId != null) {
         await run.loadRunSummary();
       }
     });
@@ -117,6 +121,7 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
                 ],
               ),
             ),
+            if (widget.runId != null)
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               child: Column(

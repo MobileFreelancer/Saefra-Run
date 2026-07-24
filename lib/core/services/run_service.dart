@@ -219,24 +219,40 @@ class RunService extends ChangeNotifier {
     }
   }
 
-  Future<bool> loadRunSummary() async {
-    final runId = _session.runId;
-    if (runId == null) return false;
+  Future<bool> loadRunSummary({String? runId}) async {
+    final id = runId ?? _session.runId;
+    if (id == null || id.isEmpty) return false;
 
     try {
-      final payload = await _api.getRunSummary(runId);
+      final payload = await _api.getRunSummary(id);
       final summary = payload['summary'] is Map
           ? Map<String, dynamic>.from(payload['summary'] as Map)
           : payload;
 
-      _session = RunSessionModel.fromJson(summary).copyWith(
-        runId: runId,
-        routeId: _session.routeId ?? summary['route_id']?.toString(),
-        routeName: _session.routeName ?? summary['route_name']?.toString(),
-        routePath: _session.routePath.isNotEmpty
-            ? _session.routePath
-            : _decodePolyline(summary['polyline']),
+      final route = summary['route'] is Map ? summary['route'] as Map : null;
+
+      final loadedSession = RunSessionModel.fromJson(summary).copyWith(
+        runId: id,
+        routeId: route?['id']?.toString() ??
+            summary['route_id']?.toString() ??
+            _session.routeId,
+        routeName: route?['name']?.toString() ??
+            summary['route_name']?.toString() ??
+            _session.routeName,
+        routePath: _decodePolyline(summary['polyline']),
       );
+
+      if (runId == null) {
+        // If we are loading the CURRENT session summary
+        _session = loadedSession;
+      } else {
+        // If we are loading a HISTORICAL session summary, 
+        // we might want to keep the current session intact 
+        // but for now, let's just update _session as the summary screen 
+        // is designed to show _session.
+        _session = loadedSession;
+      }
+
       notifyListeners();
       return true;
     } catch (e) {

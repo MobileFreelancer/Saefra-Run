@@ -89,17 +89,30 @@ class RunSessionModel {
     final distance = (json['distance_km'] as num?)?.toDouble() ??
         (json['distance'] as num?)?.toDouble() ??
         0;
-    final durationSeconds = json['elapsed_seconds'] as int? ??
-        json['duration'] as int? ??
-        0;
+
+    int durationSeconds = 0;
+    final durationRaw = json['elapsed_seconds'] ?? json['duration'];
+    if (durationRaw is int) {
+      durationSeconds = durationRaw;
+    } else if (durationRaw is String) {
+      // Parse "MM:SS" or "HH:MM:SS"
+      final parts = durationRaw.split(':').map(int.tryParse).toList();
+      if (parts.length == 2) {
+        durationSeconds = (parts[0] ?? 0) * 60 + (parts[1] ?? 0);
+      } else if (parts.length == 3) {
+        durationSeconds = (parts[0] ?? 0) * 3600 + (parts[1] ?? 0) * 60 + (parts[2] ?? 0);
+      }
+    }
+
     final pace = json['pace']?.toString() ??
         json['pace_label']?.toString() ??
+        json['avg_pace']?.toString() ??
         '';
 
     return RunSessionModel(
       runId: json['run_id']?.toString() ?? json['id']?.toString(),
-      routeId: json['route_id'] as String?,
-      routeName: json['route_name'] as String?,
+      routeId: json['route_id']?.toString(),
+      routeName: json['route_name']?.toString(),
       distanceKm: distance,
       elapsed: Duration(seconds: durationSeconds),
       paceLabel: pace.isNotEmpty ? pace : '0:00 min/km',

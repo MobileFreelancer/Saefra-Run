@@ -88,7 +88,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       child: _RecentRunCard(
                         run: run,
                         bodyStyle: _body(context),
-                        onTap: () => context.pushNamed('runSummary'),
+                        onTap: () => context.pushNamed(
+                          'runSummary',
+                          queryParameters: {'runId': run.id},
+                        ),
                       ),
                     ),
                   ),

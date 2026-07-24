@@ -339,7 +339,10 @@ class AppRouter {
       GoRoute(
         path: '/run/summary',
         name: 'runSummary',
-        builder: (context, state) => const RunSummaryScreen(),
+        builder: (context, state) {
+          final runId = state.uri.queryParameters['runId'];
+          return RunSummaryScreen(runId: runId);
+        },
       ),
       GoRoute(
         path: '/run/rate',
