@@ -78,6 +78,19 @@ class FcmService {
           sound: true,
         );
         debugPrint('FCM iOS auth: ${settings.authorizationStatus}');
+
+        // iOS APNS token wait loop
+        String? apnsToken;
+        int retry = 0;
+        while (apnsToken == null && retry < 10) {
+          apnsToken = await messaging.getAPNSToken();
+          if (apnsToken == null) {
+            await Future.delayed(const Duration(seconds: 1));
+            retry++;
+          }
+        }
+        debugPrint('FCM APNS token: $apnsToken');
+
         await messaging.setForegroundNotificationPresentationOptions(
           alert: true,
           badge: true,

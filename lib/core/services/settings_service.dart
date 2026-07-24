@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
@@ -7,6 +10,7 @@ import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/local_emergency_contacts_storage.dart';
 import 'package:saefra_run/core/services/secure_storage_service.dart';
+import 'package:saefra_run/core/utils/formatters.dart';
 
 class SettingsService extends ChangeNotifier {
   SettingsService(this._auth);
@@ -307,6 +311,9 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final countryCode = PlatformDispatcher.instance.locale.countryCode;
+      final normalizedPhone = Formatters.normalizePhoneNumber(phone, countryCode);
+
       await _api.addEmergencyContact(
         name: normalizedName,
         phone: normalizedPhone,
