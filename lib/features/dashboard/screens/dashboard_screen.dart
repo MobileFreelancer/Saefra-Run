@@ -14,6 +14,7 @@ import '../../../core/utils/app_tost.dart';
 import 'package:saefra_run/core/utils/navigation_utils.dart';
 import '../../../core/widgets/activity_shimmer_screen.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/app_cached_image.dart';
 import '../../../core/widgets/show_bottom_sheet.dart';
 import '../../../generated/assets.dart';
 import '../widgets/dashboard_map.dart';
@@ -84,9 +85,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Row(
                     children: [
                       userProFileImage != null && userProFileImage.isNotEmpty
-                          ? CircleAvatar(
-                        radius: 20.r,
-                        backgroundImage: NetworkImage(userProFileImage),
+                          ? AppCircleCachedImage(
+                        imageUrl: userProFileImage,
+                        width: 42.w,
+                        height: 42.h,
+                        fit: BoxFit.cover,
                       )
                           : _UserAvatar(name: displayName),
                       const SizedBox(width: 12),

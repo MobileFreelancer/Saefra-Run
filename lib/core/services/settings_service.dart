@@ -94,6 +94,7 @@ class SettingsService extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       _contacts = await LocalEmergencyContactsStorage.read();
+
       await _loadLocalSafetySettings();
     } finally {
       _hasLoaded = true;

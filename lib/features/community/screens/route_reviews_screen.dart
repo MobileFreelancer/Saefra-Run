@@ -6,6 +6,7 @@ import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/services/community_service.dart';
 import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
+import 'package:saefra_run/core/widgets/app_cached_image.dart';
 import 'package:saefra_run/generated/assets.dart';
 
 class RouteReviewsScreen extends StatefulWidget {
@@ -584,18 +585,21 @@ class _ReviewTile extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
-          radius: 22.r,
-          backgroundColor: AppColors.surfaced2C,
-          backgroundImage:
-              review.avatarUrl != null ? NetworkImage(review.avatarUrl!) : null,
-          child: review.avatarUrl == null
-              ? Text(
+        review.avatarUrl != null && review.avatarUrl!.isNotEmpty
+            ? AppCircleCachedImage(
+                imageUrl: review.avatarUrl!,
+                width: 44.r,
+                height: 44.r,
+                fit: BoxFit.cover,
+              )
+            : CircleAvatar(
+                radius: 22.r,
+                backgroundColor: AppColors.surfaced2C,
+                child: Text(
                   review.userName.isNotEmpty ? review.userName[0] : '?',
                   style: bodyStyle.copyWith(fontWeight: FontWeight.w700),
-                )
-              : null,
-        ),
+                ),
+              ),
         SizedBox(width: 12.w),
         Expanded(
           child: Column(

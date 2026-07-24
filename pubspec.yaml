@@ -41,6 +41,7 @@ dependencies:
   share_plus:
   package_info_plus:
   in_app_review: ^2.0.12
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

@@ -10,6 +10,7 @@ import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
 import 'package:saefra_run/core/widgets/settings_tile.dart';
 import 'package:saefra_run/features/settings/widgets/logout_dialog.dart';
+import 'package:saefra_run/core/widgets/app_cached_image.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -107,23 +108,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 28.r,
-                          backgroundColor: AppColors.surfaceLight,
-                          backgroundImage: user?.profileImage != null
-                              ? NetworkImage(user!.profileImage!)
-                              : null,
-                          child: user?.profileImage == null
-                              ? Text(
+                        user?.profileImage != null && user!.profileImage!.isNotEmpty
+                            ? AppCircleCachedImage(
+                                imageUrl: user.profileImage!,
+                                width: 56.r,
+                                height: 56.r,
+                                fit: BoxFit.cover,
+                              )
+                            : CircleAvatar(
+                                radius: 28.r,
+                                backgroundColor: AppColors.surfaceLight,
+                                child: Text(
                                   displayName.isNotEmpty
                                       ? displayName[0].toUpperCase()
                                       : '?',
                                   style: textTheme.titleLarge?.copyWith(
                                     fontSize: 20.sp,
                                   ),
-                                )
-                              : null,
-                        ),
+                                ),
+                              ),
                         SizedBox(width: 14.w),
                         Expanded(
                           child: Column(

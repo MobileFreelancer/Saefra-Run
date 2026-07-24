@@ -42,25 +42,26 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
   void _bindTrackingSync() {
     final tracking = context.read<RunningProvider>();
     final runService = context.read<RunService>();
-    tracking.onTrackingUpdate = ({
-      required latitude,
-      required longitude,
-      required distanceKm,
-      required durationSeconds,
-      required speedKmh,
-      required steps,
-      required pace,
-    }) {
-      runService.syncLiveUpdate(
-        latitude: latitude,
-        longitude: longitude,
-        distanceKm: distanceKm,
-        durationSeconds: durationSeconds,
-        speedKmh: speedKmh,
-        pace: pace,
-        steps: steps,
-      );
-    };
+    tracking.onTrackingUpdate =
+        ({
+          required latitude,
+          required longitude,
+          required distanceKm,
+          required durationSeconds,
+          required speedKmh,
+          required steps,
+          required pace,
+        }) {
+          runService.syncLiveUpdate(
+            latitude: latitude,
+            longitude: longitude,
+            distanceKm: distanceKm,
+            durationSeconds: durationSeconds,
+            speedKmh: speedKmh,
+            pace: pace,
+            steps: steps,
+          );
+        };
   }
 
   Future<void> _bootstrap() async {
@@ -90,10 +91,12 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
     await tracking.initTracking();
     if (!mounted) return;
 
-    final lat = tracking.currentPosition?.latitude ??
+    final lat =
+        tracking.currentPosition?.latitude ??
         route?.startPoint?.latitude ??
         0.0;
-    final lng = tracking.currentPosition?.longitude ??
+    final lng =
+        tracking.currentPosition?.longitude ??
         route?.startPoint?.longitude ??
         0.0;
 
@@ -107,9 +110,9 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
     if (!mounted) return;
 
     if (!started && runService.apiError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(runService.apiError!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(runService.apiError!)));
     }
 
     if (!tracking.isTracking) {
@@ -163,9 +166,9 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
     if (!mounted) return;
 
     if (!finished && runService.apiError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(runService.apiError!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(runService.apiError!)));
     }
 
     await runService.loadRunSummary();
@@ -222,8 +225,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
             await settings.load();
           }
 
-          final lat =
-              tracking.currentPosition?.latitude ?? dashboard.latitude;
+          final lat = tracking.currentPosition?.latitude ?? dashboard.latitude;
           final lng =
               tracking.currentPosition?.longitude ?? dashboard.longitude;
           final addressLink = lat != null && lng != null
@@ -246,7 +248,8 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                runService.sosError ?? 'Failed to activate SOS. Please try again.',
+                runService.sosError ??
+                    'Failed to activate SOS. Please try again.',
               ),
             ),
           );
@@ -264,9 +267,9 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
       final ok = await runService.pause();
       if (!mounted) return;
       if (!ok && runService.apiError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(runService.apiError!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(runService.apiError!)));
       }
       _showPauseDialog();
     } else {
@@ -274,9 +277,9 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
       final ok = await runService.resume();
       if (!mounted) return;
       if (!ok && runService.apiError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(runService.apiError!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(runService.apiError!)));
       }
     }
   }
@@ -289,26 +292,58 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
         children: [
           GoogleMap(
             initialCameraPosition: CameraPosition(
-              target: trackingProvider.currentPosition ?? const LatLng(37.7749, -122.4194),
-              zoom: 16,
+              target:
+                  trackingProvider.currentPosition ??
+                  const LatLng(37.7749, -122.4194),
+              zoom: 18.5, // More zoom like the screenshot
+              tilt: 0,
+              bearing: 0,
             ),
             onMapCreated: (GoogleMapController controller) {
               trackingProvider.onMapReady(controller);
               context.read<DashboardServices>().applyMapStyle(controller);
+
+              if (trackingProvider.currentPosition != null) {
+                controller.moveCamera(
+                  CameraUpdate.newCameraPosition(
+                    CameraPosition(
+                      target: trackingProvider.currentPosition!,
+                      zoom: 18.5,
+                      tilt: 0,
+                      bearing: 0,
+                    ),
+                  ),
+                );
+              }
             },
             polylines: Set<Polyline>.of(trackingProvider.polylines.values),
             markers: trackingProvider.buildMarkerSet(),
-            onTap: (LatLng position) {
-              // if (!trackingProvider.mapController.isCompleted) {
-              //   trackingProvider.mapController.complete(trackingProvider.mapController);
-              // }
-              //trackingProvider.selectDestination(position);
-            },
             myLocationEnabled: false,
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
           ),
 
+          // GoogleMap(
+          //   initialCameraPosition: CameraPosition(
+          //     target: trackingProvider.currentPosition ?? const LatLng(37.7749, -122.4194),
+          //     zoom: 16,
+          //   ),
+          //   onMapCreated: (GoogleMapController controller) {
+          //     trackingProvider.onMapReady(controller);
+          //     context.read<DashboardServices>().applyMapStyle(controller);
+          //   },
+          //   polylines: Set<Polyline>.of(trackingProvider.polylines.values),
+          //   markers: trackingProvider.buildMarkerSet(),
+          //   onTap: (LatLng position) {
+          //     // if (!trackingProvider.mapController.isCompleted) {
+          //     //   trackingProvider.mapController.complete(trackingProvider.mapController);
+          //     // }
+          //     //trackingProvider.selectDestination(position);
+          //   },
+          //   myLocationEnabled: false,
+          //   zoomControlsEnabled: false,
+          //   mapToolbarEnabled: false,
+          // ),
           Positioned(
             bottom: 0,
             left: 0,
@@ -334,20 +369,30 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                         children: [
                           const Text(
                             'Track Details',
-                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.white),
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.white,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             trackingProvider.destinationPosition == null
                                 ? 'Loading route...'
                                 : 'Route Remaining: ${trackingProvider.routeRemainingStr}',
-                            style: TextStyle(fontSize: 15, color: Colors.grey[500]),
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.grey[500],
+                            ),
                           ),
                           if (trackingProvider.isUsingStepTracking) ...[
                             const SizedBox(height: 4),
                             Text(
                               'Indoor mode: tracking steps along route',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                             ),
                           ],
                         ],
@@ -364,21 +409,36 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                           radius: 20,
                           child: InkWell(
                             onTap: () {
+                              print("---------------------------sdsdsdsdsdsds");
                               _showSosDialog();
                             },
-                            child: const Text('SOS', style: TextStyle(color: AppColors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                            child: const Text(
+                              'SOS',
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                   const SizedBox(height: 15),
 
                   // LIVE RUNNING TIME DISPLAY
-                  Text('Running time', style: TextStyle(fontSize: 14, color: Colors.grey[400])),
+                  Text(
+                    'Running time',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                  ),
                   Text(
                     trackingProvider.formattedDuration,
-                    style: const TextStyle(fontSize: 42, fontWeight: FontWeight.bold, color: AppColors.white),
+                    style: const TextStyle(
+                      fontSize: 42,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.white,
+                    ),
                   ),
                   const SizedBox(height: 20),
 
@@ -388,60 +448,100 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 12,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildMetricItem(
                           "assets/images/runicon.png",
                           trackingProvider.totalDistanceKm < 0.1
-                              ? trackingProvider.totalDistanceKm.toStringAsFixed(2)
-                              : trackingProvider.totalDistanceKm.toStringAsFixed(1),
+                              ? trackingProvider.totalDistanceKm
+                                    .toStringAsFixed(2)
+                              : trackingProvider.totalDistanceKm
+                                    .toStringAsFixed(1),
                           "km",
                         ),
                         _buildVerticalDivider(),
-                        _buildMetricItem("assets/images/runicon.png", "${trackingProvider.totalSteps}", "Steps"),
+                        _buildMetricItem(
+                          "assets/images/runicon.png",
+                          "${trackingProvider.totalSteps}",
+                          "Steps",
+                        ),
                         _buildVerticalDivider(),
-                        _buildMetricItem("assets/images/kmphicon.png", trackingProvider.currentSpeedKmh.toStringAsFixed(1), "km/hr"),
+                        _buildMetricItem(
+                          "assets/images/kmphicon.png",
+                          trackingProvider.currentSpeedKmh.toStringAsFixed(1),
+                          "km/hr",
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 25),
 
-
                   Row(
                     children: [
-                      if (!trackingProvider.isTracking && trackingProvider.secondsElapsed == 0) ...[
-
+                      if (!trackingProvider.isTracking &&
+                          trackingProvider.secondsElapsed == 0) ...[
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () =>
-                                context.read<RunningProvider>().startRunSession(),
+                            onPressed: () => context
+                                .read<RunningProvider>()
+                                .startRunSession(),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:  AppColors.primary,
+                              backgroundColor: AppColors.primary,
                               disabledBackgroundColor: Colors.grey[800],
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
                             ),
-                            child: const Text("Start Run Session", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            child: const Text(
+                              "Start Run Session",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ] else ...[
-
                         Expanded(
                           child: OutlinedButton(
                             onPressed: _onPausePressed,
                             style: OutlinedButton.styleFrom(
-                              side:  BorderSide(color: AppColors.primary, width: 1.5),
+                              side: BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(trackingProvider.isTracking ? Icons.pause : Icons.play_arrow, color: Colors.white),
+                                Icon(
+                                  trackingProvider.isTracking
+                                      ? Icons.pause
+                                      : Icons.play_arrow,
+                                  color: Colors.white,
+                                ),
                                 const SizedBox(width: 8),
-                                Text(trackingProvider.isTracking ? "Pause" : "Resume", style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                Text(
+                                  trackingProvider.isTracking
+                                      ? "Pause"
+                                      : "Resume",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -454,14 +554,26 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFE52344),
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
                             ),
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.flag_outlined, color: AppColors.white),
+                                Icon(
+                                  Icons.flag_outlined,
+                                  color: AppColors.white,
+                                ),
                                 const SizedBox(width: 8),
-                                Text("Finish", style: TextStyle(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                Text(
+                                  "Finish",
+                                  style: TextStyle(
+                                    color: AppColors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -473,7 +585,7 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -488,10 +600,17 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
       children: [
         Row(
           children: [
-            Image.asset(icon,scale: 2.5,),
+            Image.asset(icon, scale: 2.5),
             // Icon(icon, color: const Color(0xFFF07522), size: 18),
             const SizedBox(width: 4),
-            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
           ],
         ),
         Text(unit, style: const TextStyle(fontSize: 12, color: Colors.grey)),
@@ -499,8 +618,6 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
     );
   }
 }
-
-
 
 class _PauseRunDialog extends StatelessWidget {
   const _PauseRunDialog({required this.onResume, required this.onEnd});
@@ -555,7 +672,10 @@ class _PauseRunDialog extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: onResume,
-                icon: const Icon(Icons.play_arrow_rounded, color: AppColors.white),
+                icon: const Icon(
+                  Icons.play_arrow_rounded,
+                  color: AppColors.white,
+                ),
                 label: const Text('Resume Run'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.buttonColor,
@@ -572,11 +692,17 @@ class _PauseRunDialog extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: onEnd,
-                icon: const Icon(Icons.stop_circle_outlined, color: AppColors.white),
+                icon: const Icon(
+                  Icons.stop_circle_outlined,
+                  color: AppColors.white,
+                ),
                 label: const Text('End Run'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.white,
-                  side: const BorderSide(color: AppColors.buttonColor, width: 1.5),
+                  side: const BorderSide(
+                    color: AppColors.buttonColor,
+                    width: 1.5,
+                  ),
                   padding: EdgeInsets.symmetric(vertical: 14.h),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30.r),
@@ -647,7 +773,10 @@ class _SosConfirmDialog extends StatelessWidget {
                     onPressed: onCancel,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.white,
-                      side: const BorderSide(color: AppColors.buttonColor, width: 1.5),
+                      side: const BorderSide(
+                        color: AppColors.buttonColor,
+                        width: 1.5,
+                      ),
                       padding: EdgeInsets.symmetric(vertical: 14.h),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30.r),
@@ -696,139 +825,150 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
     });
   }
 
-   Future<void> _markSafe() async {
-     final run = context.read<RunService>();
-     final ok = await run.markSafe();
-     if (!mounted) return;
+  Future<void> _markSafe() async {
+    final run = context.read<RunService>();
+    final ok = await run.markSafe();
+    if (!mounted) return;
 
-     if (ok) {
-       safePop(context, fallback: '/run/live');
-       return;
-     }
+    if (ok) {
+      safePop(context, fallback: '/run/live');
+      return;
+    }
 
-     ScaffoldMessenger.of(context).showSnackBar(
-       SnackBar(
-         content: Text(run.sosError ?? 'Failed to cancel SOS. Please try again.'),
-       ),
-     );
-   }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          run.sosError ?? 'Failed to cancel SOS. Please try again.',
+        ),
+      ),
+    );
+  }
 
-   void _showEmergencyContactSelectionDialog(
-     BuildContext context,
-     List<dynamic> contacts,
-     RunService runService,
-   ) {
-     showDialog<void>(
-       context: context,
-       barrierDismissible: true,
-       builder: (ctx) => Dialog(
-         backgroundColor: AppColors.surface,
-         insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
-         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-         child: Padding(
-           padding: EdgeInsets.all(24.w),
-           child: Column(
-             mainAxisSize: MainAxisSize.min,
-             children: [
-               Text(
-                 'Select Contact to Call',
-                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                   color: AppColors.white,
-                   fontWeight: FontWeight.w700,
-                   fontSize: 22.sp,
-                 ),
-               ),
-               SizedBox(height: 16.h),
-               SizedBox(
-                 height: 300.h,
-                 child: ListView.separated(
-                   itemCount: contacts.length,
-                   separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                   itemBuilder: (listCtx, idx) {
-                     final contact = contacts[idx];
-                     final name = contact.name ?? 'Unknown';
-                     final phone = contact.phone ?? '';
+  void _showEmergencyContactSelectionDialog(
+    BuildContext context,
+    List<dynamic> contacts,
+    RunService runService,
+  ) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        backgroundColor: AppColors.surface,
+        insetPadding: EdgeInsets.symmetric(horizontal: 28.w),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24.r),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(24.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Select Contact to Call',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 22.sp,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              SizedBox(
+                height: 300.h,
+                child: ListView.separated(
+                  itemCount: contacts.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                  itemBuilder: (listCtx, idx) {
+                    final contact = contacts[idx];
+                    final name = contact.name ?? 'Unknown';
+                    final phone = contact.phone ?? '';
 
-                     return Container(
-                       decoration: BoxDecoration(
-                         color: AppColors.surfaced1F,
-                         borderRadius: BorderRadius.circular(16.r),
-                         border: Border.all(
-                           color: AppColors.white.withValues(alpha: 0.1),
-                         ),
-                       ),
-                       child: ListTile(
-                         contentPadding: EdgeInsets.symmetric(
-                           horizontal: 12.w,
-                           vertical: 8.h,
-                         ),
-                         leading: EmergencyContactAvatar(
-                           contact: contact,
-                           radius: 18.r,
-                         ),
-                         title: Text(
-                           name,
-                           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                             color: AppColors.white,
-                             fontSize: 16.sp,
-                             fontWeight: FontWeight.w600,
-                           ),
-                         ),
-                         subtitle: Text(
-                           phone,
-                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                             color: AppColors.textMuted,
-                             fontSize: 12.sp,
-                           ),
-                         ),
-                         onTap: () async {
-                           Navigator.pop(listCtx);
-                           final ok = await runService.callEmergencyContact(contact);
-                           if (!mounted) return;
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaced1F,
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(
+                          color: AppColors.white.withValues(alpha: 0.1),
+                        ),
+                      ),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 8.h,
+                        ),
+                        leading: EmergencyContactAvatar(
+                          contact: contact,
+                          radius: 18.r,
+                        ),
+                        title: Text(
+                          name,
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: AppColors.white,
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        subtitle: Text(
+                          phone,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: AppColors.textMuted,
+                                fontSize: 12.sp,
+                              ),
+                        ),
+                        onTap: () async {
+                          Navigator.pop(listCtx);
+                          final ok = await runService.callEmergencyContact(
+                            contact,
+                          );
+                          if (!mounted) return;
 
-                           if (!ok) {
-                             ScaffoldMessenger.of(context).showSnackBar(
-                               SnackBar(
-                                 content: Text(
-                                   runService.emergencyCallError ??
-                                       'Failed to initiate call. Please try again.',
-                                 ),
-                               ),
-                             );
-                           }
-                         },
-                         trailing: Icon(
-                           Icons.phone,
-                           color: AppColors.primary,
-                           size: 20.sp,
-                         ),
-                       ),
-                     );
-                   },
-                 ),
-               ),
-               SizedBox(height: 16.h),
-               SizedBox(
-                 width: double.infinity,
-                 child: OutlinedButton(
-                   onPressed: () => Navigator.pop(ctx),
-                   style: OutlinedButton.styleFrom(
-                     foregroundColor: AppColors.white,
-                     side: const BorderSide(color: AppColors.buttonColor, width: 1.5),
-                     padding: EdgeInsets.symmetric(vertical: 12.h),
-                     shape: RoundedRectangleBorder(
-                       borderRadius: BorderRadius.circular(30.r),
-                     ),
-                   ),
-                   child: const Text('Cancel'),
-                 ),
-               ),
-             ],
-           ),
-         ),
-       ),
-     );
-   }
+                          if (!ok) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  runService.emergencyCallError ??
+                                      'Failed to initiate call. Please try again.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        trailing: Icon(
+                          Icons.phone,
+                          color: AppColors.primary,
+                          size: 20.sp,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: 16.h),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.white,
+                    side: const BorderSide(
+                      color: AppColors.buttonColor,
+                      width: 1.5,
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30.r),
+                    ),
+                  ),
+                  child: const Text('Cancel'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -849,7 +989,7 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                 padding: EdgeInsets.all(16.w),
                 children: [
                   Center(
-                    child:  Container(
+                    child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: const BoxDecoration(
                         color: Color(0x33E52344),
@@ -864,10 +1004,17 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                         child: CircleAvatar(
                           backgroundColor: const Color(0xFFE52344),
                           radius: 30,
-                          child: const Text('SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                          child: const Text(
+                            'SOS',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
                       ),
-                    )
+                    ),
                   ),
                   SizedBox(height: 16.h),
                   Text(
@@ -898,50 +1045,61 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                         'No emergency contacts found. Add contacts in Settings first.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textMuted,
-                            ),
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     )
                   else
                     ...contacts.map(
-                          (c) => Container(
-                        margin: EdgeInsets.only(bottom: 12.h), // Spacing between list items
+                      (c) => Container(
+                        margin: EdgeInsets.only(
+                          bottom: 12.h,
+                        ), // Spacing between list items
                         decoration: BoxDecoration(
                           color: AppColors.surfaced1F, // Card background color
                           borderRadius: BorderRadius.circular(16.r),
                           border: Border.all(
-                            color: AppColors.white.withValues(alpha: 0.1), // Subtle border outline
+                            color: AppColors.white.withValues(
+                              alpha: 0.1,
+                            ), // Subtle border outline
                             width: 1.w,
                           ),
                         ),
                         child: ListTile(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 10.w,vertical: 8.h),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 8.h,
+                          ),
                           leading: EmergencyContactAvatar(
                             contact: c,
                             radius: 20.r,
                           ),
                           title: Text(
                             c.name,
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: AppColors.white,
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(
+                                  color: AppColors.white,
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
                                 'Alert Sent',
-                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: AppColors.success, // Assuming AppColors.success is green
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      color: AppColors
+                                          .success, // Assuming AppColors.success is green
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                               ),
                               SizedBox(width: 8.w),
                               Icon(
-                                Icons.check_box, // Matches the square checkbox in the design
+                                Icons
+                                    .check_box, // Matches the square checkbox in the design
                                 color: AppColors.success,
                                 size: 20.w,
                               ),
@@ -953,120 +1111,136 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                 ],
               ),
             ),
-             Padding(
-               padding: EdgeInsets.all(16.w),
-               child: Column(
-                 children: [
-                   PrimaryButton(
-                     label: 'Share Live Notification',
-                     isLoading: context.watch<RunService>().isShareLocationLoading,
-                     onPressed: () async {
-                       final tracking = context.read<RunningProvider>();
-                       final dashboard = context.read<DashboardServices>();
-                       final run = context.read<RunService>();
-                       final lat = tracking.currentPosition?.latitude ?? dashboard.latitude ?? 0.0;
-                       final lng = tracking.currentPosition?.longitude ?? dashboard.longitude ?? 0.0;
-                       if (lat == 0.0 && lng == 0.0) {
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(
-                             content: Text('Location not available. Please enable GPS.'),
-                           ),
-                         );
-                         return;
-                       }
-
-                       final ok = await run.shareUpdatedLocationWithEmergencyContact(
-                         latitude: lat,
-                         longitude: lng,
-                       );
-
-                       if (!mounted) return;
-
-                       if (ok) {
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(
-                             content: Text('Location shared with emergency contacts.'),
-                             duration: Duration(seconds: 2),
-                           ),
-                         );
-                       } else {
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(
-                             content: Text(
-                               run.shareLocationError ??
-                                   'Failed to share location. Please try again.',
-                             ),
-                           ),
-                         );
-                       }
-                     },
-                   ),
-                   SizedBox(height: 8.h),
-                   SecondaryButton(
-                     label: context.watch<RunService>().emergencyCallLoading
-                         ? 'Calling...'
-                         : 'Call local emergency service',
-                     onPressed: context.watch<RunService>().emergencyCallLoading
-                         ? null
-                         : () async {
-                             final settings = context.read<SettingsService>();
-                             final run = context.read<RunService>();
-                             final contacts = run.sosNotifiedContacts.isNotEmpty
-                                 ? run.sosNotifiedContacts
-                                 : settings.contacts;
-
-                             if (contacts.isEmpty) {
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                 const SnackBar(
-                                   content: Text(
-                                     'No emergency contacts available. Please add an emergency contact in Settings.',
-                                   ),
-                                 ),
-                               );
-                               return;
-                             }
-
-                             // If only one contact, call directly
-                             if (contacts.length == 1) {
-                               final ok = await run.callEmergencyContact(contacts.first);
-                               if (!mounted) return;
-
-                               if (!ok) {
-                                 ScaffoldMessenger.of(context).showSnackBar(
-                                   SnackBar(
-                                     content: Text(
-                                       run.emergencyCallError ??
-                                           'Failed to initiate call. Please try again.',
-                                     ),
-                                   ),
-                                 );
-                               }
-                               return;
-                             }
-
-                             // Show contact selection dialog
-                             _showEmergencyContactSelectionDialog(
-                               context,
-                               contacts,
-                               run,
-                             );
-                           },
-                   ),
-                   SizedBox(height: 8.h),
-                   SecondaryButton(
-                     label: run.sosLoading ? 'Cancelling...' : "I'm Safe",
-                     onPressed: run.sosLoading ? null : _markSafe,
-                   ),
-                 ],
-               ),
-             ),
             Padding(
-                padding: EdgeInsets.symmetric(horizontal:  16.w),
-                child: Row(
+              padding: EdgeInsets.all(16.w),
+              child: Column(
+                children: [
+                  PrimaryButton(
+                    label: 'Share Live Notification',
+                    isLoading: context
+                        .watch<RunService>()
+                        .isShareLocationLoading,
+                    onPressed: () async {
+                      final tracking = context.read<RunningProvider>();
+                      final dashboard = context.read<DashboardServices>();
+                      final run = context.read<RunService>();
+                      final lat =
+                          tracking.currentPosition?.latitude ??
+                          dashboard.latitude ??
+                          0.0;
+                      final lng =
+                          tracking.currentPosition?.longitude ??
+                          dashboard.longitude ??
+                          0.0;
+                      if (lat == 0.0 && lng == 0.0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Location not available. Please enable GPS.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      final ok = await run
+                          .shareUpdatedLocationWithEmergencyContact(
+                            latitude: lat,
+                            longitude: lng,
+                          );
+
+                      if (!mounted) return;
+
+                      if (ok) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Location shared with emergency contacts.',
+                            ),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              run.shareLocationError ??
+                                  'Failed to share location. Please try again.',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  SizedBox(height: 8.h),
+                  SecondaryButton(
+                    label: context.watch<RunService>().emergencyCallLoading
+                        ? 'Calling...'
+                        : 'Call local emergency service',
+                    onPressed: context.watch<RunService>().emergencyCallLoading
+                        ? null
+                        : () async {
+                            final settings = context.read<SettingsService>();
+                            final run = context.read<RunService>();
+                            final contacts = run.sosNotifiedContacts.isNotEmpty
+                                ? run.sosNotifiedContacts
+                                : settings.contacts;
+
+                            if (contacts.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'No emergency contacts available. Please add an emergency contact in Settings.',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            // If only one contact, call directly
+                            if (contacts.length == 1) {
+                              final ok = await run.callEmergencyContact(
+                                contacts.first,
+                              );
+                              if (!mounted) return;
+
+                              if (!ok) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      run.emergencyCallError ??
+                                          'Failed to initiate call. Please try again.',
+                                    ),
+                                  ),
+                                );
+                              }
+                              return;
+                            }
+
+                            // Show contact selection dialog
+                            _showEmergencyContactSelectionDialog(
+                              context,
+                              contacts,
+                              run,
+                            );
+                          },
+                  ),
+                  SizedBox(height: 8.h),
+                  SecondaryButton(
+                    label: run.sosLoading ? 'Cancelling...' : "I'm Safe",
+                    onPressed: run.sosLoading ? null : _markSafe,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.lock_outline_rounded, // Matches the square checkbox in the design
+                    Icons
+                        .lock_outline_rounded, // Matches the square checkbox in the design
                     color: AppColors.whiteText,
                     size: 15.w,
                   ),
@@ -1075,13 +1249,13 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                     child: Text(
                       "Your live location will remain shared until SOS is turned off. Only select 'I'm Safe' when you're out of danger.",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.whiteText, // Assuming AppColors.success is green
+                        color: AppColors
+                            .whiteText, // Assuming AppColors.success is green
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-
                 ],
               ),
             ),

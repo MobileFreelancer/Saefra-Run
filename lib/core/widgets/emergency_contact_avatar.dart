@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
+import 'package:saefra_run/core/widgets/app_cached_image.dart';
 
 class EmergencyContactAvatar extends StatelessWidget {
   const EmergencyContactAvatar({
@@ -33,11 +34,11 @@ class EmergencyContactAvatar extends StatelessWidget {
         height: size,
         color: AppColors.surfaceLight,
         child: imageUrl != null
-            ? Image.network(
-                imageUrl,
+            ? AppCircleCachedImage(
+                imageUrl: imageUrl,
+                width: size,
+                height: size,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Center(child: Text(initial, style: textStyle)),
               )
             : Center(child: Text(initial, style: textStyle)),
       ),

@@ -620,7 +620,6 @@ class ApiService {
     return _map(response);
   }
 
-  // ─── Routes ─────────────────────────────────────────────────────────────────
 
   Future<List<RouteModel>> searchRoutes(String query) async {
     if (query.trim().length < 2) return [];

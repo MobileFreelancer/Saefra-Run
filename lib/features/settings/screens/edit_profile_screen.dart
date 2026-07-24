@@ -11,6 +11,7 @@ import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_text_field.dart';
+import 'package:saefra_run/core/widgets/app_cached_image.dart';
 import 'package:saefra_run/core/utils/app_validators.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:image_picker/image_picker.dart';
@@ -299,28 +300,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 ),
                               ],
                             ),
-                            child:CircleAvatar(
+                            child: CircleAvatar(
                               radius: 60.r,
                               backgroundColor: AppColors.white,
-                              child: CircleAvatar(
-                                radius: 56.r, // Inner radius
-                                backgroundColor: AppColors.surfaceLight,
-                                backgroundImage: _selectedProfileImagePath != null
-                                    ? FileImage(File(_selectedProfileImagePath!))
-                                    : (user?.profileImage != null &&
-                                    user!.profileImage!.isNotEmpty
-                                    ? NetworkImage(user.profileImage!)
-                                    : null) as ImageProvider?,
-                                child: (_selectedProfileImagePath == null &&
-                                    (user?.profileImage == null ||
-                                        user!.profileImage!.isEmpty))
-                                    ? Icon(
-                                  Icons.person,
-                                  size: 48.sp,
-                                  color: AppColors.textMuted,
-                                )
-                                    : null,
-                              ),
+                              child: _selectedProfileImagePath != null
+                                  ? CircleAvatar(
+                                      radius: 56.r,
+                                      backgroundColor: AppColors.surfaceLight,
+                                      backgroundImage:
+                                          FileImage(File(_selectedProfileImagePath!)),
+                                    )
+                                  : (user?.profileImage != null && user!.profileImage!.isNotEmpty
+                                      ? SizedBox(
+                                          width: 112.r,
+                                          height: 112.r,
+                                          child: AppCircleCachedImage(
+                                            imageUrl: user.profileImage!,
+                                            width: 112.r,
+                                            height: 112.r,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        )
+                                      : CircleAvatar(
+                                          radius: 56.r,
+                                          backgroundColor: AppColors.surfaceLight,
+                                          child: Icon(
+                                            Icons.person,
+                                            size: 48.sp,
+                                            color: AppColors.textMuted,
+                                          ),
+                                        )),
                             ),
                           ),
                           Positioned(

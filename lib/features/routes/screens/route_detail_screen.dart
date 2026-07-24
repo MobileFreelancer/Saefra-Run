@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/models/route_model.dart';
@@ -10,7 +9,6 @@ import 'package:saefra_run/core/services/live_running_services.dart';
 import 'package:saefra_run/core/services/route_detail_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
 import 'package:saefra_run/core/widgets/app_route_map.dart';
-import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:saefra_run/generated/assets.dart';
 
@@ -58,7 +56,7 @@ class _RouteDetailScreenState extends State<RouteDetailScreen> {
                   )
                 : Column(
                     children: [
-                      const AppPageHeader(title: 'Route Detail'),
+                      const AppPageHeader(title: ''),
                       Expanded(
                         child: ListView(
                           padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
@@ -390,14 +388,14 @@ class _SaefraScoreCard extends StatelessWidget {
                     alignment: AlignmentGeometry.bottomEnd,
                     children: [
                       Text(
-                        '${pct.round()}',
+                        '${pct.round()}%',
                         style: textTheme.displayLarge?.copyWith(fontSize: 38.sp, fontWeight: FontWeight.w800, color: AppColors.primary),
                       ),
 
-                      Positioned(
-                        left: 40,
-                          child: Text("%",style: textTheme.displayLarge?.copyWith(fontSize: 20.sp, fontWeight: FontWeight.w800, color: AppColors.primary),)
-                      )
+                      // Positioned(
+                      //   left: 40,
+                      //     child: Text("%",style: textTheme.displayLarge?.copyWith(fontSize: 20.sp, fontWeight: FontWeight.w800, color: AppColors.primary),)
+                      // )
                     ],
                   ),
                 ],
