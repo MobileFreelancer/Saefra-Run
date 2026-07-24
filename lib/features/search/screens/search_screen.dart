@@ -267,29 +267,32 @@ class _NotFoundState extends StatelessWidget {
     return Center(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 32.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              Assets.noLocationFoundImg,
-              height: 120.h,
-              errorBuilder: (_, __, ___) => Icon(
-                Icons.search_off,
-                size: 72.sp,
-                color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: NeverScrollableScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                Assets.noLocationFoundImg,
+                height: 120.h,
+                errorBuilder: (_, __, ___) => Icon(
+                  Icons.search_off,
+                  size: 72.sp,
+                  color: AppColors.primary,
+                ),
               ),
-            ),
-            SizedBox(height: 20.h),
-            Text('Not Found', style: Theme.of(context).textTheme.titleLarge),
-            SizedBox(height: 8.h),
-            Text(
-              query.isEmpty
-                  ? 'We couldn’t find a route that matches your preferences. Try adjusting your settings and we’ll look again'
-                  : 'We couldn’t find a route that matches your preferences. Try adjusting your settings and we’ll look again',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
+              SizedBox(height: 20.h),
+              Text('Not Found', style: Theme.of(context).textTheme.titleLarge),
+              SizedBox(height: 8.h),
+              Text(
+                query.isEmpty
+                    ? 'We couldn’t find a route that matches your preferences. Try adjusting your settings and we’ll look again'
+                    : 'We couldn’t find a route that matches your preferences. Try adjusting your settings and we’ll look again',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
         ),
       ),
     );
