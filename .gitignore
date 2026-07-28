@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 assets/notification.json
+.ollamassist
 # IntelliJ related
 *.iml
 *.ipr
