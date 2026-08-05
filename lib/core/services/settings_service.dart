@@ -32,6 +32,9 @@ class SettingsService extends ChangeNotifier {
   bool _emailNotifications = false;
   bool _smsNotifications = false;
 
+  bool _termsAccepted = false;
+  bool _privacyAccepted = false;
+
   String _firstName = '';
   String _lastName = '';
   String _email = '';
@@ -52,6 +55,9 @@ class SettingsService extends ChangeNotifier {
   bool get pushNotifications => _pushNotifications;
   bool get emailNotifications => _emailNotifications;
   bool get smsNotifications => _smsNotifications;
+
+  bool get termsAccepted => _termsAccepted;
+  bool get privacyAccepted => _privacyAccepted;
 
   String get firstName => _firstName;
   String get lastName => _lastName;
@@ -91,11 +97,13 @@ class SettingsService extends ChangeNotifier {
 
       await _loadEmergencyContacts();
       await _loadLocalSafetySettings();
+      await _loadAgreementStatus();
     } catch (e) {
       _error = e.toString();
       _contacts = await LocalEmergencyContactsStorage.read();
 
       await _loadLocalSafetySettings();
+      await _loadAgreementStatus();
     } finally {
       _hasLoaded = true;
       _isLoading = false;
@@ -274,6 +282,39 @@ class SettingsService extends ChangeNotifier {
       value: payload,
     );
     await Future<void>.delayed(const Duration(milliseconds: 300));
+  }
+
+  Future<void> _loadAgreementStatus() async {
+    try {
+      final termsRaw = await SecureStorageService.instance.read(
+        key: ApiConfig.storageKeyTermsAccepted,
+      );
+      final privacyRaw = await SecureStorageService.instance.read(
+        key: ApiConfig.storageKeyPrivacyAccepted,
+      );
+      _termsAccepted = termsRaw == '1';
+      _privacyAccepted = privacyRaw == '1';
+    } catch (e) {
+      debugPrint('Failed to load agreement status: $e');
+    }
+  }
+
+  Future<void> setTermsAccepted(bool accepted) async {
+    _termsAccepted = accepted;
+    await SecureStorageService.instance.write(
+      key: ApiConfig.storageKeyTermsAccepted,
+      value: accepted ? '1' : '0',
+    );
+    notifyListeners();
+  }
+
+  Future<void> setPrivacyAccepted(bool accepted) async {
+    _privacyAccepted = accepted;
+    await SecureStorageService.instance.write(
+      key: ApiConfig.storageKeyPrivacyAccepted,
+      value: accepted ? '1' : '0',
+    );
+    notifyListeners();
   }
 
   Future<bool> saveNotificationSettings() async {

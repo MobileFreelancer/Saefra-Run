@@ -101,4 +101,6 @@ class ApiConfig {
   static const String storageKeyPendingSignup = 'pending_signup';
   static const String storageKeyEmergencyContacts = 'emergency_contacts_local';
   static const String storageKeySafetySettings = 'safety_settings_local';
+  static const String storageKeyTermsAccepted = 'terms_accepted';
+  static const String storageKeyPrivacyAccepted = 'privacy_accepted';
 }
