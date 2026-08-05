@@ -35,7 +35,7 @@ class ReviewModel {
             userMap?['avatar'] ??
             json['avatar'] ??
             json['avatar_url'] ??
-            json['profile_image'],
+            json['profile_image'] ,
       ),
       rating: _toDouble(
         json['rating'] ?? json['overall_rating'] ?? json['stars'],

@@ -210,10 +210,12 @@ class AuthService extends ChangeNotifier {
         value: password,
       );
       await FcmService.syncToken();
-      if (response.needsOnboarding != null) {
+      if (response.needsOnboarding == true) {
         await OnboardingService().handleNeedsOnboarding(response.needsOnboarding!);
       }
-      await OnboardingService().syncFromServer();
+      else{
+        await OnboardingService().syncFromServer();
+      }
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -547,10 +549,12 @@ class AuthService extends ChangeNotifier {
       await _storage.delete(key: ApiConfig.storageKeyUserPassword);
       await _storage.delete(key: ApiConfig.storageKeyPendingSignup);
       await FcmService.syncToken();
-      if (response.needsOnboarding != null) {
+      if (response.needsOnboarding == true) {
         await OnboardingService().handleNeedsOnboarding(response.needsOnboarding!);
       }
-      await OnboardingService().syncFromServer();
+      else{
+        await OnboardingService().syncFromServer();
+      }
       return true;
     } catch (e) {
       log('Social login error --> $e');

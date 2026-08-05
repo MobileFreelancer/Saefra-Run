@@ -1,9 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
@@ -15,7 +13,6 @@ import 'package:saefra_run/core/widgets/app_cached_image.dart';
 import 'package:saefra_run/core/utils/app_validators.dart';
 import 'package:saefra_run/core/widgets/primary_button.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:saefra_run/core/utils/app_loader.dart';
 import 'package:saefra_run/core/utils/app_tost.dart';
 
 class EditProfileScreen extends StatefulWidget {

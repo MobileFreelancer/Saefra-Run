@@ -628,10 +628,8 @@ class RunningProvider extends ChangeNotifier {
       if (remaining <= segmentMeters) {
         final t = remaining / segmentMeters;
         return LatLng(
-          points[i].latitude +
-              (points[i + 1].latitude - points[i].latitude) * t,
-          points[i].longitude +
-              (points[i + 1].longitude - points[i].longitude) * t,
+          points[i].latitude + (points[i + 1].latitude - points[i].latitude) * t,
+          points[i].longitude + (points[i + 1].longitude - points[i].longitude) * t,
         );
       }
 
