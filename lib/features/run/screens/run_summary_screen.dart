@@ -121,7 +121,7 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
                 ],
               ),
             ),
-            if (widget.runId != null)
+            if (session.runId != null || widget.runId != null)
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               child: Column(
