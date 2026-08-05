@@ -5,17 +5,16 @@ import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/services/notification_inbox_service.dart';
+import 'package:saefra_run/core/services/activity_service.dart';
+import 'package:saefra_run/core/models/generate_route_filters.dart';
 import 'package:saefra_run/core/widgets/recent_route_tile.dart';
-import 'package:saefra_run/core/widgets/recommended_route_card.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../core/models/route_model.dart';
 import '../../../core/services/dashboard_services.dart';
-import '../../../core/utils/app_tost.dart';
 import 'package:saefra_run/core/utils/navigation_utils.dart';
 import '../../../core/widgets/activity_shimmer_screen.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/app_cached_image.dart';
-import '../../../core/widgets/show_bottom_sheet.dart';
+import '../../../core/widgets/primary_button.dart';
 import '../../../generated/assets.dart';
 import '../widgets/dashboard_map.dart';
 
@@ -32,6 +31,639 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  int _selectedTemplateIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final services = context.read<DashboardServices>();
+      if (!services.hasHomeData) {
+        await services.initializeDashboard();
+      }
+      if (!mounted) return;
+      context.read<NotificationInboxService>().loadIfNeeded();
+      context.read<ActivityService>().load();
+    });
+  }
+
+  void _onFindMyRoutePressed() {
+    switch (_selectedTemplateIndex) {
+      case 0:
+        context.pushNamed(
+          'generateRoute',
+          queryParameters: {
+            'difficulty': RouteDifficulty.easy.name,
+            'distance': '3.0',
+            'shape': RouteShape.loop.name,
+          },
+        );
+        break;
+      case 1:
+        context.pushNamed(
+          'generateRoute',
+          queryParameters: {
+            'difficulty': RouteDifficulty.moderate.name,
+            'distance': '10.0',
+            'shape': RouteShape.loop.name,
+          },
+        );
+        break;
+      case 2:
+        context.pushNamed('community');
+        break;
+      case 3:
+        context.pushNamed('generateRoute');
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthService>();
+    final inbox = context.watch<NotificationInboxService>();
+    final services = context.watch<DashboardServices>();
+    final activity = context.watch<ActivityService>();
+    final user = auth.currentUser;
+
+    final greetingName = [
+      user?.firstName,
+      user?.lastName,
+    ].where((part) => part != null && part.trim().isNotEmpty).join(' ').trim();
+    final displayName = greetingName.isNotEmpty
+        ? greetingName
+        : (user?.email?.split('@').first ?? 'Runner');
+    final userProfileImage = user?.profileImage?.toString();
+
+    // Stats variables with fallback values if null/empty
+    final summary = activity.summary;
+    final calories = summary != null && summary.totalCalories > 0 ? summary.totalCalories : 1250;
+    final activeMinutes = summary != null && summary.totalMinutes > 0 ? summary.totalMinutes : 72;
+    final distanceKm = summary != null && summary.totalDistanceKm > 0 ? summary.totalDistanceKm : 12.0;
+
+    final templates = [
+      _TemplateItem(
+        title: 'Easy & Relaxing',
+        subtitle: 'A comfortable route to build confidence',
+        icon: Assets.onboardingEasyPaceIcon,
+      ),
+      _TemplateItem(
+        title: 'Moderate Challenge',
+        subtitle: 'Push yourself just enough with a balanced route',
+        icon: Assets.onboardingModerateChallengeIcon,
+      ),
+      _TemplateItem(
+        title: 'Community Favorite',
+        subtitle: 'Popular routes loved by runners near by',
+        icon: Assets.communityFavIcon,
+      ),
+      _TemplateItem(
+        title: 'Generate My Own',
+        subtitle: 'Customize my run based on my preferences',
+        icon: Assets.generateOwnIcon,
+      ),
+    ];
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) handleRootBack(context);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              // Top Profile Bar
+              Container(
+                padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
+                color: AppColors.background,
+                child: Row(
+                  children: [
+                    userProfileImage != null && userProfileImage.isNotEmpty
+                        ? AppCircleCachedImage(
+                            imageUrl: userProfileImage,
+                            width: 42.w,
+                            height: 42.h,
+                            fit: BoxFit.cover,
+                          )
+                        : _UserAvatar(name: displayName),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hello, ${displayName.toUpperCase()}',
+                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                  fontSize: 16.sp,
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            'Welcome back! 💪🏼',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontSize: 12.sp,
+                                  color: AppColors.welcomeColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => context.pushNamed('notificationsInbox'),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            height: 38.h,
+                            width: 38.w,
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(10.r),
+                              border: Border.all(
+                                color: AppColors.white.withValues(alpha: 0.05),
+                              ),
+                            ),
+                            padding: EdgeInsets.all(9.r),
+                            child: Image.asset(
+                              Assets.homeNotificationIcon,
+                              color: AppColors.white,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.notifications_none,
+                                size: 18,
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ),
+                          if (inbox.unreadCount > 0)
+                            Positioned(
+                              top: -2.h,
+                              right: -2.w,
+                              child: Container(
+                                width: 10.w,
+                                height: 10.h,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Main Content Scrollable
+              Expanded(
+                child: RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: () async {
+                    await services.refreshHomeData();
+                    if (!mounted) return;
+                    await context.read<NotificationInboxService>().load(refresh: true);
+                    await context.read<ActivityService>().load(refresh: true);
+                  },
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 100.h),
+                    children: [
+                      // Header title
+                      Text(
+                        'What kind of route do you want today?',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.white,
+                            ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'Choose one to get started',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize: 12.sp,
+                              color: AppColors.textMuted,
+                            ),
+                      ),
+                      SizedBox(height: 16.h),
+
+                      // Templates List
+                      ...List.generate(templates.length, (index) {
+                        final item = templates[index];
+                        final isSelected = _selectedTemplateIndex == index;
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 10.h),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedTemplateIndex = index;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(12.r),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppColors.surfaceLight : AppColors.surface,
+                                borderRadius: BorderRadius.circular(12.r),
+                                border: Border.all(
+                                  color: isSelected ? AppColors.primary : AppColors.borderColor,
+                                  width: 1.5.w,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  // Icon Container
+                                  Image.asset(
+                                    item.icon,
+                                    color: isSelected ? AppColors.primary : AppColors.white.withValues(alpha: 0.6),
+                                    height: 30.r,
+                                  ),
+                                  SizedBox(width: 12.w),
+                                  // Titles
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.title,
+                                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14.sp,
+                                                color: AppColors.white,
+                                              ),
+                                        ),
+                                        SizedBox(height: 2.h),
+                                        Text(
+                                          item.subtitle,
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                fontSize: 11.sp,
+                                                color: AppColors.textMuted,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: AppColors.textMuted,
+                                    size: 18.r,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                      SizedBox(height: 10.h),
+
+                      // Find My Route Button
+                      PrimaryButton(
+                        label: 'Get Started',
+                        //isLoading: service.isLoading,
+                        onPressed: _onFindMyRoutePressed,
+                      ),
+                      SizedBox(height: 24.h),
+
+                      // Fitness Stats Section
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Powered by Our Running Community',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        fontSize: 11.sp,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                ),
+                                Text(
+                                 "Routes improved by runners near you",
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 11.sp,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => context.goNamed('activity'),
+                            child: Text(
+                              'Explore',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 11.sp,
+                                    color: AppColors.textMuted,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12.h),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.people_outline_rounded,
+                              iconColor: const Color(0xFFFF4E6A),
+                              value: services.nearbyRunners.toString(),
+                              unit: '',
+                              label: 'Runners active nearby',
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.verified_user_outlined,
+                              iconColor: const Color(0xFF22C55E),
+                              value: services.routesVerifiedToday.toString(),
+                              unit: '',
+                              label: 'Routes verified today',
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.report_problem_outlined,
+                              iconColor: const Color(0xFFFF9500),
+                              value: services.safetyReportsCount.toString(),
+                              unit: '',
+                              label: 'New safety reports',
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 24.h),
+
+                      // Recent Routes Section
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Recent Route',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.white,
+                                ),
+                          ),
+                          GestureDetector(
+                            onTap: () => context.pushNamed('search'),
+                            child: Text(
+                              'View all',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 11.sp,
+                                    color: AppColors.textMuted,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10.h),
+                      if (services.isRouteLoading) ...[
+                        const ActivityCardShimmer(),
+                      ] else if (services.recentRoutes.isNotEmpty) ...[
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: services.recentRoutes.length.clamp(0, 2),
+                          separatorBuilder: (context, index) => SizedBox(height: 10.h),
+                          itemBuilder: (context, index) {
+                            final route = services.recentRoutes[index];
+                            return RecentRouteTile.fromRawMap(
+                              Map<String, dynamic>.from(route as Map),
+                              onTap: () {
+                                final id = '${route['route_id'] ?? route['id'] ?? index + 1}';
+                                context.pushNamed(
+                                  'routeDetail',
+                                  pathParameters: {'id': id},
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ] else ...[
+                        Container(
+                          padding: EdgeInsets.symmetric(vertical: 20.h),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'No recent routes found.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.textMuted,
+                                  fontSize: 12.sp,
+                                ),
+                          ),
+                        ),
+                      ],
+                      SizedBox(height: 24.h),
+
+                      // Map Overview Section
+                      Text(
+                        'Map Preview',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.white,
+                            ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Container(
+                        height: 180.h,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16.r),
+                          border: Border.all(
+                            color: AppColors.borderColor,
+                            width: 1.w,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16.r),
+                          child: DashboardMap(
+                            initialTarget: DashboardScreen._initialPosition.target,
+                            initialZoom: DashboardScreen._initialPosition.zoom,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: const AppBottomNav(activeIndex: 0),
+      ),
+    );
+  }
+}
+
+class _TemplateItem {
+  final String title;
+  final String subtitle;
+  final String icon;
+
+  const _TemplateItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String value;
+  final String unit;
+  final String label;
+
+  const _StatCard({
+    required this.icon,
+    required this.iconColor,
+    required this.value,
+    required this.unit,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: AppColors.borderColor,
+          width: 1.w,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: iconColor,
+            size: 24.r,
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.white,
+                    ),
+              ),
+              SizedBox(width: 2.w),
+              Text(
+                unit,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 10.sp,
+                      color: AppColors.textMuted,
+                    ),
+              ),
+            ],
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontSize: 10.sp,
+                  color: AppColors.textMuted,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UserAvatar extends StatelessWidget {
+  const _UserAvatar({required this.name});
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = name.trim().isEmpty
+        ? '?'
+        : name
+            .trim()
+            .split(RegExp(r'\s+'))
+            .take(2)
+            .map((w) => w[0])
+            .join()
+            .toUpperCase();
+
+    return CircleAvatar(
+      radius: 20.r,
+      backgroundColor: AppColors.surfaceLight,
+      child: Text(
+        initials,
+        style: TextStyle(
+          color: AppColors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 14.sp,
+        ),
+      ),
+    );
+  }
+}
+
+/*
+OLD DASHBOARD SCREEN IMPLEMENTATION FOR FUTURE REFERENCE
+
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:saefra_run/core/constants/app_colors.dart';
+import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/notification_inbox_service.dart';
+import 'package:saefra_run/core/widgets/recent_route_tile.dart';
+import 'package:saefra_run/core/widgets/recommended_route_card.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../core/models/route_model.dart';
+import '../../../core/services/dashboard_services.dart';
+import '../../../core/utils/app_tost.dart';
+import 'package:saefra_run/core/utils/navigation_utils.dart';
+import '../../../core/widgets/activity_shimmer_screen.dart';
+import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/app_cached_image.dart';
+import '../../../core/widgets/show_bottom_sheet.dart';
+import '../../../generated/assets.dart';
+import '../widgets/dashboard_map.dart';
+
+class OldDashboardScreen extends StatefulWidget {
+  const OldDashboardScreen({super.key});
+
+  static const CameraPosition _initialPosition = CameraPosition(
+    target: LatLng(21.205194905801783, 72.77568113625402),
+    zoom: 16,
+  );
+
+  @override
+  State<OldDashboardScreen> createState() => _OldDashboardScreenState();
+}
+
+class _OldDashboardScreenState extends State<OldDashboardScreen> {
 
 
   @override
@@ -91,7 +723,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         height: 42.h,
                         fit: BoxFit.cover,
                       )
-                          : _UserAvatar(name: displayName),
+                          : _OldUserAvatar(name: displayName),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -140,7 +772,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               padding: const EdgeInsets.all(9),
                               child: Image.asset(
-                                Assets.homeNotificationIcon,
+                                  Assets.homeNotificationIcon,
                                 color: AppColors.white,
                                 errorBuilder: (_, __, ___) => const Icon(
                                   Icons.notifications_none,
@@ -168,7 +800,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  SearchRouteField(),
+                  OldSearchRouteField(),
                 ],
               ),
             ),
@@ -185,8 +817,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Positioned.fill(
                           child: DashboardMap(
-                            initialTarget: DashboardScreen._initialPosition.target,
-                            initialZoom: DashboardScreen._initialPosition.zoom,
+                            initialTarget: OldDashboardScreen._initialPosition.target,
+                            initialZoom: OldDashboardScreen._initialPosition.zoom,
                           ),
                         ),
 
@@ -204,7 +836,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
-                                Icons.add,
+                               Icons.add,
                                 size: 26,
                                 color: AppColors.white,
                               ),
@@ -438,15 +1070,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
 
-class SearchRouteField extends StatefulWidget {
+class OldSearchRouteField extends StatefulWidget {
 
-  const  SearchRouteField({super.key,});
+  const  OldSearchRouteField({super.key,});
 
   @override
-  State<SearchRouteField> createState() => _SearchRouteFieldState();
+  State<OldSearchRouteField> createState() => _OldSearchRouteFieldState();
 }
 
-class _SearchRouteFieldState extends State<SearchRouteField> {
+class _OldSearchRouteFieldState extends State<OldSearchRouteField> {
   late final TextEditingController _searchController;
 
   @override
@@ -480,7 +1112,7 @@ class _SearchRouteFieldState extends State<SearchRouteField> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: (){
+              onTap: () {
                 final query = _searchController.text.trim();
                 context.pushNamed(
                   'search',
@@ -512,13 +1144,8 @@ class _SearchRouteFieldState extends State<SearchRouteField> {
   }
 }
 
-
-
-
-
-
-class _UserAvatar extends StatelessWidget {
-  const _UserAvatar({required this.name});
+class _OldUserAvatar extends StatelessWidget {
+  const _OldUserAvatar({required this.name});
   final String name;
 
   @override
@@ -547,3 +1174,4 @@ class _UserAvatar extends StatelessWidget {
     );
   }
 }
+*/

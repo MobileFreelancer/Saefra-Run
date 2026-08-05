@@ -142,8 +142,7 @@ class _DashboardMapSnapshot {
     }
 
     final polylines = <Polyline>{};
-    if (services.hasSelectedDestination &&
-        services.routePolylinePoints.length > 1) {
+    if (services.routePolylinePoints.length > 1) {
       polylines.add(
         Polyline(
           polylineId: const PolylineId('safe_route_polyline'),

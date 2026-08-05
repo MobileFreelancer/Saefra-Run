@@ -23,11 +23,17 @@ class GenerateRouteScreen extends StatefulWidget {
     this.destLat,
     this.destLng,
     this.destName,
+    this.difficulty,
+    this.distance,
+    this.shape,
   });
 
   final double? destLat;
   final double? destLng;
   final String? destName;
+  final RouteDifficulty? difficulty;
+  final double? distance;
+  final RouteShape? shape;
 
   @override
   State<GenerateRouteScreen> createState() => _GenerateRouteScreenState();
@@ -127,6 +133,18 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _dashboard = context.read<DashboardServices>();
+      
+      final service = context.read<GenerateRouteService>();
+      if (widget.difficulty != null) {
+        service.setDifficulty(widget.difficulty!);
+      }
+      if (widget.distance != null) {
+        service.setDistance(widget.distance!);
+      }
+      if (widget.shape != null) {
+        service.setShape(widget.shape!);
+      }
+
       _syncRouteContext(force: true);
       _dashboard?.addListener(_onDashboardUpdate);
     });

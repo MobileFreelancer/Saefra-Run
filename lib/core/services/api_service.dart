@@ -580,42 +580,22 @@ class ApiService {
   Future<Map<String, dynamic>> generateSafeRoute({
     required double originLat,
     required double originLng,
-    required double destLat,
-    required double destLng,
+    double? destLat,
+    double? destLng,
   }) async {
     final payload = {
       'origin': {
-        'location': {
-          'latLng': {
-            'latitude': originLat,
-            'longitude': originLng,
-          }
-        }
+        'latitude': originLat,
+        'longitude': originLng,
       },
-      'destination': {
-        'location': {
-          'latLng': {
-            'latitude': destLat,
-            'longitude': destLng,
-          }
-        }
-      },
-      'travelMode': 'WALK',
-      'computeAlternativeRoutes': true,
-      'languageCode': 'en-US',
-      'units': 'METRIC',
     };
 
     final response = await _dio.post(
       _path('/routes/generate-safe-route'),
-      options: Options(
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-FieldMask':
-              'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs,routes.travelAdvisory,routes.routeLabels',
-        },
-      ),
       data: json.encode(payload),
+      options: Options(
+        headers: {'Content-Type': 'application/json'},
+      ),
     );
     return _map(response);
   }

@@ -35,10 +35,7 @@ class AppBottomNav extends StatelessWidget {
             ),
             GestureDetector(
               onTap: () {
-                final services = context.read<DashboardServices>();
-                final route = services.recommendedRoute;
-                final id = '${route?['route_id'] ?? route?['id'] ?? '2'}';
-                context.pushNamed('liveRunning', queryParameters: {'routeId': id});
+                context.pushNamed('generateRoute');
               },
               behavior: HitTestBehavior.opaque,
               child: Image.asset(

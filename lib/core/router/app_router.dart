@@ -27,6 +27,7 @@ import 'package:saefra_run/core/services/community_route_list_service.dart';
 import 'package:saefra_run/features/community/screens/route_reviews_screen.dart';
 import 'package:saefra_run/features/activity/screens/activity_screen.dart';
 import 'package:saefra_run/features/routes/screens/generate_route_screen.dart';
+import 'package:saefra_run/core/models/generate_route_filters.dart';
 import 'package:saefra_run/features/routes/screens/route_detail_screen.dart';
 import 'package:saefra_run/features/run/screens/add_run_images_screen.dart';
 import 'package:saefra_run/features/run/screens/live_running_screen.dart';
@@ -204,10 +205,32 @@ class AppRouter {
           final params = state.uri.queryParameters;
           final destLat = double.tryParse(params['destLat'] ?? '');
           final destLng = double.tryParse(params['destLng'] ?? '');
+
+          RouteDifficulty? difficulty;
+          if (params['difficulty'] != null) {
+            difficulty = RouteDifficulty.values.firstWhere(
+              (e) => e.name == params['difficulty'],
+              orElse: () => RouteDifficulty.moderate,
+            );
+          }
+
+          final distance = double.tryParse(params['distance'] ?? '');
+
+          RouteShape? shape;
+          if (params['shape'] != null) {
+            shape = RouteShape.values.firstWhere(
+              (e) => e.name == params['shape'],
+              orElse: () => RouteShape.loop,
+            );
+          }
+
           return GenerateRouteScreen(
             destLat: destLat,
             destLng: destLng,
             destName: params['destName'],
+            difficulty: difficulty,
+            distance: distance,
+            shape: shape,
           );
         },
       ),

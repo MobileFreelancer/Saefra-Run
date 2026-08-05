@@ -60,6 +60,8 @@ class Assets {
   static const String homeRoutePreviewImg= '${mainImageUrl}home_route_preview_img.png';
   static const String homeRouteThumbnailImg= '${mainImageUrl}home_route_thumbnail_img.png';
   static const String pluseIcon= '${mainImageUrl}pluseIcon.png';
+  static const String communityFavIcon= '${mainImageUrl}community_fav_icon.png';
+  static const String generateOwnIcon= '${mainImageUrl}generate_own_icon.png';
 
   // Search / routes / map style (add PNGs later — fallbacks used until then)
   static const String searchNotFoundIllustration = '${mainImageUrl}search_not_found.png';

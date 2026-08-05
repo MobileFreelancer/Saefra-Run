@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
+import 'package:saefra_run/core/utils/api_response_parser.dart';
 import 'package:saefra_run/core/utils/map_style_service.dart';
 import 'package:saefra_run/core/utils/polyline_decoder.dart';
 
@@ -56,6 +57,10 @@ class DashboardServices extends ChangeNotifier {
   DashboardMapStyle _mapStyle = DashboardMapStyle.darkBase;
   MapTheme _mapTheme = MapTheme.light;
 
+  int _nearbyRunners = 0;
+  int _routesVerifiedToday = 0;
+  int _safetyReportsCount = 0;
+
   final ApiService _apiService = ApiService();
   Timer? _fetchRouteDebounce;
   int _fetchRouteGeneration = 0;
@@ -96,6 +101,10 @@ class DashboardServices extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   DashboardMapStyle get mapStyle => _mapStyle;
   MapTheme get mapTheme => _mapTheme;
+
+  int get nearbyRunners => _nearbyRunners;
+  int get routesVerifiedToday => _routesVerifiedToday;
+  int get safetyReportsCount => _safetyReportsCount;
 
   void setBottomIndex(int index) {
     _currentBottomIndex = index;
@@ -231,8 +240,6 @@ class DashboardServices extends ChangeNotifier {
       _scheduleFetchSafeRoute(
         originLat: _latitude!,
         originLng: _longitude!,
-        destLat: lat,
-        destLng: lng,
       );
     } else {
       _routePolylinePoints = [];
@@ -254,16 +261,12 @@ class DashboardServices extends ChangeNotifier {
   void _scheduleFetchSafeRoute({
     required double originLat,
     required double originLng,
-    required double destLat,
-    required double destLng,
   }) {
     _fetchRouteDebounce?.cancel();
     _fetchRouteDebounce = Timer(const Duration(milliseconds: 600), () {
       fetchSafeRoute(
         originLat: originLat,
         originLng: originLng,
-        destLat: destLat,
-        destLng: destLng,
       );
     });
   }
@@ -271,8 +274,6 @@ class DashboardServices extends ChangeNotifier {
   Future<void> fetchSafeRoute({
     required double originLat,
     required double originLng,
-    required double destLat,
-    required double destLng,
   }) async {
     final generation = ++_fetchRouteGeneration;
     _isRouteLoading = true;
@@ -283,49 +284,37 @@ class DashboardServices extends ChangeNotifier {
       final result = await _apiService.generateSafeRoute(
         originLat: originLat,
         originLng: originLng,
-        destLat: destLat,
-        destLng: destLng,
+        destLat: originLat, // Passing origin as placeholder if API expects it
+        destLng: originLng,
       );
 
       if (generation != _fetchRouteGeneration) return;
 
       if (result['success'] == true ||
           result['status']?.toString().toLowerCase() == 'success') {
-        final routeData = result['route'] ?? result['data']?['route'] ?? result['data'];
-        if (routeData == null) {
-          _errorMessage = result['message'] ?? 'Failed to generate safe route.';
-          return;
+        final payload = ApiResponseParser.payload(result);
+        
+        final stats = payload['community_stats'];
+        if (stats is Map) {
+          _nearbyRunners = (stats['nearby_runners'] as num?)?.toInt() ?? 0;
+          _routesVerifiedToday = (stats['routes_verified'] as num?)?.toInt() ?? 0;
+          _safetyReportsCount = (stats['safety_reports'] as num?)?.toInt() ?? 0;
         }
 
-        final routeMap = routeData is Map<String, dynamic>
-            ? routeData
-            : Map<String, dynamic>.from(routeData as Map);
-
-        final recommended = routeMap['recommended_routes'] ?? routeMap['recommended_route'];
-        if (recommended is List && recommended.isNotEmpty) {
-          _recommendedRoute =
-              Map<String, dynamic>.from(recommended.first as Map);
-        } else if (recommended is Map) {
-          _recommendedRoute = Map<String, dynamic>.from(recommended);
-        } else {
-          _recommendedRoute = null;
+        final activeRouteData = payload['active_route'];
+        if (activeRouteData is Map) {
+          _recommendedRoute = Map<String, dynamic>.from(activeRouteData);
+          final routeModel = RouteModel.fromJson(_recommendedRoute!);
+          _routePolylinePoints = routeModel.polylinePoints;
         }
 
-        final list = routeMap['recent_routes'];
-        if (list is List) {
-          _recentRoutes = list;
+        final recentList = payload['recent_routes'];
+        if (recentList is List) {
+          _recentRoutes = recentList;
         }
-
-        if (_recommendedRoute != null && hasSelectedDestination) {
-          _routePolylinePoints =
-              PolylineDecoder.fromRouteJson(_recommendedRoute!);
-          if (_routePolylinePoints.length > 1) {
-            _fitMapToPoints(_routePolylinePoints);
-          } else {
-            _routePolylinePoints = [];
-          }
-        } else {
-          _routePolylinePoints = [];
+        
+        if (_routePolylinePoints.length > 1) {
+          _fitMapToPoints(_routePolylinePoints);
         }
       } else {
         _errorMessage = result['message'] ?? 'Failed to generate safe route.';
@@ -434,8 +423,6 @@ class DashboardServices extends ChangeNotifier {
     await fetchSafeRoute(
       originLat: lat,
       originLng: lng,
-      destLat: lat,
-      destLng: lng,
     );
   }
 
