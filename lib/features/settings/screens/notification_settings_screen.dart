@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/settings_service.dart';
 import 'package:saefra_run/core/widgets/app_page_header.dart';
+import 'package:saefra_run/core/widgets/primary_button.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -15,6 +17,13 @@ class NotificationSettingsScreen extends StatefulWidget {
 
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
+
+  Future<void> _updateSetting(Future<void> Function(bool) setter, bool value) async {
+    await setter(value);
+    final settings = context.read<SettingsService>();
+    await settings.saveNotificationSettings();
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsService>();
@@ -25,6 +34,12 @@ class _NotificationSettingsScreenState
         child: Column(
           children: [
             const AppPageHeader(title: 'Notifications'),
+            if (settings.isLoading)
+              const LinearProgressIndicator(
+                minHeight: 2,
+                color: AppColors.primary,
+                backgroundColor: Colors.transparent,
+              ),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
@@ -41,7 +56,7 @@ class _NotificationSettingsScreenState
                     child: _NotificationToggleRow(
                       title: 'Allow Push Notifications',
                       value: settings.pushNotifications,
-                      onChanged: settings.setPushNotifications,
+                      onChanged: (v) => _updateSetting((val) async => settings.setPushNotifications(val), v),
                     ),
                   ),
                   SizedBox(height: 24.h),
@@ -68,8 +83,8 @@ class _NotificationSettingsScreenState
                       children: [
                         _NotificationToggleRow(
                           title: 'Run Reminders',
-                          value: settings.pushNotifications,
-                          onChanged: (v) => settings.setPushNotifications(v),
+                          value: settings.runReminders,
+                          onChanged: (v) => _updateSetting((val) async => settings.setRunReminders(val), v),
                         ),
 
                         Divider(
@@ -81,8 +96,8 @@ class _NotificationSettingsScreenState
                         ),
                         _NotificationToggleRow(
                           title: 'Safety Alerts',
-                          value: settings.emergencyAlerts,
-                          onChanged: settings.setEmergencyAlerts,
+                          value: settings.safetyAlerts,
+                          onChanged: (v) => _updateSetting((val) async => settings.setSafetyAlerts(val), v),
                         ),
 
                         Divider(
@@ -94,8 +109,8 @@ class _NotificationSettingsScreenState
                         ),
                         _NotificationToggleRow(
                           title: 'Route Updates',
-                          value: settings.routeSafetyAlerts,
-                          onChanged: settings.setRouteSafetyAlerts,
+                          value: settings.routeUpdates,
+                          onChanged: (v) => _updateSetting((val) async => settings.setRouteUpdates(val), v),
                         ),
 
                         Divider(
@@ -107,8 +122,8 @@ class _NotificationSettingsScreenState
                         ),
                         _NotificationToggleRow(
                           title: 'Community Updates',
-                          value: settings.pushNotifications,
-                          onChanged: (v) => settings.setPushNotifications(v),
+                          value: settings.communityUpdates,
+                          onChanged: (v) => _updateSetting((val) async => settings.setCommunityUpdates(val), v),
                         ),
 
                         Divider(
@@ -120,8 +135,8 @@ class _NotificationSettingsScreenState
                         ),
                         _NotificationToggleRow(
                           title: 'Activity Settings',
-                          value: settings.pushNotifications,
-                          onChanged: (v) => settings.setPushNotifications(v),
+                          value: settings.activitySettings,
+                          onChanged: (v) => _updateSetting((val) async => settings.setActivitySettings(val), v),
                         ),
 
                       ],

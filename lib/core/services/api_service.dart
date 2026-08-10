@@ -557,14 +557,42 @@ class ApiService {
   Future<void> updatePreferences({
     String? visitReason,
     String? runPreference,
+    bool? shareLiveLocation,
+    bool? emergencyAlertsEnabled,
+    bool? profilePublic,
+    bool? shareRunHistory,
+    bool? pushNotificationsEnabled,
+    bool? emailNotificationsEnabled,
+    bool? runRemindersEnabled,
+    bool? safetyAlertsEnabled,
+    bool? routeUpdatesEnabled,
+    bool? communityUpdatesEnabled,
+    bool? activitySettingsEnabled,
   }) async {
     try {
+      final Map<String, dynamic> data = {};
+      if (visitReason != null) data['visit_reason'] = visitReason;
+      if (runPreference != null) data['run_preference'] = runPreference;
+      
+      void addBool(String key, bool? value) {
+        if (value != null) data[key] = value ? 1 : 0;
+      }
+
+      addBool('share_live_location', shareLiveLocation);
+      addBool('emergency_alerts_enabled', emergencyAlertsEnabled);
+      addBool('profile_public', profilePublic);
+      addBool('share_run_history', shareRunHistory);
+      addBool('push_notifications_enabled', pushNotificationsEnabled);
+      addBool('email_notifications_enabled', emailNotificationsEnabled);
+      addBool('run_reminders_enabled', runRemindersEnabled);
+      addBool('safety_alerts_enabled', safetyAlertsEnabled);
+      addBool('route_updates_enabled', routeUpdatesEnabled);
+      addBool('community_updates_enabled', communityUpdatesEnabled);
+      addBool('activity_settings_enabled', activitySettingsEnabled);
+
       final response = await _dio.post(
         _path('/preferences'),
-        queryParameters: {
-          if (visitReason != null) 'visit_reason': visitReason,
-          if (runPreference != null) 'run_preference': runPreference,
-        },
+        data: _form(data),
       );
       _map(response);
     } on DioException catch (e) {

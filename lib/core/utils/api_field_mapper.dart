@@ -26,7 +26,7 @@ class ApiFieldMapper {
       case 'Moderate Challenge':
         return 'moderate';
       case 'Push My Limits':
-        return 'hard';
+        return 'push_limit';
       default:
         return uiActivity.trim().toLowerCase().replaceAll(' ', '_');
     }
@@ -89,6 +89,7 @@ class ApiFieldMapper {
         return 'Easy Pace';
       case 'moderate':
         return 'Moderate Challenge';
+      case 'push_limit':
       case 'hard':
         return 'Push My Limits';
       default:

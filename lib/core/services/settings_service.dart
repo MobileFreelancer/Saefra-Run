@@ -31,6 +31,13 @@ class SettingsService extends ChangeNotifier {
   bool _pushNotifications = true;
   bool _emailNotifications = false;
   bool _smsNotifications = false;
+  bool _profilePublic = true;
+  bool _shareRunHistory = true;
+  bool _runReminders = true;
+  bool _safetyAlerts = true;
+  bool _routeUpdates = true;
+  bool _communityUpdates = true;
+  bool _activitySettings = true;
 
   bool _termsAccepted = false;
   bool _privacyAccepted = false;
@@ -55,6 +62,13 @@ class SettingsService extends ChangeNotifier {
   bool get pushNotifications => _pushNotifications;
   bool get emailNotifications => _emailNotifications;
   bool get smsNotifications => _smsNotifications;
+  bool get profilePublic => _profilePublic;
+  bool get shareRunHistory => _shareRunHistory;
+  bool get runReminders => _runReminders;
+  bool get safetyAlerts => _safetyAlerts;
+  bool get routeUpdates => _routeUpdates;
+  bool get communityUpdates => _communityUpdates;
+  bool get activitySettings => _activitySettings;
 
   bool get termsAccepted => _termsAccepted;
   bool get privacyAccepted => _privacyAccepted;
@@ -94,6 +108,13 @@ class SettingsService extends ChangeNotifier {
           _preferences?.pushNotificationsEnabled ?? _pushNotifications;
       _emailNotifications =
           _preferences?.emailNotificationsEnabled ?? _emailNotifications;
+      _profilePublic = _preferences?.profilePublic ?? _profilePublic;
+      _shareRunHistory = _preferences?.shareRunHistory ?? _shareRunHistory;
+      _runReminders = _preferences?.runRemindersEnabled ?? _runReminders;
+      _safetyAlerts = _preferences?.safetyAlertsEnabled ?? _safetyAlerts;
+      _routeUpdates = _preferences?.routeUpdatesEnabled ?? _routeUpdates;
+      _communityUpdates = _preferences?.communityUpdatesEnabled ?? _communityUpdates;
+      _activitySettings = _preferences?.activitySettingsEnabled ?? _activitySettings;
 
       await _loadEmergencyContacts();
       await _loadLocalSafetySettings();
@@ -209,6 +230,41 @@ class SettingsService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setProfilePublic(bool v) {
+    _profilePublic = v;
+    notifyListeners();
+  }
+
+  void setShareRunHistory(bool v) {
+    _shareRunHistory = v;
+    notifyListeners();
+  }
+
+  void setRunReminders(bool v) {
+    _runReminders = v;
+    notifyListeners();
+  }
+
+  void setSafetyAlerts(bool v) {
+    _safetyAlerts = v;
+    notifyListeners();
+  }
+
+  void setRouteUpdates(bool v) {
+    _routeUpdates = v;
+    notifyListeners();
+  }
+
+  void setCommunityUpdates(bool v) {
+    _communityUpdates = v;
+    notifyListeners();
+  }
+
+  void setActivitySettings(bool v) {
+    _activitySettings = v;
+    notifyListeners();
+  }
+
   Future<bool> saveProfile({String? profileImagePath}) async {
     _isLoading = true;
     _error = null;
@@ -321,7 +377,19 @@ class SettingsService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      await _api.updatePreferences();
+      await _api.updatePreferences(
+        pushNotificationsEnabled: _pushNotifications,
+        emailNotificationsEnabled: _emailNotifications,
+        runRemindersEnabled: _runReminders,
+        safetyAlertsEnabled: _safetyAlerts,
+        routeUpdatesEnabled: _routeUpdates,
+        communityUpdatesEnabled: _communityUpdates,
+        activitySettingsEnabled: _activitySettings,
+        profilePublic: _profilePublic,
+        shareRunHistory: _shareRunHistory,
+        shareLiveLocation: _liveTracking,
+        emergencyAlertsEnabled: _emergencyAlerts,
+      );
       return true;
     } catch (e) {
       _error = e.toString();
