@@ -17,6 +17,13 @@ class NotificationSettingsScreen extends StatefulWidget {
 
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SettingsService>().load(refresh: true);
+    });
+  }
 
   Future<void> _updateSetting(Future<void> Function(bool) setter, bool value) async {
     await setter(value);

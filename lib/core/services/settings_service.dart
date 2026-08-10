@@ -115,7 +115,8 @@ class SettingsService extends ChangeNotifier {
       _routeUpdates = _preferences?.routeUpdatesEnabled ?? _routeUpdates;
       _communityUpdates = _preferences?.communityUpdatesEnabled ?? _communityUpdates;
       _activitySettings = _preferences?.activitySettingsEnabled ?? _activitySettings;
-
+      
+      _hasLoaded = true;
       await _loadEmergencyContacts();
       await _loadLocalSafetySettings();
       await _loadAgreementStatus();
@@ -377,7 +378,7 @@ class SettingsService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      await _api.updatePreferences(
+      final updated = await _api.updatePreferences(
         pushNotificationsEnabled: _pushNotifications,
         emailNotificationsEnabled: _emailNotifications,
         runRemindersEnabled: _runReminders,
@@ -390,6 +391,7 @@ class SettingsService extends ChangeNotifier {
         shareLiveLocation: _liveTracking,
         emergencyAlertsEnabled: _emergencyAlerts,
       );
+      _preferences = updated;
       return true;
     } catch (e) {
       _error = e.toString();

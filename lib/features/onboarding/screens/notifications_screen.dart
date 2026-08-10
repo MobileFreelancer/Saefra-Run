@@ -26,7 +26,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     await PermissionService.requestNotificationPermission();
     onboardingService.setPushNotifications(enable);
     onboardingService.setEmailNotifications(enable);
-    await FcmService.requestPermissionAndSync();
+    
+    // Attempt sync, but don't let iOS APNS token wait block the flow
+    FcmService.requestPermissionAndSync();
 
     // Fire onboarding completion
     final success = await onboardingService.completeOnboarding(authService);

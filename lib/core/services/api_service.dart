@@ -451,6 +451,24 @@ class ApiService {
     }
   }
 
+  Future<void> deleteAccount({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _dio.post(
+        _path('/auth/delete-account'),
+        data: _form({
+          'email': email,
+          'password': password,
+        }),
+      );
+      _map(response);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
 
   Future<UserModel> getCurrentUser() async {
     try {
@@ -546,15 +564,17 @@ class ApiService {
       final response = await _dio.get(_path('/preferences'));
       final map = _map(response);
       final payload = ApiResponseParser.payload(map);
-      return UserPreferencesModel.fromJson(
-        ApiResponseParser.asMap(payload['preferences']),
-      );
+      
+      // Look for data directly or inside a 'preferences' key
+      final data = payload.containsKey('id') ? payload : payload['preferences'] ?? payload;
+      
+      return UserPreferencesModel.fromJson(ApiResponseParser.asMap(data));
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
-  Future<void> updatePreferences({
+  Future<UserPreferencesModel> updatePreferences({
     String? visitReason,
     String? runPreference,
     bool? shareLiveLocation,
@@ -594,7 +614,11 @@ class ApiService {
         _path('/preferences'),
         data: _form(data),
       );
-      _map(response);
+      final responseMap = _map(response);
+      final payload = ApiResponseParser.payload(responseMap);
+      final resultData = payload.containsKey('id') ? payload : payload['preferences'] ?? payload;
+      
+      return UserPreferencesModel.fromJson(ApiResponseParser.asMap(resultData));
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

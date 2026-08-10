@@ -54,6 +54,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _confirmDeleteAccount() async {
+    final passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.background,
+        title: const Text('Delete Account', style: TextStyle(color: Colors.white)),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Are you sure you want to delete your account? This action is permanent and cannot be undone.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: passwordController,
+                obscureText: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Enter your password',
+                  hintStyle: TextStyle(color: AppColors.textMuted),
+                ),
+                validator: (v) => (v == null || v.isEmpty) ? 'Password required' : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final auth = context.read<AuthService>();
+              final success = await auth.deleteAccount(password: passwordController.text);
+              if (!ctx.mounted) return;
+              Navigator.pop(ctx);
+              if (success) {
+                if (mounted) context.goNamed('login');
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(auth.error ?? 'Delete failed')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Delete Permanently'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsService>();
@@ -222,6 +282,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                   _SettingsGroup(
                     children: [
+                      SettingsTile(
+                        dividerColors: Colors.transparent,
+                        label: 'Delete Account',
+                        fallbackIcon: Icons.delete_outline,
+                        onTap: () => _confirmDeleteAccount(),
+                        isDestructive: true,
+                      ),
+                      _SettingsDivider(),
                       SettingsTile(
                         dividerColors: Colors.transparent,
                         label: 'Logout',

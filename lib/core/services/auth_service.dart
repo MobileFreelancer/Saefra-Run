@@ -382,6 +382,28 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<bool> deleteAccount({required String password}) async {
+    _setLoading(true);
+    try {
+      final email = await _storage.read(key: ApiConfig.storageKeyUserEmail) ??
+          _currentUser?.email ??
+          '';
+      if (email.isEmpty) {
+        _setError('User email not found. Please log in again.');
+        return false;
+      }
+
+      await _apiService.deleteAccount(email: email, password: password);
+      await forceLogout();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> forceLogout() async {
     if (_sessionToken == null && _currentUser == null) return;
     _setLoading(true);
