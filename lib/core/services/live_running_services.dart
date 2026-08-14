@@ -15,10 +15,22 @@ class RunningProvider extends ChangeNotifier {
   Completer<GoogleMapController> get mapController => _mapController;
   GoogleMapController? _activeMapController;
 
-  static const LocationSettings _locationSettings = LocationSettings(
-    accuracy: LocationAccuracy.bestForNavigation,
-    distanceFilter: 0,
-  );
+  static LocationSettings get _locationSettings {
+    if (Platform.isIOS) {
+      return AppleSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 0,
+        activityType: ActivityType.fitness,
+        pauseLocationUpdatesAutomatically: false,
+        showBackgroundLocationIndicator: true,
+      );
+    }
+
+    return const LocationSettings(
+      accuracy: LocationAccuracy.bestForNavigation,
+      distanceFilter: 0,
+    );
+  }
 
   static const double _avgStrideMeters = 0.762;
   static const double _gpsAccuracyThreshold = 35;
