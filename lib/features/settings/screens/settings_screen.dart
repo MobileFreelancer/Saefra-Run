@@ -276,7 +276,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         fallbackIcon: Icons.info_outline,
                         onTap: () => context.pushNamed('aboutUs'),
                       ),
-                    ],
+                    ], 
                   ),
                   SizedBox(height: 12.h),
 
