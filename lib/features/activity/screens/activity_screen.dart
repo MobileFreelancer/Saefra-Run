@@ -9,7 +9,6 @@ import 'package:saefra_run/core/utils/navigation_utils.dart';
 import 'package:saefra_run/core/widgets/app_bottom_nav.dart';
 import 'package:saefra_run/core/widgets/asset_or_fallback.dart';
 import 'package:saefra_run/generated/assets.dart';
-
 import '../../../core/widgets/activity_shimmer_screen.dart';
 
 class ActivityScreen extends StatefulWidget {
@@ -170,17 +169,17 @@ class _SectionHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: bodyStyle.copyWith(fontWeight: FontWeight.w700,fontSize: 16.sp)),
-        GestureDetector(
-          onTap: onViewAll,
-          child: Text(
-            'View All',
-            style: bodyStyle.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w700,
-              fontSize: 13.sp
-            ),
-          ),
-        ),
+        // GestureDetector(
+        //   onTap: onViewAll,
+        //   child: Text(
+        //     'View All',
+        //     style: bodyStyle.copyWith(
+        //       color: AppColors.primary,
+        //       fontWeight: FontWeight.w700,
+        //       fontSize: 13.sp
+        //     ),
+        //   ),
+        // ),
       ],
     );
   }

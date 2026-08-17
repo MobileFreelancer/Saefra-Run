@@ -121,7 +121,7 @@ class SearchRouteBar extends StatelessWidget {
           child: Icon(Icons.close, color: AppColors.textMuted, size: 18),
         ),
       );
-    } else if (showInsideFilter) {
+    } else if (!showInsideFilter) {
       suffix = GestureDetector(
         onTap: openFilter,
         behavior: HitTestBehavior.opaque,
