@@ -72,10 +72,10 @@ class CommunityService extends ChangeNotifier {
       _hasMore = result.hasMore;
     } catch (e) {
       _error = e.toString();
-      _applyMockRoutes();
+      //_applyMockRoutes();
     } finally {
       if (_popularRoutes.isEmpty && _topRatedRoutes.isEmpty) {
-        _applyMockRoutes();
+     //   _applyMockRoutes();
       }
       _hasLoaded = true;
       _isLoading = false;
