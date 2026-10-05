@@ -141,39 +141,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: AppColors.background,
                 child: Row(
                   children: [
-                    userProfileImage != null && userProfileImage.isNotEmpty
-                        ? AppCircleCachedImage(
-                            imageUrl: userProfileImage,
-                            width: 42.w,
-                            height: 42.h,
-                            fit: BoxFit.cover,
-                          )
-                        : _UserAvatar(name: displayName),
-                    SizedBox(width: 12.w),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hello, ${displayName.toUpperCase()}',
-                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                                  fontSize: 16.sp,
-                                  color: AppColors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                          SizedBox(height: 2.h),
-                          Text(
-                            'Welcome back! 💪🏼',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontSize: 12.sp,
-                                  color: AppColors.welcomeColor,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                        ],
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => context.pushNamed('activity'),
+                        child: Row(
+                          children: [
+                            userProfileImage != null && userProfileImage.isNotEmpty
+                                ? AppCircleCachedImage(
+                                    imageUrl: userProfileImage,
+                                    width: 42.w,
+                                    height: 42.h,
+                                    fit: BoxFit.cover,
+                                  )
+                                : _UserAvatar(name: displayName),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Hello, ${displayName.toUpperCase()}',
+                                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                          fontSize: 16.sp,
+                                          color: AppColors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                  SizedBox(height: 2.h),
+                                  Text(
+                                    'Welcome back! 💪🏼',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          fontSize: 12.sp,
+                                          color: AppColors.welcomeColor,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                    SizedBox(width: 8.w),
                     GestureDetector(
                       onTap: () => context.pushNamed('notificationsInbox'),
                       child: Stack(

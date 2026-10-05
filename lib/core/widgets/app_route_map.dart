@@ -244,7 +244,7 @@ class _AppRouteMapState extends State<AppRouteMap> {
     required LatLng fallbackTarget,
     required bool useLocalCamera,
   }) async {
-    if (_userMovedCamera) return;
+    if (_userMovedCamera || !mounted) return;
 
     final controller = _controller;
     if (controller == null) return;
@@ -254,68 +254,73 @@ class _AppRouteMapState extends State<AppRouteMap> {
       ...points,
     ];
 
-    if (!useLocalCamera) {
-      final destinationMarker = markers.where(
-        (marker) => marker.markerId.value == 'route_destination',
-      );
-      if (destinationMarker.isNotEmpty) {
+    try {
+      if (!useLocalCamera) {
+        final destinationMarker = markers.where(
+          (marker) => marker.markerId.value == 'route_destination',
+        );
+        if (destinationMarker.isNotEmpty) {
+          await controller.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              destinationMarker.first.position,
+              widget.zoom,
+            ),
+          );
+          return;
+        }
+      }
+
+      if (allPoints.isEmpty) {
         await controller.animateCamera(
-          CameraUpdate.newLatLngZoom(
-            destinationMarker.first.position,
-            widget.zoom,
-          ),
+          CameraUpdate.newLatLngZoom(fallbackTarget, widget.zoom),
         );
         return;
       }
-    }
 
-    if (allPoints.isEmpty) {
-      await controller.animateCamera(
-        CameraUpdate.newLatLngZoom(fallbackTarget, widget.zoom),
-      );
-      return;
-    }
+      if (allPoints.length == 1) {
+        await controller.animateCamera(
+          CameraUpdate.newLatLngZoom(allPoints.first, widget.zoom),
+        );
+        return;
+      }
 
-    if (allPoints.length == 1) {
-      await controller.animateCamera(
-        CameraUpdate.newLatLngZoom(allPoints.first, widget.zoom),
-      );
-      return;
-    }
+      var minLat = allPoints.first.latitude;
+      var maxLat = allPoints.first.latitude;
+      var minLng = allPoints.first.longitude;
+      var maxLng = allPoints.first.longitude;
 
-    var minLat = allPoints.first.latitude;
-    var maxLat = allPoints.first.latitude;
-    var minLng = allPoints.first.longitude;
-    var maxLng = allPoints.first.longitude;
+      for (final point in allPoints) {
+        if (point.latitude < minLat) minLat = point.latitude;
+        if (point.latitude > maxLat) maxLat = point.latitude;
+        if (point.longitude < minLng) minLng = point.longitude;
+        if (point.longitude > maxLng) maxLng = point.longitude;
+      }
 
-    for (final point in allPoints) {
-      if (point.latitude < minLat) minLat = point.latitude;
-      if (point.latitude > maxLat) maxLat = point.latitude;
-      if (point.longitude < minLng) minLng = point.longitude;
-      if (point.longitude > maxLng) maxLng = point.longitude;
-    }
+      if ((maxLat - minLat).abs() < 1e-6 && (maxLng - minLng).abs() < 1e-6) {
+        await controller.animateCamera(
+          CameraUpdate.newLatLngZoom(allPoints.first, widget.zoom),
+        );
+        return;
+      }
 
-    if ((maxLat - minLat).abs() < 1e-6 && (maxLng - minLng).abs() < 1e-6) {
-      await controller.animateCamera(
-        CameraUpdate.newLatLngZoom(allPoints.first, widget.zoom),
-      );
-      return;
-    }
-
-    try {
-      await controller.animateCamera(
-        CameraUpdate.newLatLngBounds(
-          LatLngBounds(
-            southwest: LatLng(minLat, minLng),
-            northeast: LatLng(maxLat, maxLng),
+      try {
+        await controller.animateCamera(
+          CameraUpdate.newLatLngBounds(
+            LatLngBounds(
+              southwest: LatLng(minLat, minLng),
+              northeast: LatLng(maxLat, maxLng),
+            ),
+            56,
           ),
-          56,
-        ),
-      );
+        );
+      } catch (_) {
+        if (!mounted) return;
+        await controller.animateCamera(
+          CameraUpdate.newLatLngZoom(allPoints.first, widget.zoom),
+        );
+      }
     } catch (_) {
-      await controller.animateCamera(
-        CameraUpdate.newLatLngZoom(allPoints.first, widget.zoom),
-      );
+      // Ignore if map controller was already disposed
     }
   }
 
