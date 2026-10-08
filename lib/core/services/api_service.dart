@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'dart:convert';
+import 'package:http_parser/http_parser.dart';
 import 'package:intl/intl.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/activity_model.dart';
@@ -19,6 +20,7 @@ import 'package:saefra_run/core/models/run_review_form_model.dart';
 import 'package:saefra_run/core/models/sos_response_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_exception.dart';
+import 'package:saefra_run/core/services/reverse_geocoding_service.dart';
 import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/utils/api_response_parser.dart';
 import 'package:saefra_run/core/utils/formatters.dart';
@@ -677,9 +679,40 @@ class ApiService {
   }
 
   Future<RouteModel> saveRoute(Map<String, dynamic> body) async {
+    final requestBody = Map<String, dynamic>.from(body);
+    var location = requestBody['location']?.toString().trim();
+    final startLat = _toDouble(requestBody['start_latitude']);
+    final startLng = _toDouble(requestBody['start_longitude']);
+
+    if ((location == null || location.isEmpty) &&
+        startLat != null &&
+        startLng != null) {
+      developer.log(
+        'saveRoute resolving location from start=$startLat,$startLng',
+        name: 'saveRoute',
+      );
+      final resolved = await ReverseGeocodingService().addressFromCoordinates(
+        latitude: startLat,
+        longitude: startLng,
+      );
+      location = resolved?.trim();
+      if (location != null && location.isNotEmpty) {
+        requestBody['location'] = location;
+      } else {
+        developer.log(
+          'saveRoute FAILED to resolve location for $startLat,$startLng',
+          name: 'saveRoute',
+        );
+      }
+    }
+
+    developer.log(
+      'saveRoute body keys=${requestBody.keys.toList()} location=$location',
+      name: 'saveRoute',
+    );
     final response = await _dio.post(
       _path('/routes'),
-      data: body,
+      data: requestBody,
       options: Options(
         headers: {'Content-Type': 'application/json'},
       ),
@@ -689,6 +722,12 @@ class ApiService {
     return RouteModel.fromJson(
       Map<String, dynamic>.from((payload['route'] ?? payload) as Map),
     );
+  }
+
+  double? _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value.trim());
+    return null;
   }
 
   // ─── Settings / emergency contacts ──────────────────────────────────────────
@@ -1110,6 +1149,9 @@ class ApiService {
   }
 
   /// POST /api/v1/route-review
+  ///
+  /// Per API contract (`docs/API_REQUIREMENTS.md`), image uploads use the
+  /// multipart field `route_image[]` for both one and multiple images.
   Future<void> submitRunReview({
     String? runId,
     required String routeId,
@@ -1119,28 +1161,81 @@ class ApiService {
       final fields = form.toApiFields(routeId: routeId, runId: runId);
       final formData = FormData.fromMap(fields);
 
+      const fileKey = 'route_image[]';
+      var attachedCount = 0;
+
       for (final imagePath in form.imagePaths) {
         if (imagePath.isEmpty) continue;
         final file = File(imagePath);
         if (!await file.exists()) continue;
+        final fileName = imagePath.split('/').last;
+        final contentType = _imageContentType(fileName);
+        developer.log(
+          'Review image upload field=$fileKey file=$fileName '
+          'contentType=$contentType path=$imagePath',
+          name: 'submitRunReview',
+        );
         formData.files.add(
           MapEntry(
-            'route_image[]',
+            fileKey,
             await MultipartFile.fromFile(
               imagePath,
-              filename: imagePath.split('/').last,
+              filename: fileName,
+              contentType: contentType,
             ),
           ),
         );
+        attachedCount++;
       }
+
+      developer.log(
+        'Submitting route-review routeId=$routeId runId=$runId '
+        'images=$attachedCount field=${attachedCount > 0 ? fileKey : '(none)'}',
+        name: 'submitRunReview',
+      );
 
       final response = await _dio.post(
         _path('/route-review'),
         data: formData,
       );
-      _map(response);
+      // HTTP 200 can still be a business failure, e.g.
+      // {status: Fail, message: You have already reviewed this route.}
+      final mapped = _map(response);
+      developer.log(
+        'route-review success keys=${mapped.keys.toList()} '
+        'status=${mapped['status']} message=${mapped['message']}',
+        name: 'submitRunReview',
+      );
+    } on ApiException catch (e) {
+      developer.log(
+        'route-review business failure: ${e.message} (code=${e.statusCode})',
+        name: 'submitRunReview',
+      );
+      rethrow;
     } on DioException catch (e) {
+      developer.log(
+        'route-review failed: ${e.response?.statusCode} ${e.response?.data}',
+        name: 'submitRunReview',
+      );
       throw _handleDioError(e);
+    }
+  }
+
+  MediaType _imageContentType(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'png':
+        return MediaType('image', 'png');
+      case 'gif':
+        return MediaType('image', 'gif');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'heic':
+        return MediaType('image', 'heic');
+      case 'jpg':
+      case 'jpeg':
+      default:
+        return MediaType('image', 'jpeg');
     }
   }
 

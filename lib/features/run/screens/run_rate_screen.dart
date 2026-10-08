@@ -61,7 +61,10 @@ class _RunRateScreenState extends State<RunRateScreen> {
     if (!mounted) return;
 
     if (!ok) {
-      setState(() => _submitError = 'Failed to submit review. Please try again.');
+      setState(() {
+        _submitError = review.error ??
+            'Failed to submit review. Please try again.';
+      });
       return;
     }
 

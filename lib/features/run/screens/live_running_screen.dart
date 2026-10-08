@@ -295,32 +295,21 @@ class _LiveRunningScreenState extends State<LiveRunningScreen> {
               target:
                   trackingProvider.currentPosition ??
                   const LatLng(37.7749, -122.4194),
-              zoom: 18.5, // More zoom like the screenshot
+              zoom: 14,
               tilt: 0,
               bearing: 0,
             ),
             onMapCreated: (GoogleMapController controller) {
               trackingProvider.onMapReady(controller);
               context.read<DashboardServices>().applyMapStyle(controller);
-
-              if (trackingProvider.currentPosition != null) {
-                controller.moveCamera(
-                  CameraUpdate.newCameraPosition(
-                    CameraPosition(
-                      target: trackingProvider.currentPosition!,
-                      zoom: 18.5,
-                      tilt: 0,
-                      bearing: 0,
-                    ),
-                  ),
-                );
-              }
             },
             polylines: Set<Polyline>.of(trackingProvider.polylines.values),
             markers: trackingProvider.buildMarkerSet(),
             myLocationEnabled: false,
+            myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
+            compassEnabled: false,
           ),
 
           // GoogleMap(

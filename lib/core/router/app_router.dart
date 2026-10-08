@@ -332,7 +332,7 @@ class AppRouter {
         name: 'activity',
         builder: (context, state) => const ActivityScreen(),
       ),
-      GoRoute(
+   /*   GoRoute(
         path: '/run/safety-checkin',
         name: 'safetyCheckIn',
         builder: (context, state) {
@@ -342,7 +342,7 @@ class AppRouter {
             routeName: qp['routeName'],
           );
         },
-      ),
+      ),*/
       GoRoute(
         path: '/run/live',
         name: 'liveRunning',

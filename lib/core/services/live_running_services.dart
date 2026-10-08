@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
@@ -68,6 +67,11 @@ class RunningProvider extends ChangeNotifier {
   bool _isLoadingRoute = false;
   bool get isLoadingRoute => _isLoadingRoute;
 
+  bool _isRerouting = false;
+  DateTime? _lastRerouteAt;
+  static const Duration _rerouteCooldown = Duration(seconds: 12);
+  static const double _offRouteThresholdMeters = 35;
+
   bool _isSafeRouteSelected = false;
   bool get isSafeRouteSelected => _isSafeRouteSelected;
 
@@ -116,6 +120,8 @@ class RunningProvider extends ChangeNotifier {
       _destinationIcon ??
       BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
 
+  static const double _navigationZoom = 14.0;
+
   /// Fresh marker set each call so GoogleMap always picks up GPS moves.
   Set<Marker> buildMarkerSet() {
     final markers = <Marker>{};
@@ -125,18 +131,30 @@ class RunningProvider extends ChangeNotifier {
           markerId: const MarkerId('runner_location'),
           position: _currentPosition!,
           icon: runnerMarkerIcon,
-          anchor: const Offset(0.5, 0.5),
-          zIndex: 2,
+          // Bottom-center so the person icon sits on the route point.
+          anchor: const Offset(0.5, 0.9),
+          zIndexInt: 2,
+          flat: false,
+          consumeTapEvents: false,
         ),
       );
     }
-    if (_destinationPosition != null) {
+    if (_destinationPosition != null &&
+        (_currentPosition == null ||
+            Geolocator.distanceBetween(
+                  _currentPosition!.latitude,
+                  _currentPosition!.longitude,
+                  _destinationPosition!.latitude,
+                  _destinationPosition!.longitude,
+                ) >
+                25)) {
       markers.add(
         Marker(
           markerId: const MarkerId('destination_location'),
           position: _destinationPosition!,
           icon: destinationMarkerIcon,
           anchor: const Offset(0.5, 1.0),
+          zIndexInt: 1,
         ),
       );
     }
@@ -151,40 +169,55 @@ class RunningProvider extends ChangeNotifier {
   /// Loads custom marker images from app assets.
   Future<void> _ensureRunnerIcons() async {
     try {
-      const ImageConfiguration imageConfig = ImageConfiguration(size: Size(48, 48));
+      // Fixed logical sizes so the person marker stays clearly visible.
+      const imageConfig = ImageConfiguration(devicePixelRatio: 3);
+      const personMarkerSize = 64.0;
+      const destinationMarkerSize = 48.0;
 
-      _runnerIconIdle ??= await BitmapDescriptor.asset(
+      // Start / runner marker: people (running person) icon.
+      final personIcon = await BitmapDescriptor.asset(
         imageConfig,
-        'assets/images/endimage.png',
-          width: 25.w,
-          height: 25.h
+        'assets/images/runicon.png',
+        width: personMarkerSize,
+        height: personMarkerSize,
       );
-
-      _runnerIconActive ??= await BitmapDescriptor.asset(
-        imageConfig,
-        'assets/images/endimage.png',
-          width: 25.w,
-          height: 25.h
-      );
+      _runnerIconIdle ??= personIcon;
+      _runnerIconActive ??= personIcon;
 
       _destinationIcon ??= await BitmapDescriptor.asset(
         imageConfig,
         'assets/images/startrun.png',
-        width: 25.w,
-        height: 25.h
+        width: destinationMarkerSize,
+        height: destinationMarkerSize,
       );
+      debugPrint('✅ Person start marker + destination markers loaded');
+      notifyListeners();
     } catch (e) {
-      debugPrint("⚠️ Could not load custom asset icons, falling back to default colors: $e");
-
-      _runnerIconIdle ??= BitmapDescriptor.defaultMarkerWithHue(
-        BitmapDescriptor.hueRose,
+      debugPrint(
+        '⚠️ Could not load person marker asset, trying user.png fallback: $e',
       );
-      _runnerIconActive ??= BitmapDescriptor.defaultMarkerWithHue(
-        BitmapDescriptor.hueAzure,
-      );
+      try {
+        const imageConfig = ImageConfiguration(devicePixelRatio: 3);
+        final fallbackPerson = await BitmapDescriptor.asset(
+          imageConfig,
+          'assets/images/user.png',
+          width: 56,
+          height: 56,
+        );
+        _runnerIconIdle ??= fallbackPerson;
+        _runnerIconActive ??= fallbackPerson;
+      } catch (_) {
+        _runnerIconIdle ??= BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueRose,
+        );
+        _runnerIconActive ??= BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueAzure,
+        );
+      }
       _destinationIcon ??= BitmapDescriptor.defaultMarkerWithHue(
         BitmapDescriptor.hueRed,
       );
+      notifyListeners();
     }
   }
 
@@ -239,11 +272,8 @@ class RunningProvider extends ChangeNotifier {
     if (!_mapController.isCompleted) {
       _mapController.complete(controller);
     }
-    if (_currentPosition != null) {
-      _followRunnerOnMap(_currentPosition!, zoom: 16);
-    } else {
-      _adjustCameraToFitRoute();
-    }
+    // Prefer a route-aware overview over an extreme close-up zoom.
+    _adjustCameraToFitRoute();
     notifyListeners();
   }
 
@@ -290,8 +320,11 @@ class RunningProvider extends ChangeNotifier {
       _secondsElapsed = 0;
       _routeRemainingStr = "0m";
 
-      // Prefer live GPS; fall back to route start until the stream updates.
-      _currentPosition ??= startPoint;
+      // Prefer live GPS; fall back to route start so the runner marker is visible.
+      _currentPosition ??=
+          (routePolyline != null && routePolyline.isNotEmpty)
+              ? routePolyline.first
+              : startPoint;
 
       _destinationPosition = endPoint;
       _isSafeRouteSelected = true;
@@ -315,48 +348,70 @@ class RunningProvider extends ChangeNotifier {
 
   Future<void> _adjustCameraToFitRoute() async {
     try {
-      if (_currentPosition == null || _destinationPosition == null) return;
-
       final controller = _activeMapController ??
           (_mapController.isCompleted ? await _mapController.future : null);
       if (controller == null) return;
 
-      LatLngBounds bounds;
-      if (_currentPosition!.latitude > _destinationPosition!.latitude) {
-        bounds = LatLngBounds(
-          southwest: LatLng(
-            _destinationPosition!.latitude,
-            _destinationPosition!.longitude < _currentPosition!.longitude
-                ? _destinationPosition!.longitude
-                : _currentPosition!.longitude,
-          ),
-          northeast: LatLng(
-            _currentPosition!.latitude,
-            _destinationPosition!.longitude > _currentPosition!.longitude
-                ? _destinationPosition!.longitude
-                : _currentPosition!.longitude,
-          ),
+      // Fit the remaining polyline (not just start/end). Loop routes have the
+      // same start & end, which previously collapsed bounds and over-zoomed.
+      final points = <LatLng>[
+        if (_currentPosition != null) _currentPosition!,
+        ..._runningPathCoordinates,
+        if (_destinationPosition != null) _destinationPosition!,
+      ];
+
+      if (points.isEmpty) return;
+
+      if (points.length == 1) {
+        await controller.animateCamera(
+          CameraUpdate.newLatLngZoom(points.first, _navigationZoom),
         );
-      } else {
-        bounds = LatLngBounds(
-          southwest: LatLng(
-            _currentPosition!.latitude,
-            _currentPosition!.longitude < _destinationPosition!.longitude
-                ? _currentPosition!.longitude
-                : _destinationPosition!.longitude,
-          ),
-          northeast: LatLng(
-            _destinationPosition!.latitude,
-            _destinationPosition!.longitude > _destinationPosition!.longitude
-                ? _destinationPosition!.longitude
-                : _currentPosition!.longitude,
-          ),
-        );
+        return;
       }
 
-      controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 70));
+      var minLat = points.first.latitude;
+      var maxLat = points.first.latitude;
+      var minLng = points.first.longitude;
+      var maxLng = points.first.longitude;
+      for (final point in points) {
+        minLat = minLat < point.latitude ? minLat : point.latitude;
+        maxLat = maxLat > point.latitude ? maxLat : point.latitude;
+        minLng = minLng < point.longitude ? minLng : point.longitude;
+        maxLng = maxLng > point.longitude ? maxLng : point.longitude;
+      }
+
+      final latDelta = (maxLat - minLat).abs();
+      final lngDelta = (maxLng - minLng).abs();
+      // Very small spans (same-point loop / GPS noise) → moderate navigation zoom.
+      if (latDelta < 0.003 && lngDelta < 0.003) {
+        final center = _currentPosition ??
+            LatLng((minLat + maxLat) / 2, (minLng + maxLng) / 2);
+        await controller.animateCamera(
+          CameraUpdate.newLatLngZoom(center, _navigationZoom),
+        );
+        return;
+      }
+
+      // Pad degenerate edges so LatLngBounds never collapses.
+      if (latDelta < 0.0005) {
+        minLat -= 0.001;
+        maxLat += 0.001;
+      }
+      if (lngDelta < 0.0005) {
+        minLng -= 0.001;
+        maxLng += 0.001;
+      }
+
+      final bounds = LatLngBounds(
+        southwest: LatLng(minLat, minLng),
+        northeast: LatLng(maxLat, maxLng),
+      );
+      await controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
     } catch (e) {
-      debugPrint("❌ Error moving camera bounds: $e");
+      debugPrint('❌ Error moving camera bounds: $e');
+      if (_currentPosition != null) {
+        await _followRunnerOnMap(_currentPosition!, zoom: _navigationZoom);
+      }
     }
   }
 
@@ -531,12 +586,11 @@ class RunningProvider extends ChangeNotifier {
 
   void _applyGpsPosition(Position position, {bool followCamera = true}) {
     _lastGpsAccuracy = position.accuracy;
-
     final newPos = LatLng(position.latitude, position.longitude);
     final previous = _currentPosition;
-    final gpsReliable = position.accuracy <= _gpsAccuracyThreshold;
+    _lastMeaningfulGpsUpdateAt = DateTime.now();
 
-    if (_isTracking && gpsReliable && previous != null && !_shouldPreferStepTracking()) {
+    if (_isTracking && previous != null) {
       final distanceMovedMeters = Geolocator.distanceBetween(
         previous.latitude,
         previous.longitude,
@@ -545,7 +599,6 @@ class RunningProvider extends ChangeNotifier {
       );
 
       if (distanceMovedMeters > 0.5) {
-        _lastMeaningfulGpsUpdateAt = DateTime.now();
         _trackedDistanceMeters += distanceMovedMeters;
         _totalDistanceKm += distanceMovedMeters / 1000;
 
@@ -557,6 +610,7 @@ class RunningProvider extends ChangeNotifier {
         _currentPosition = newPos;
         if (_runningPathCoordinates.isNotEmpty) {
           _trimPassedRoutePoints(newPos);
+          _checkAndTriggerReroute(newPos);
         }
         _calculateRemainingDistance();
         _notifyTrackingUpdate(newPos);
@@ -569,11 +623,6 @@ class RunningProvider extends ChangeNotifier {
       }
     }
 
-    if (_isTracking && _shouldPreferStepTracking()) {
-      notifyListeners();
-      return;
-    }
-
     _currentPosition = newPos;
 
     if (followCamera && (_isTracking || previous == null)) {
@@ -581,6 +630,172 @@ class RunningProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  void _checkAndTriggerReroute(LatLng currentPos) {
+    if (_destinationPosition == null || _isLoadingRoute || _isRerouting) return;
+    if (_runningPathCoordinates.isEmpty) return;
+
+    if (_lastRerouteAt != null &&
+        DateTime.now().difference(_lastRerouteAt!) < _rerouteCooldown) {
+      return;
+    }
+
+    double minDistance = double.infinity;
+    var nearestIndex = 0;
+    for (var i = 0; i < _runningPathCoordinates.length; i++) {
+      final point = _runningPathCoordinates[i];
+      final dist = Geolocator.distanceBetween(
+        currentPos.latitude,
+        currentPos.longitude,
+        point.latitude,
+        point.longitude,
+      );
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearestIndex = i;
+      }
+    }
+
+    if (minDistance > _offRouteThresholdMeters) {
+      debugPrint(
+        '[Reroute] Off-route detected: ${minDistance.toStringAsFixed(1)}m '
+        'from remaining path (nearestIndex=$nearestIndex, '
+        'remainingPoints=${_runningPathCoordinates.length}). '
+        'Reconnecting to remaining route instead of final destination.',
+      );
+      _rerouteReconnectingToRemainingPath(
+        currentPos: currentPos,
+        nearestIndex: nearestIndex,
+      );
+    }
+  }
+
+  /// Reconnects from the runner's current position to the nearest remaining
+  /// route segment, then preserves the rest of the planned path (important for loops).
+  Future<void> _rerouteReconnectingToRemainingPath({
+    required LatLng currentPos,
+    required int nearestIndex,
+  }) async {
+    if (_isLoadingRoute || _isRerouting || _runningPathCoordinates.isEmpty) {
+      return;
+    }
+
+    _isRerouting = true;
+    _isLoadingRoute = true;
+    _lastRerouteAt = DateTime.now();
+    notifyListeners();
+
+    try {
+      final reconnectIndex = _reconnectIndexAlongRemainingPath(nearestIndex);
+      final reconnectPoint = _runningPathCoordinates[reconnectIndex];
+      final remainingTail =
+          _runningPathCoordinates.sublist(reconnectIndex);
+
+      debugPrint(
+        '[Reroute] Requesting reconnect path: '
+        'current=(${currentPos.latitude},${currentPos.longitude}) → '
+        'reconnect=(${reconnectPoint.latitude},${reconnectPoint.longitude}) '
+        'index=$reconnectIndex/${_runningPathCoordinates.length - 1}',
+      );
+
+      final response = await _polylinePoints.getRouteBetweenCoordinatesV2(
+        request: RoutesApiRequest(
+          origin: PointLatLng(currentPos.latitude, currentPos.longitude),
+          destination: PointLatLng(
+            reconnectPoint.latitude,
+            reconnectPoint.longitude,
+          ),
+          travelMode: TravelMode.walking,
+          routingPreference: RoutingPreference.unspecified,
+        ),
+      );
+
+      if (response.errorMessage != null && response.errorMessage!.isNotEmpty) {
+        debugPrint('[Reroute] API error: ${response.errorMessage}');
+      }
+
+      final decoded = response.routes.isNotEmpty
+          ? response.routes.first.polylinePoints
+          : null;
+
+      if (decoded == null || decoded.isEmpty) {
+        debugPrint(
+          '[Reroute] No reconnect polyline returned (status=${response.status}). '
+          'Keeping existing remaining path.',
+        );
+        return;
+      }
+
+      final reconnectPath = decoded
+          .map((point) => LatLng(point.latitude, point.longitude))
+          .toList();
+
+      final merged = <LatLng>[...reconnectPath];
+      for (final point in remainingTail) {
+        if (merged.isNotEmpty) {
+          final last = merged.last;
+          final gap = Geolocator.distanceBetween(
+            last.latitude,
+            last.longitude,
+            point.latitude,
+            point.longitude,
+          );
+          if (gap < 3) continue;
+        }
+        merged.add(point);
+      }
+
+      if (merged.length < 2) {
+        debugPrint('[Reroute] Merged path too short; aborting update');
+        return;
+      }
+
+      _runningPathCoordinates
+        ..clear()
+        ..addAll(merged);
+      _fullRoutePoints = List<LatLng>.from(merged);
+      _drawRunningPolyline(const Color(0xFFE91E63));
+      _calculateRemainingDistance();
+
+      debugPrint(
+        '[Reroute] Success. New remaining points=${merged.length}, '
+        'remaining=${_routeRemainingStr}',
+      );
+    } catch (e) {
+      debugPrint('[Reroute] Failed: $e');
+    } finally {
+      _isRerouting = false;
+      _isLoadingRoute = false;
+      notifyListeners();
+    }
+  }
+
+  /// Prefer a point slightly ahead of the nearest index so we reconnect in the
+  /// intended travel direction instead of behind the runner.
+  int _reconnectIndexAlongRemainingPath(int nearestIndex) {
+    if (_runningPathCoordinates.isEmpty) return 0;
+    if (nearestIndex >= _runningPathCoordinates.length - 1) {
+      return _runningPathCoordinates.length - 1;
+    }
+
+    const lookaheadMeters = 60.0;
+    var traveled = 0.0;
+    var index = nearestIndex;
+
+    for (var i = nearestIndex; i < _runningPathCoordinates.length - 1; i++) {
+      final segment = Geolocator.distanceBetween(
+        _runningPathCoordinates[i].latitude,
+        _runningPathCoordinates[i].longitude,
+        _runningPathCoordinates[i + 1].latitude,
+        _runningPathCoordinates[i + 1].longitude,
+      );
+      traveled += segment;
+      index = i + 1;
+      if (traveled >= lookaheadMeters) break;
+    }
+
+    return index;
   }
 
   bool _shouldPreferStepTracking() {
@@ -737,13 +952,11 @@ class RunningProvider extends ChangeNotifier {
     if (controller == null) return;
 
     try {
-      if (zoom != null) {
-        await controller.animateCamera(
-          CameraUpdate.newLatLngZoom(position, zoom),
-        );
-      } else {
-        await controller.animateCamera(CameraUpdate.newLatLng(position));
-      }
+      // Keep a professional street-level view; never snap to extreme close-up.
+      final targetZoom = zoom ?? _navigationZoom;
+      await controller.animateCamera(
+        CameraUpdate.newLatLngZoom(position, targetZoom),
+      );
     } catch (e) {
       debugPrint('Camera follow failed: $e');
     }

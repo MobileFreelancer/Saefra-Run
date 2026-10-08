@@ -9,6 +9,7 @@ class SaveRoutePayload {
     double? startLongitude,
     double? endLatitude,
     double? endLongitude,
+    String? location,
   }) {
     final body = <String, dynamic>{
       'routeName': result.routeName,
@@ -24,6 +25,12 @@ class SaveRoutePayload {
       'averageSpeedKmh': result.averageSpeedKmh,
       'encodedPolyline': result.encodedPolyline,
     };
+
+    final locationLabel = location?.trim();
+    if (locationLabel != null && locationLabel.isNotEmpty) {
+      // Backend Activity/community screens read this as the route place label.
+      body['location'] = locationLabel;
+    }
 
     if (startLatitude != null && startLongitude != null) {
       body['start_latitude'] = startLatitude;

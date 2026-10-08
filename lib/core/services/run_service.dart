@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -8,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:saefra_run/core/models/emergency_contact_model.dart';
 import 'package:saefra_run/core/models/run_session_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
+import 'package:saefra_run/core/services/reverse_geocoding_service.dart';
+import 'package:saefra_run/core/services/run_location_cache.dart';
 
 class RunService extends ChangeNotifier {
   RunService();
@@ -211,11 +212,39 @@ class RunService extends ChangeNotifier {
         polyline: _encodePolyline(routePath),
         endedAt: DateTime.now(),
       );
+      // Await so Activity can read the city/state cache immediately after finish.
+      await _cacheRunCityState(
+        runId: runId,
+        latitude: latitude,
+        longitude: longitude,
+      );
       return true;
     } catch (e) {
       _apiError = e.toString();
       debugPrint('RunService.finishRunOnServer failed: $e');
       return false;
+    }
+  }
+
+  Future<void> _cacheRunCityState({
+    required String runId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final cityState = await ReverseGeocodingService().cityStateFromCoordinates(
+        latitude: latitude,
+        longitude: longitude,
+      );
+      if (cityState == null || cityState.isEmpty) {
+        debugPrint(
+          '[ActivityLocation] Finish reverse-geocode returned empty for run $runId',
+        );
+        return;
+      }
+      await RunLocationCache.save(runId, cityState);
+    } catch (e) {
+      debugPrint('[ActivityLocation] Finish location cache failed: $e');
     }
   }
 
@@ -398,12 +427,14 @@ class RunService extends ChangeNotifier {
 
   Future<bool> saveActivity() async {
     final runId = _session.runId;
-    final mood = _mood;
     if (runId == null || runId.isEmpty) return true;
+
+    // Mood selector was removed from Run Summary (Phase 1). Only submit a
+    // feeling when the user explicitly set one — never invent a default.
+    final mood = _mood;
     if (mood == null) {
-      _apiError = 'Please select how your run felt.';
-      notifyListeners();
-      return false;
+      _apiError = null;
+      return true;
     }
 
     try {

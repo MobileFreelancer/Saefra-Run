@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:saefra_run/core/mock/feature_mock_data.dart';
 import 'package:saefra_run/core/models/community_route_list_result.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
@@ -64,9 +63,9 @@ class CommunityRouteListService extends ChangeNotifier {
       _currentPage = result.currentPage;
     } catch (e) {
       _error = e.toString();
-      _applyMockRoutes();
+      _routes = [];
+      _hasMore = false;
     } finally {
-      if (_routes.isEmpty) _applyMockRoutes();
       _isLoading = false;
       notifyListeners();
     }
@@ -141,15 +140,6 @@ class CommunityRouteListService extends ChangeNotifier {
           search: search,
         ),
     };
-  }
-
-  void _applyMockRoutes() {
-    _routes = switch (_kind) {
-      CommunityRouteListKind.popular => FeatureMockData.popularRoutes,
-      CommunityRouteListKind.recent => FeatureMockData.recentRoutes,
-      null => const [],
-    };
-    _hasMore = false;
   }
 
   @override

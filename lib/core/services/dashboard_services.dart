@@ -384,12 +384,20 @@ class DashboardServices extends ChangeNotifier {
   }
 
   Future<void> initializeDashboard() async {
-    if (_homeRoutesRequested) return;
-
-    try {
-      await getCurrentLocation().timeout(const Duration(seconds: 8));
-    } catch (e) {
-      debugPrint('getCurrentLocation timed out or failed: $e');
+    // Always try to resolve GPS when missing — home routes may already have
+    // loaded with default coordinates after a previous failed location attempt.
+    if (_latitude == null || _longitude == null) {
+      try {
+        await ensureCurrentLocation().timeout(const Duration(seconds: 12));
+      } catch (e) {
+        debugPrint('initializeDashboard location failed: $e');
+      }
+    } else if (!_locationInitStarted) {
+      try {
+        await getCurrentLocation().timeout(const Duration(seconds: 8));
+      } catch (e) {
+        debugPrint('getCurrentLocation timed out or failed: $e');
+      }
     }
     await loadHomeRoutesIfNeeded();
   }
@@ -502,26 +510,136 @@ class DashboardServices extends ChangeNotifier {
   }
 
   Future<void> refreshCurrentLocation() async {
-    try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
+    await ensureCurrentLocation(forceRefresh: true);
+  }
 
+  /// Ensures [latitude]/[longitude] are available for routing.
+  ///
+  /// Requests permission when needed, prompts to enable GPS if required,
+  /// prefers a fresh fix, and falls back to last-known position.
+  Future<bool> ensureCurrentLocation({
+    bool forceRefresh = false,
+    bool openSettingsIfDisabled = true,
+  }) async {
+    if (!forceRefresh && _latitude != null && _longitude != null) {
+      return true;
+    }
+
+    try {
       var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-        return;
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
       }
 
+      _locationPermissionResolved = true;
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _errorMessage =
+            'Location permission is required to generate a route.';
+        debugPrint('ensureCurrentLocation: permission=$permission');
+        notifyListeners();
+        return false;
+      }
+
+      var serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint(
+          'ensureCurrentLocation: location services reported disabled',
+        );
+        // Keep any existing fix usable for routing.
+        if (!forceRefresh && _latitude != null && _longitude != null) {
+          return true;
+        }
+
+        if (openSettingsIfDisabled) {
+          try {
+            await Geolocator.openLocationSettings();
+          } catch (e) {
+            debugPrint('openLocationSettings failed: $e');
+          }
+          // Give the user a moment to turn GPS on, then re-check once.
+          await Future<void>.delayed(const Duration(seconds: 2));
+          serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        }
+      }
+
+      // Always attempt a position read when permission is granted — some OEMs
+      // report services as disabled even when a fix is still available.
+      final resolved = await _resolvePositionFix();
+      if (resolved) {
+        _errorMessage = null;
+        _startPositionStreamIfNeeded();
+        notifyListeners();
+        return true;
+      }
+
+      if (!serviceEnabled) {
+        _errorMessage =
+            'Please turn on Location / GPS in Settings, then try again.';
+      } else {
+        _errorMessage =
+            'Could not get your current location. Check GPS and try again.';
+      }
+      notifyListeners();
+      return false;
+    } catch (e) {
+      debugPrint('ensureCurrentLocation failed: $e');
+      if (_latitude != null && _longitude != null) return true;
+      _errorMessage =
+          'Could not get your current location. Check GPS and try again.';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> _resolvePositionFix() async {
+    try {
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) {
+        _latitude = lastKnown.latitude;
+        _longitude = lastKnown.longitude;
+        debugPrint(
+          'ensureCurrentLocation: using lastKnown ($_latitude, $_longitude)',
+        );
+      }
+    } catch (e) {
+      debugPrint('ensureCurrentLocation lastKnown failed: $e');
+    }
+
+    try {
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
         ),
-      );
+      ).timeout(const Duration(seconds: 12));
       _latitude = pos.latitude;
       _longitude = pos.longitude;
-      notifyListeners();
+      debugPrint(
+        'ensureCurrentLocation: fresh fix ($_latitude, $_longitude)',
+      );
+      return true;
     } catch (e) {
-      debugPrint('refreshCurrentLocation failed: $e');
+      debugPrint('ensureCurrentLocation getCurrentPosition failed: $e');
+      return _latitude != null && _longitude != null;
     }
+  }
+
+  void _startPositionStreamIfNeeded() {
+    if (_positionStreamSubscription != null) return;
+    _locationInitStarted = true;
+    _positionStreamSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.medium,
+        distanceFilter: 10,
+      ),
+    ).listen((Position position) {
+      _latitude = position.latitude;
+      _longitude = position.longitude;
+      _notifyLocationListeners();
+      loadHomeRoutesIfNeeded();
+    });
   }
 
   Future<void> _animateToCurrentLocation() async {

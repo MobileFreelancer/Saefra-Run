@@ -166,7 +166,7 @@ class SaefraRunApp extends StatelessWidget {
     return GestureDetector(
      onTap: () => FocusScope.of(context).unfocus(),
       child: ScreenUtilInit(
-        designSize: const Size(360, 690),
+        designSize: const Size(390, 844),
         minTextAdapt: true,
         splitScreenMode: true,
         builder: (context, child) => MaterialApp.router(

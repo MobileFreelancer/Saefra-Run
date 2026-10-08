@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:saefra_run/core/utils/activity_location_resolver.dart';
+
 enum ActivityPeriod { weekly, monthly, yearly }
 
 class ActivitySummaryModel {
@@ -52,6 +55,11 @@ class RecentActivityModel {
   final String? location;
   final int? safetyScore;
   final int? calories;
+  final double? latitude;
+  final double? longitude;
+  /// Catalog/API `location` string kept only as a last-resort fallback after
+  /// reverse-geocoding fails.
+  final String? fallbackLocation;
 
   const RecentActivityModel({
     required this.id,
@@ -66,7 +74,13 @@ class RecentActivityModel {
     this.location,
     this.safetyScore,
     this.calories,
+    this.latitude,
+    this.longitude,
+    this.fallbackLocation,
   });
+
+  bool get needsReverseGeocode =>
+      location == null && latitude != null && longitude != null;
 
   String get formattedDuration =>
       durationLabel ?? (durationMinutes > 0 ? '$durationMinutes min' : '0 min');
@@ -74,8 +88,58 @@ class RecentActivityModel {
   String get formattedDistance =>
       distanceKm > 0 ? '${distanceKm.toStringAsFixed(2)} km' : '0 km';
 
+  RecentActivityModel copyWith({
+    String? id,
+    String? name,
+    String? dateLabel,
+    double? distanceKm,
+    int? durationMinutes,
+    String? durationLabel,
+    String? paceLabel,
+    String? mapImageAsset,
+    String? difficulty,
+    String? location,
+    int? safetyScore,
+    int? calories,
+    double? latitude,
+    double? longitude,
+    String? fallbackLocation,
+  }) {
+    return RecentActivityModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      dateLabel: dateLabel ?? this.dateLabel,
+      distanceKm: distanceKm ?? this.distanceKm,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      durationLabel: durationLabel ?? this.durationLabel,
+      paceLabel: paceLabel ?? this.paceLabel,
+      mapImageAsset: mapImageAsset ?? this.mapImageAsset,
+      difficulty: difficulty ?? this.difficulty,
+      location: location ?? this.location,
+      safetyScore: safetyScore ?? this.safetyScore,
+      calories: calories ?? this.calories,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      fallbackLocation: fallbackLocation ?? this.fallbackLocation,
+    );
+  }
+
   factory RecentActivityModel.fromJson(Map<String, dynamic> json) {
     final durationRaw = json['duration_minutes'] ?? json['duration'];
+    final coords = ActivityLocationResolver.parseCoordinates(json);
+    final resolvedLocation =
+        ActivityLocationResolver.resolveDisplayLocation(json);
+    final rawLocation = ActivityValueParser.nullableString(json['location']);
+
+    debugPrint(
+      '[ActivityLocation] run_id=${json['run_id'] ?? json['id']} '
+      'keys=${json.keys.toList()} '
+      'raw_location=$rawLocation '
+      'street=${json['street'] ?? json['route_street']} '
+      'city=${json['city']} state=${json['state']} '
+      'coords=$coords resolved=$resolvedLocation',
+    );
+
     return RecentActivityModel(
       id: '${json['id'] ?? json['run_id'] ?? ''}',
       name: json['name'] as String? ??
@@ -100,9 +164,12 @@ class RecentActivityModel {
         json['map_image'] ?? json['route_image'] ?? json['image'],
       ),
       difficulty: json['difficulty'] as String?,
-      location: json['location'] as String?,
+      location: resolvedLocation,
       safetyScore: _toInt(json['safety_score']),
       calories: _toInt(json['calories']),
+      latitude: coords?.$1,
+      longitude: coords?.$2,
+      fallbackLocation: rawLocation,
     );
   }
 

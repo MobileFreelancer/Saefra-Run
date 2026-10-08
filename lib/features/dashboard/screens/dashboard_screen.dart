@@ -86,13 +86,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final activity = context.watch<ActivityService>();
     final user = auth.currentUser;
 
-    final greetingName = [
-      user?.firstName,
-      user?.lastName,
-    ].where((part) => part != null && part.trim().isNotEmpty).join(' ').trim();
-    final displayName = greetingName.isNotEmpty
-        ? greetingName
+    final rawFirstName = (user?.firstName != null && user!.firstName!.trim().isNotEmpty)
+        ? user.firstName!.trim()
         : (user?.email?.split('@').first ?? 'Runner');
+    final formattedFirstName = rawFirstName.isNotEmpty
+        ? rawFirstName[0].toUpperCase() + rawFirstName.substring(1).toLowerCase()
+        : 'Runner';
+    final displayName = formattedFirstName;
     final userProfileImage = user?.profileImage?.toString();
 
     // Stats variables with fallback values if null/empty
@@ -161,7 +161,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Hello, ${displayName.toUpperCase()}',
+                                    'Hello, $formattedFirstName',
                                     style: Theme.of(context).textTheme.displayLarge?.copyWith(
                                           fontSize: 16.sp,
                                           color: AppColors.white,

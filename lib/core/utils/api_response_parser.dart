@@ -46,14 +46,16 @@ class ApiResponseParser {
     dynamic data, {
     String fallback = 'Something went wrong.',
   }) {
-    if (data is! Map<String, dynamic>) return fallback;
+    if (data is! Map) return fallback;
 
-    final message = data['message'];
+    final map = asMap(data);
+
+    final message = map['message'];
     if (message is String && message.trim().isNotEmpty) {
       return message.trim();
     }
 
-    final errors = data['errors'];
+    final errors = map['errors'];
     if (errors is List && errors.isNotEmpty) {
       final first = errors.first;
       if (first is Map) {
@@ -61,6 +63,8 @@ class ApiResponseParser {
         if (nested is String && nested.trim().isNotEmpty) {
           return nested.trim();
         }
+      } else if (first is String && first.trim().isNotEmpty) {
+        return first.trim();
       }
     }
     if (errors is Map) {

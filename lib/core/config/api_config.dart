@@ -28,17 +28,6 @@ class ApiConfig {
     }
   }
 
-  /// Toggle mock API responses. Set USE_MOCK_API=false in .env when backend is ready.
-  static bool get useMockApi {
-    const dartDefine = String.fromEnvironment('USE_MOCK_API');
-    if (dartDefine.isNotEmpty) return dartDefine.toLowerCase() == 'true';
-    final envVal = dotenv.env['USE_MOCK_API'];
-    if (envVal != null && envVal.isNotEmpty) {
-      return envVal.toLowerCase() == 'true';
-    }
-    return false;
-  }
-
   /// ngrok free tier requires this header to avoid HTML warning pages.
   static const String ngrokSkipBrowserWarning = 'Ngrok-Skip-Browser-Warning';
 

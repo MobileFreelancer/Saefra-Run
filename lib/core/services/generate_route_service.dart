@@ -6,6 +6,7 @@ import 'package:saefra_run/core/models/generate_route_filters.dart';
 import 'package:saefra_run/core/models/route_model.dart';
 import 'package:saefra_run/core/models/save_route_payload.dart';
 import 'package:saefra_run/core/services/api_service.dart';
+import 'package:saefra_run/core/services/reverse_geocoding_service.dart';
 import 'package:saefra_run/core/services/route_service.dart';
 
 import 'package:saefra_run/core/utils/polyline_decoder.dart';
@@ -17,6 +18,7 @@ class GenerateRouteService extends ChangeNotifier {
 
   final ApiService _api = ApiService();
   final RouteService _routeService = RouteService();
+  final ReverseGeocodingService _reverseGeocoder = ReverseGeocodingService();
 
   GenerateRouteFilters _filters = const GenerateRouteFilters();
   RouteModel? _generatedRoute;
@@ -210,7 +212,7 @@ class GenerateRouteService extends ChangeNotifier {
               ? 'No walkable route found to the selected destination.'
               : 'No route preview available for these settings.';
         } else {
-          _error = null;
+          _error = result.warningMessage;
         }
       }
     } catch (e) {
@@ -267,12 +269,27 @@ class GenerateRouteService extends ChangeNotifier {
       final start = coordinates.isNotEmpty ? coordinates.first : null;
       final end = coordinates.isNotEmpty ? coordinates.last : null;
 
+      final startLat = (start?['latitude'] as num?)?.toDouble() ?? latitude;
+      final startLng = (start?['longitude'] as num?)?.toDouble() ?? longitude;
+
+      // Resolve a human-readable place for the backend `location` field so
+      // Activity/community screens don't fall back to a stale catalog city.
+      final locationAddress = await _resolveSaveLocationAddress(
+        latitude: startLat,
+        longitude: startLng,
+      );
+      debugPrint(
+        '[SaveRoute] location/address → $locationAddress '
+        '(origin=$startLat,$startLng destName=$_destinationName)',
+      );
+
       final payload = SaveRoutePayload.fromLoopResult(
         loopResult,
-        startLatitude: start?['latitude'],
-        startLongitude: start?['longitude'],
+        startLatitude: startLat,
+        startLongitude: startLng,
         endLatitude: end?['latitude'],
         endLongitude: end?['longitude'],
+        location: locationAddress,
       );
 
       _generatedRoute = await _api.saveRoute(payload);
@@ -285,6 +302,29 @@ class GenerateRouteService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<String?> _resolveSaveLocationAddress({
+    required double latitude,
+    required double longitude,
+  }) async {
+    final destinationName = _destinationName?.trim();
+    try {
+      final geocoded = await _reverseGeocoder.addressFromCoordinates(
+        latitude: latitude,
+        longitude: longitude,
+      );
+      if (geocoded != null && geocoded.trim().isNotEmpty) {
+        return geocoded.trim();
+      }
+    } catch (e) {
+      debugPrint('[SaveRoute] reverse-geocode failed: $e');
+    }
+
+    if (destinationName != null && destinationName.isNotEmpty) {
+      return destinationName;
+    }
+    return null;
   }
 
   @override

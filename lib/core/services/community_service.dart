@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:saefra_run/core/mock/feature_mock_data.dart';
 import 'package:saefra_run/core/models/community_route_model.dart';
 import 'package:saefra_run/core/models/review_model.dart';
 import 'package:saefra_run/core/models/route_review_list_result.dart';
@@ -72,11 +71,7 @@ class CommunityService extends ChangeNotifier {
       _hasMore = result.hasMore;
     } catch (e) {
       _error = e.toString();
-      //_applyMockRoutes();
     } finally {
-      if (_popularRoutes.isEmpty && _topRatedRoutes.isEmpty) {
-     //   _applyMockRoutes();
-      }
       _hasLoaded = true;
       _isLoading = false;
       notifyListeners();
@@ -166,11 +161,6 @@ class CommunityService extends ChangeNotifier {
     _reviews = append ? [..._reviews, ...result.reviews] : result.reviews;
     _reviewsPage = result.currentPage;
     _hasMoreReviews = result.hasMore;
-  }
-
-  void _applyMockRoutes() {
-    _popularRoutes = FeatureMockData.popularRoutes;
-    _topRatedRoutes = FeatureMockData.recentRoutes;
   }
 
   void toggleLike(String routeId) {

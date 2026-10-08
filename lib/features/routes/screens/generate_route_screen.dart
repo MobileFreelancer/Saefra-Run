@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
@@ -74,7 +75,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
     final dashboard = context.read<DashboardServices>();
     final service = context.read<GenerateRouteService>();
 
-    await dashboard.refreshCurrentLocation();
+    await dashboard.ensureCurrentLocation();
 
     final destinationLat =
         widget.destLat ?? dashboard.destinationPositionLatitude;
@@ -111,12 +112,48 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
   Future<void> _generate() async {
     final service = context.read<GenerateRouteService>();
     final dashboard = context.read<DashboardServices>();
+
+    // Prefer an existing fix; only force a refresh when we have none yet.
+    final needsFix =
+        dashboard.latitude == null || dashboard.longitude == null;
+    final hasLocation = await dashboard.ensureCurrentLocation(
+      forceRefresh: needsFix,
+      openSettingsIfDisabled: true,
+    );
+    if (!mounted) return;
+
+    log('=========================');
+    log('lat--${dashboard.latitude}---long--${dashboard.longitude}');
+
+    if (!hasLocation ||
+        dashboard.latitude == null ||
+        dashboard.longitude == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            dashboard.errorMessage ??
+                'Location is required to generate a route.',
+          ),
+          action: SnackBarAction(
+            label: 'Settings',
+            onPressed: () {
+              Geolocator.openLocationSettings();
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    service.bindLocation(
+      latitude: dashboard.latitude,
+      longitude: dashboard.longitude,
+    );
+
     final route = await service.generate(
       latitude: dashboard.latitude,
       longitude: dashboard.longitude,
     );
-    log("=========================");
-    log("lat--${dashboard.latitude}---long--${dashboard.longitude}");
     if (!mounted || route == null) {
       if (mounted && service.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -229,7 +266,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                                         color: AppColors.white,
                                         width: 2
                                     ),
-                                    color: AppColors.border.withOpacity(.7),
+                                    color: AppColors.border.withValues(alpha: .7),
                                     borderRadius: BorderRadius.circular(20.r),
                                   ),
                                   child: Row(
@@ -255,9 +292,7 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                                 color: AppColors.primary,
                               ),
                             ),
-                          if (!service.isPreviewLoading &&
-                              service.error != null &&
-                              destination != null)
+                          if (!service.isPreviewLoading && service.error != null)
                             Positioned(
                               left: 12.w,
                               right: 12.w,
@@ -268,16 +303,31 @@ class _GenerateRouteScreenState extends State<GenerateRouteScreen> {
                                   vertical: 8.h,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.72),
+                                  color: AppColors.surfaced1B.withValues(alpha: 0.95),
+                                  border: Border.all(
+                                    color: AppColors.primary.withValues(alpha: 0.6),
+                                  ),
                                   borderRadius: BorderRadius.circular(10.r),
                                 ),
-                                child: Text(
-                                  service.error!,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: AppColors.white,
-                                    fontSize: 11.sp,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: AppColors.primary,
+                                      size: 16.sp,
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    Expanded(
+                                      child: Text(
+                                        service.error!,
+                                        style: TextStyle(
+                                          color: AppColors.white,
+                                          fontSize: 11.sp,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

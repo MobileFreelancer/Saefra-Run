@@ -28,10 +28,6 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final run = context.read<RunService>();
-      if (run.mood == null) {
-        run.setMood(RunMood.great);
-      }
-      
       if (widget.runId != null) {
         await run.loadRunSummary(runId: widget.runId);
       } else if (run.session.runId != null) {
@@ -59,7 +55,7 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
       return;
     }
 
-    context.goNamed('dashboard');
+    context.goNamed('runRate');
   }
 
   @override
@@ -104,24 +100,10 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
                   ),
                   SizedBox(height: 10.h),
                   _SplitsCard(splits: session.splits, textTheme: textTheme),
-                  SizedBox(height: 20.h),
-                  Text(
-                    'How Did This Run Feel?',
-                    style: textTheme.titleMedium?.copyWith(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: 12.h),
-                  _MoodSelector(
-                    selected: run.mood ?? RunMood.great,
-                    onSelected: run.setMood,
-                    textTheme: textTheme,
-                  ),
                 ],
               ),
             ),
-            if (session.runId != null || widget.runId != null)
+            //if (session.runId != null || widget.runId != null)
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               child: Column(
@@ -139,29 +121,9 @@ class _RunSummaryScreenState extends State<RunSummaryScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: PrimaryButton(
-                      label: 'Save Activity',
+                      label: 'Share Route Feedback',
                       isLoading: _isSaving,
                       onPressed: _saveActivity,
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () => context.pushNamed('runRate'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.white,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.17),
-                        side: const BorderSide(color: AppColors.white),
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28.r),
-                        ),
-                      ),
-                      child: Text(
-                        'Rate For Route',
-                        style: textTheme.labelLarge?.copyWith(fontSize: 14.sp),
-                      ),
                     ),
                   ),
                 ],
@@ -437,76 +399,3 @@ class _SplitPaceRow extends StatelessWidget {
   }
 }
 
-class _MoodSelector extends StatelessWidget {
-  const _MoodSelector({
-    required this.selected,
-    required this.onSelected,
-    required this.textTheme,
-  });
-
-  final RunMood selected;
-  final ValueChanged<RunMood> onSelected;
-  final TextTheme textTheme;
-
-  static const _options = [
-    _MoodOption(RunMood.great, 'Great', '😄', Color(0xFF22C55E)),
-    _MoodOption(RunMood.good, 'Good', '🙂', Color(0xFF3B82F6)),
-    _MoodOption(RunMood.okay, 'Okay', '😐', Color(0xFFA855F7)),
-    _MoodOption(RunMood.tough, 'Tough', '😓', Color(0xFFF97316)),
-    _MoodOption(RunMood.exhausted, 'Exhausted', '😫', Color(0xFFEAB308)),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: _options.map((option) {
-        final isSelected = selected == option.mood;
-        return GestureDetector(
-          onTap: () => onSelected(option.mood),
-          child: Column(
-            children: [
-              Container(
-                width: 54.w,
-                height: 54.w,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSelected
-                      ? option.color.withValues(alpha: 0.22)
-                      : AppColors.surface,
-                  border: Border.all(
-                    color: isSelected ? option.color : AppColors.border,
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  option.emoji,
-                  style: TextStyle(fontSize: 24.sp),
-                ),
-              ),
-              SizedBox(height: 6.h),
-              Text(
-                option.label,
-                style: textTheme.bodySmall?.copyWith(
-                  fontSize: 10.sp,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color: isSelected ? option.color : AppColors.textMuted,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _MoodOption {
-  const _MoodOption(this.mood, this.label, this.emoji, this.color);
-
-  final RunMood mood;
-  final String label;
-  final String emoji;
-  final Color color;
-}
