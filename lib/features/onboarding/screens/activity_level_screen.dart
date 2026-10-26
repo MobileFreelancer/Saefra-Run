@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
+import 'package:saefra_run/core/utils/onboarding_navigation.dart';
 import 'package:saefra_run/core/widgets/onboarding_progress_widgets.dart';
 import 'package:saefra_run/core/widgets/option_tile.dart';
 
@@ -53,9 +54,9 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             OnboardingStepHeader(
-              step: 2,
-              totalSteps: 4, // Matches '1 of 2' from the target layout asset image_2edd4f.png
-              onBack: () => context.go('/onboarding/gender'),
+              step: 3,
+              totalSteps: 4,
+              onBack: () => context.go('/onboarding/basic-info'),
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -115,8 +116,8 @@ class _ActivityLevelScreenState extends State<ActivityLevelScreen> {
             ),
             OnboardingContinueBar(
               isEnabled: selected != null,
-              onContinue: () => context.go('/onboarding/goal'),
-              onSkip: () => context.go('/onboarding/goal'),
+              onContinue: () => goOnboarding(context, '/onboarding/goal'),
+              onSkip: () => goOnboarding(context, '/onboarding/goal'),
             ),
           ],
         ),

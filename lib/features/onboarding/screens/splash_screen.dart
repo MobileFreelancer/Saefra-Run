@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/fcm_service.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/widgets/app_logo.dart';
 import 'package:saefra_run/generated/assets.dart';
@@ -38,9 +39,22 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (auth.isLoggedIn) {
-      context.go(
-        onboarding.isComplete ? '/dashboard' : '/onboarding/gender',
-      );
+      await onboarding.syncFromServer();
+      onboarding.applyUserProfile(auth.currentUser);
+      if (!mounted) return;
+
+      if (onboarding.isComplete) {
+        await FcmService.requestPermissionAndSync();
+        if (!mounted) return;
+        context.go('/dashboard');
+      } else {
+        context.go(onboarding.resumeRoute);
+      }
+      return;
+    }
+
+    if (auth.hasPendingSignup) {
+      context.go(onboarding.resumeRoute);
       return;
     }
 

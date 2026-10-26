@@ -3,14 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/constants/app_colors.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
 import 'package:saefra_run/core/utils/formatters.dart';
-import 'package:saefra_run/core/widgets/auth_scaffold.dart';
 import 'package:saefra_run/core/widgets/otp_input.dart';
-import 'package:saefra_run/core/widgets/primary_button.dart';
-
 import '../../../core/widgets/auth_header.dart';
 import '../../onboarding/widgets/common_app_button.dart';
 
@@ -40,7 +36,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel(); // Cancel timer to avoid memory leaks
+    _timer?.cancel();
     for (final c in _controllers) {
       c.dispose();
     }
@@ -71,12 +67,10 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
 
   Future<void> _verify() async {
     if (_code.length != 6) {
-
       return;
     }
-
     final auth = context.read<AuthService>();
-    final success = await auth.verifyOtp(code: _code);
+    final success = await auth.verifyOtp(code: _code,);
 
     if (!mounted) return;
 
@@ -128,62 +122,65 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 10.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AuthHeader(
-                title: 'Verification Code',
-                subtitle:
-                    'We have sent a code for verification to your email $masked',
-                fallbackRoute: '/auth/forgot-password',
+          child: SingleChildScrollView(
+            physics: NeverScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AuthHeader(
+                  title: 'Verification Code',
+                  subtitle:
+                      'We have sent a code for verification to your email $masked',
+                  fallbackRoute: '/auth/forgot-password',
+                ),
+                SizedBox(height: 22.h),
+              OtpInput(
+                controllers: _controllers,
+                focusNodes: _focusNodes,
+                onCompleted: (code) => setState(() => _code = code),
               ),
-              SizedBox(height: 22.h),
-            OtpInput(
-              controllers: _controllers,
-              focusNodes: _focusNodes,
-              onCompleted: (code) => setState(() => _code = code),
-            ),
-            SizedBox(height: 8.h,),
-            Padding(
-              padding:   EdgeInsets.symmetric(horizontal: 10.w),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (!_canResend)
-                    Text(
-                      '${_secondsRemaining.toString().padLeft(2, '0')} seconds',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.primaryDark,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14.sp,
+              SizedBox(height: 8.h,),
+              Padding(
+                padding:   EdgeInsets.symmetric(horizontal: 10.w),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (!_canResend)
+                      Text(
+                        '${_secondsRemaining.toString().padLeft(2, '0')} seconds',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.primaryDark,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.sp,
+                        ),
                       ),
-                    ),
-                  SizedBox(height: 8.h,),
-                  if (_canResend)
+                    SizedBox(height: 8.h,),
+                    if (_canResend)
 
-                  TextButton(
-                    onPressed: (auth.isLoading || !_canResend) ? null : _resend,
-                    child: Text(
-                      'Resend OTP',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color:  AppColors.textPrimary ,
-                        fontWeight: FontWeight.w400,
-                        fontSize: 14.sp,
-                        decoration: TextDecoration.underline,
-                        decorationColor: AppColors.white,
-                        //backgroundColor: AppColors.textPrimary
+                    TextButton(
+                      onPressed: (auth.isLoading || !_canResend) ? null : _resend,
+                      child: Text(
+                        'Resend OTP',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color:  AppColors.textPrimary ,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 14.sp,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.white,
+                          //backgroundColor: AppColors.textPrimary
+                        ),
                       ),
-                    ),
-                  )
-                ],
+                    )
+                  ],
+                ),
               ),
+              const SizedBox(height: 24),
+                _code.length != 6?SizedBox.shrink():AppPrimaryButton(
+                label: 'Verify',
+                onTap: _verify,
+              ),
+              ],
             ),
-            const SizedBox(height: 24),
-            AppPrimaryButton(
-              label: 'Verify',
-              onTap: _verify,
-            ),
-            ],
           ),
         ),
       ),

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:saefra_run/core/services/auth_service.dart';
+import 'package:saefra_run/core/services/fcm_service.dart';
 import 'package:saefra_run/core/services/onboarding_service.dart';
 import 'package:saefra_run/core/widgets/photo_permission_scaffold.dart';
 import 'package:saefra_run/generated/assets.dart';
+
+import '../../../core/services/permission_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -14,23 +17,73 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  Future<void> _complete({required bool enable}) async {
-    final auth = context.read<AuthService>();
-    final service = context.read<OnboardingService>();
-    service.setPushNotifications(enable);
-    service.setEmailNotifications(enable);
 
-    final success = await service.completeOnboarding(auth);
+  Future<void> _complete({required bool enable}) async {
+    final onboardingService = context.read<OnboardingService>();
+    final authService = context.read<AuthService>();
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    await PermissionService.requestNotificationPermission();
+    onboardingService.setPushNotifications(enable);
+    onboardingService.setEmailNotifications(enable);
+    
+    // Attempt sync, but don't let iOS APNS token wait block the flow
+    FcmService.requestPermissionAndSync();
+
+    // Fire onboarding completion
+    final success = await onboardingService.completeOnboarding(authService);
+
     if (!mounted) return;
 
     if (success) {
-      context.go('/dashboard');
+      router.go('/dashboard');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(service.error ?? 'Something went wrong')),
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            onboardingService.error ?? 'Something went wrong',
+          ),
+        ),
       );
     }
   }
+
+
+
+
+
+
+  // Future<void> _complete({required bool enable}) async {
+  //   final onboardingService = context.read<OnboardingService>();
+  //   final messenger = ScaffoldMessenger.of(context);
+  //   final router = GoRouter.of(context);
+  //
+  //   await PermissionService.requestNotificationPermission();
+  //   final auth = context.read<AuthService>();
+  //   final service = context.read<OnboardingService>();
+  //   service.setPushNotifications(enable);
+  //   service.setEmailNotifications(enable);
+  //
+  //   onboardingService.setPushNotifications(enable);
+  //   onboardingService.setEmailNotifications(enable);
+  //
+  //   //final success = await onboardingService.completeOnboarding();
+  //
+  //   final success = await service.completeOnboarding(auth);
+  //   if (!mounted) return;
+  //
+  //   if (success) {
+  //     router.go('/dashboard');
+  //   } else {
+  //     messenger.showSnackBar(
+  //       SnackBar(
+  //         content: Text(
+  //           onboardingService.error ?? 'Something went wrong',
+  //         ),
+  //       ),
+  //     );
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>124996307973-somk0jsj0m8bj8iar27gu0u9n3a5le1f.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.124996307973-somk0jsj0m8bj8iar27gu0u9n3a5le1f</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>124996307973-l131u75j3jdkgpcvvh72iqfem39bujnv.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyA6HtAIQXA7mRP0rkb0UxNjpC14ZCtsXbM</string>
+	<key>GCM_SENDER_ID</key>
+	<string>124996307973</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.saefra.run.saefraRun</string>
+	<key>PROJECT_ID</key>
+	<string>saefra-run-e446a</string>
+	<key>STORAGE_BUCKET</key>
+	<string>saefra-run-e446a.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:124996307973:ios:3d9de3ff0a9e6f43c2a06c</string>
+</dict>
+</plist>

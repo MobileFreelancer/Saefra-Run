@@ -36,4 +36,6 @@ class AppToast {
       fontSize: 14,
     );
   }
+
+
 }

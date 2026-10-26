@@ -19,8 +19,30 @@ dependencies:
   flutter_svg: ^2.0.17
   phone_form_field: ^9.0.5
   flutter_screenutil: ^5.9.3
-  fluttertoast: ^9.1.0
   intl:
+  geolocator:
+  fluttertoast: ^8.2.12
+  firebase_core: ^4.1.0
+  google_maps_flutter: ^2.13.1
+  permission_handler: ^12.0.1
+  firebase_auth: ^6.5.4
+  firebase_messaging: ^16.0.0
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^8.1.0
+  flutter_spinkit:
+  flutter_polyline_points: ^3.1.0
+  flutter_contacts: ^2.1.0
+  image_picker: ^1.1.2
+  googleapis_auth: ^2.3.3
+  http: ^1.2.1
+  pedometer: ^4.2.0
+  shimmer_animation: ^2.2.2+1
+  url_launcher: ^6.3.0
+  share_plus:
+  package_info_plus:
+  in_app_review: ^2.0.12
+  cached_network_image: ^3.4.1
+  geocoding: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -31,5 +53,9 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - assets/
     - assets/images/
     - assets/icons/
+    - assets/map_style/light.json
+    - assets/map_style/dark.json
+    - assets/map_style/park.json

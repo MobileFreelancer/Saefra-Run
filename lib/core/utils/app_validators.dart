@@ -33,4 +33,33 @@ class AppValidators {
     }
     return null;
   }
+
+  static String? confirmPassword(String? value, String originalPassword) {
+    final passwordError = password(value);
+    if (passwordError != null) return passwordError;
+    if (value != originalPassword) {
+      return 'Passwords do not match';
+    }
+    return null;
+  }
+
+  static String? phone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Phone number is required';
+    }
+    if (value.trim().length < 8) {
+      return 'Please enter a valid phone number';
+    }
+    return null;
+  }
+
+  static String? message(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Message is required';
+    }
+    if (value.trim().length < 10) {
+      return 'Message must be at least 10 characters';
+    }
+    return null;
+  }
 }

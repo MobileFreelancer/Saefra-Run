@@ -7,7 +7,7 @@ import 'package:saefra_run/features/onboarding/screens/activity_level_screen.dar
 
 void main() {
   setUpAll(() async {
-    dotenv.testLoad(fileInput: 'BASE_URL=https://api.saefra.run\nUSE_MOCK_API=true\nENVIRONMENT=development');
+    dotenv.testLoad(fileInput: 'BASE_URL=https://api.saefra.run\nUSE_MOCK_API=false\nENVIRONMENT=development');
   });
 
   testWidgets('ActivityLevelScreen renders without crashing', (WidgetTester tester) async {

@@ -1,19 +1,32 @@
+import 'dart:developer';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:saefra_run/core/services/secure_storage_service.dart';
 import 'package:saefra_run/core/config/api_config.dart';
 import 'package:saefra_run/core/models/onboarding_model.dart';
 import 'package:saefra_run/core/models/user_model.dart';
 import 'package:saefra_run/core/services/api_service.dart';
-import 'package:saefra_run/core/services/secure_storage_service.dart';
+import 'package:saefra_run/core/services/fcm_service.dart';
+import 'package:saefra_run/core/services/social_auth_services.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+import 'onboarding_service.dart';
 
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
-  AuthService._internal();
+  AuthService._internal() {
+    ApiService.onUnauthorized = () {
+      forceLogout();
+    };
+  }
 
   final ApiService _apiService = ApiService();
   final FlutterSecureStorage _storage = SecureStorageService.instance;
 
   UserModel? _currentUser;
+  String? _sessionToken;
   bool _isLoading = false;
   String? _error;
   String? _pendingResetEmail;
@@ -23,7 +36,11 @@ class AuthService extends ChangeNotifier {
   String? _pendingSignupPassword;
 
   UserModel? get currentUser => _currentUser;
-  bool get isLoggedIn => _currentUser != null;
+  String? get sessionToken => _sessionToken;
+
+  /// Logged-in state is driven by a persisted access token only.
+  bool get isLoggedIn =>
+      _sessionToken != null && _sessionToken!.trim().isNotEmpty;
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get pendingResetIdentifier => _pendingResetEmail;
@@ -33,6 +50,7 @@ class AuthService extends ChangeNotifier {
   bool _agreedToTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _sessionLoaded = false;
 
   bool get agreedToTerms => _agreedToTerms;
   bool get obscurePassword => _obscurePassword;
@@ -58,6 +76,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
@@ -74,20 +93,91 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
+    if (_sessionLoaded) return;
+
     try {
-      final token = await _storage
+      _sessionToken = await _storage
           .read(key: ApiConfig.storageKeyAccessToken)
           .timeout(const Duration(seconds: 5));
 
-      if (token != null && token.isNotEmpty) {
-        _currentUser = await _apiService.getCurrentUser();
+      if (_sessionToken == null || _sessionToken!.trim().isEmpty) {
+        _sessionToken = null;
+        _currentUser = null;
+        await _restorePendingSignup();
         notifyListeners();
+        return;
       }
+
+      // Notify immediately so router/splash see logged-in state from token.
+      notifyListeners();
+
+      await _restoreUserProfile();
+      notifyListeners();
+      await FcmService.requestPermissionAndSync();
+      // Onboarding sync will be handled in main.dart or after login
     } catch (e, s) {
       debugPrint('AUTH initialize failed: $e');
       debugPrint('$s');
-      await _clearTokens();
-      _currentUser = null;
+      _sessionToken = await _storage.read(key: ApiConfig.storageKeyAccessToken);
+      if (_sessionToken == null || _sessionToken!.trim().isEmpty) {
+        await _clearTokens();
+        _currentUser = null;
+        _sessionToken = null;
+      } else {
+        await _restoreUserProfile(fromCacheOnly: true);
+      }
+      notifyListeners();
+    } finally {
+      _sessionLoaded = true;
+    }
+  }
+
+  Future<void> syncCurrentUser(UserModel user) async {
+    _currentUser = user;
+    if (user.id.trim().isNotEmpty) {
+      await _storage.write(
+        key: ApiConfig.storageKeyUserId,
+        value: user.id.trim(),
+      );
+    }
+    if (user.email != null && user.email!.trim().isNotEmpty) {
+      await _storage.write(
+        key: ApiConfig.storageKeyUserEmail,
+        value: user.email!.trim(),
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> _restoreUserProfile({bool fromCacheOnly = false}) async {
+    if (!fromCacheOnly) {
+      try {
+        await syncCurrentUser(await _apiService.getCurrentUser());
+        return;
+      } catch (e) {
+        debugPrint('getCurrentUser failed, using cached session: $e');
+      }
+    }
+
+    final userId = await _storage.read(key: ApiConfig.storageKeyUserId);
+    final email = await _storage.read(key: ApiConfig.storageKeyUserEmail);
+
+    if (userId != null && userId.trim().isNotEmpty) {
+      _currentUser = UserModel(
+        id: userId.trim(),
+        email: email,
+        firstName: email?.split('@').first,
+      );
+      return;
+    }
+
+    // Token exists but profile cache missing — keep session, fetch profile later.
+    if (_sessionToken != null && _sessionToken!.trim().isNotEmpty) {
+      _currentUser = UserModel(
+        id: '',
+        email: email,
+        firstName: email?.split('@').first,
+      );
     }
   }
 
@@ -103,7 +193,29 @@ class AuthService extends ChangeNotifier {
         email: identifier.trim(),
         password: password,
       );
+
+      if (response.accessToken.trim().isEmpty ||
+          response.user.id.trim().isEmpty) {
+        _setError('Invalid credentials.');
+        return false;
+      }
+
       await _persistSession(response);
+      await _storage.write(
+        key: ApiConfig.storageKeyUserEmail,
+        value: identifier.trim(),
+      );
+      await _storage.write(
+        key: ApiConfig.storageKeyUserPassword,
+        value: password,
+      );
+      await FcmService.syncToken();
+      if (response.needsOnboarding == true) {
+        await OnboardingService().handleNeedsOnboarding(response.needsOnboarding!);
+      }
+      else{
+        await OnboardingService().syncFromServer();
+      }
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -114,13 +226,29 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Saves signup credentials locally; registration API runs after onboarding.
-  void startSignup({
+  Future<void> startSignup({
     required String email,
     required String password,
-  }) {
+  }) async {
     _pendingSignupEmail = email.trim();
     _pendingSignupPassword = password;
     _setError(null);
+    try {
+      await _storage.write(
+        key: ApiConfig.storageKeyUserEmail,
+        value: _pendingSignupEmail,
+      );
+      await _storage.write(
+        key: ApiConfig.storageKeyUserPassword,
+        value: password,
+      );
+      await _storage.write(
+        key: ApiConfig.storageKeyPendingSignup,
+        value: 'true',
+      );
+    } catch (e) {
+      debugPrint('startSignup persist failed: $e');
+    }
     notifyListeners();
   }
 
@@ -141,9 +269,16 @@ class AuthService extends ChangeNotifier {
         onboarding: onboarding,
       );
       await _persistSession(response);
-      _clearPendingSignup();
+      await _storage.write(key: ApiConfig.storageKeyUserEmail, value: email);
+      await _storage.write(key: ApiConfig.storageKeyUserPassword, value: password);
+      await _storage.delete(key: ApiConfig.storageKeyPendingSignup);
+      _pendingSignupEmail = null;
+      _pendingSignupPassword = null;
+      await FcmService.syncToken();
+      await OnboardingService().syncFromServer();
       return true;
     } catch (e) {
+      log("Error--> $e");
       _setError(e.toString());
       return false;
     } finally {
@@ -179,7 +314,20 @@ class AuthService extends ChangeNotifier {
     }
     _pendingResetOtp = code;
     _setError(null);
-    return true;
+
+    try {
+      await _apiService.verifyOtp(
+         email: _pendingResetEmail.toString(),
+        otp: _pendingResetOtp.toString(),
+      );
+      _pendingResetOtp = null;
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<bool> resetPassword({
@@ -187,24 +335,11 @@ class AuthService extends ChangeNotifier {
     required String confirmPassword,
   }) async {
     final email = _pendingResetEmail;
-    final otp = _pendingResetOtp;
-    if (email == null) {
-      _setError('No pending reset. Please restart reset flow.');
-      return false;
-    }
-    if (otp == null || otp.isEmpty) {
-      _setError('Please verify the OTP first.');
-      return false;
-    }
-
-    _setLoading(true);
-    _setError(null);
     try {
       await _apiService.resetPassword(
-        email: email,
+        email: email.toString(),
         password: newPassword,
         passwordConfirmation: confirmPassword,
-        otp: otp,
       );
       _pendingResetEmail = null;
       _pendingResetOtp = null;
@@ -217,17 +352,75 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> logout() async {
+  Future<bool> logout() async {
     _setLoading(true);
     try {
-      await _apiService.logout();
+      final email = await _storage.read(key: ApiConfig.storageKeyUserEmail) ??
+          _currentUser?.email ??
+          '';
+      final password =
+          await _storage.read(key: ApiConfig.storageKeyUserPassword) ?? '';
+
+      if (email.isNotEmpty && password.isNotEmpty) {
+        try {
+          await _apiService.logout(email: email, password: password);
+        } catch (e) {
+          debugPrint('Logout API failed: $e');
+        }
+      }
+      return true;
     } finally {
       await _clearTokens();
+      await OnboardingService().resetOnLogout();
       _currentUser = null;
+      _sessionToken = null;
+      _sessionLoaded = false;
       _pendingResetEmail = null;
       _pendingResetOtp = null;
       _clearPendingSignup();
       _setLoading(false);
+    }
+  }
+
+  Future<bool> deleteAccount({required String password}) async {
+    _setLoading(true);
+    try {
+      final email = await _storage.read(key: ApiConfig.storageKeyUserEmail) ??
+          _currentUser?.email ??
+          '';
+      if (email.isEmpty) {
+        _setError('User email not found. Please log in again.');
+        return false;
+      }
+
+      await _apiService.deleteAccount(email: email, password: password);
+      await forceLogout();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> forceLogout() async {
+    if (_sessionToken == null && _currentUser == null) return;
+    _setLoading(true);
+    try {
+      await _storage.deleteAll();
+      await OnboardingService().resetOnLogout();
+      _currentUser = null;
+      _sessionToken = null;
+      _sessionLoaded = false;
+      _pendingResetEmail = null;
+      _pendingResetOtp = null;
+      _clearPendingSignup();
+    } catch (e) {
+      debugPrint('forceLogout failed: $e');
+    } finally {
+      _setLoading(false);
+      notifyListeners();
     }
   }
 
@@ -240,6 +433,7 @@ class AuthService extends ChangeNotifier {
       key: ApiConfig.storageKeyUserId,
       value: response.user.id,
     );
+    _sessionToken = response.accessToken;
     _currentUser = response.user;
     notifyListeners();
   }
@@ -247,10 +441,153 @@ class AuthService extends ChangeNotifier {
   Future<void> _clearTokens() async {
     await _storage.delete(key: ApiConfig.storageKeyAccessToken);
     await _storage.delete(key: ApiConfig.storageKeyUserId);
+    await _storage.delete(key: ApiConfig.storageKeyUserEmail);
+    await _storage.delete(key: ApiConfig.storageKeyUserPassword);
+    _sessionToken = null;
+  }
+
+  Future<void> _restorePendingSignup() async {
+    try {
+      final pending =
+          await _storage.read(key: ApiConfig.storageKeyPendingSignup);
+      if (pending != 'true') {
+        _clearPendingSignup();
+        return;
+      }
+
+      _pendingSignupEmail =
+          await _storage.read(key: ApiConfig.storageKeyUserEmail);
+      _pendingSignupPassword =
+          await _storage.read(key: ApiConfig.storageKeyUserPassword);
+
+      if (_pendingSignupEmail == null || _pendingSignupPassword == null) {
+        _clearPendingSignup();
+      }
+    } catch (e) {
+      debugPrint('restorePendingSignup failed: $e');
+      _clearPendingSignup();
+    }
   }
 
   void _clearPendingSignup() {
     _pendingSignupEmail = null;
     _pendingSignupPassword = null;
+    _storage.delete(key: ApiConfig.storageKeyPendingSignup);
   }
+
+
+
+  Future<bool> loginWithGoogle() async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      final userCredential = await GoogleAuthService.signIn();
+      if (userCredential?.user == null) return false;
+
+      final user = userCredential!.user!;
+      final email = user.email?.trim();
+      if (email == null || email.isEmpty) {
+        _setError('Email not available from your Google account.');
+        return false;
+      }
+
+      return _completeSocialLogin(
+        email: email,
+        uuid: user.uid,
+        provider: 'google',
+      );
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> loginWithApple() async {
+    _setLoading(true);
+    _setError(null);
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      final firebaseUser = userCredential.user;
+      if (firebaseUser == null) return false;
+
+      // Apple only sends email/name on the FIRST login.
+      // We check firebaseUser.email first, then fallback to appleCredential.email.
+      var email = firebaseUser.email?.trim();
+      if (email == null || email.isEmpty) {
+        email = appleCredential.email?.trim();
+      }
+
+      // If we STILL don't have an email (happens on repeat logins if not cached),
+      // we might need to rely on the UUID for the backend or ask the user.
+      // But for now, we pass what we have.
+      return _completeSocialLogin(
+        email: email ?? '',
+        uuid: firebaseUser.uid,
+        provider: 'apple',
+      );
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> _completeSocialLogin({
+    required String email,
+    required String uuid,
+    required String provider,
+  }) async {
+    _clearPendingSignup();
+    try {
+      final response = await _apiService.socialLogin(
+        email: email,
+        uuid: uuid,
+        provider: provider,
+      );
+
+      if (response.accessToken.trim().isEmpty) {
+        _setError('Social login failed. Please try again.');
+        return false;
+      }
+
+      await _persistSession(response);
+      await _storage.write(key: ApiConfig.storageKeyUserEmail, value: email);
+      await _storage.delete(key: ApiConfig.storageKeyUserPassword);
+      await _storage.delete(key: ApiConfig.storageKeyPendingSignup);
+      await FcmService.syncToken();
+      if (response.needsOnboarding == true) {
+        await OnboardingService().handleNeedsOnboarding(response.needsOnboarding!);
+      }
+      else{
+        await OnboardingService().syncFromServer();
+      }
+      return true;
+    } catch (e) {
+      log('Social login error --> $e');
+      _setError(e.toString());
+      return false;
+    }
+  }
+
+  void googleLogin() async {
+    await loginWithGoogle();
+  }
+
+
 }

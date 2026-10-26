@@ -15,10 +15,7 @@ class Assets {
   static const String googleLogo = 'assets/images/googlelogo.png';
   static const String socLogin = 'assets/images/soclogin.png';
   static const String successMark = 'assets/images/Successmark.png';
-
-
   static const String imagesAppLogo = 'assets/images/logowithtext.png';
-
   static const String onboardingManIcon = '${mainImageUrl}onboarding_man_icon.png';
   static const String onboardingNotToSayIcon = '${mainImageUrl}onboarding_not_to_say_icon.png';
   static const String onboardingWomenIcon = '${mainImageUrl}onboarding_women_icon.png';
@@ -49,6 +46,9 @@ class Assets {
   static const String bottomBarHomeIcon= '${mainImageUrl}bottom_bar_home_icon.png';
   static const String bottomBarLevelIcon= '${mainImageUrl}bottom_bar_level_icon.png';
   static const String bottomBarProfileIcon= '${mainImageUrl}bottom_bar_profile_icon.png';
+  static const String bottomBarCommunityIcon= '${mainImageUrl}bottom_bar_community_icon.png';
+  static const String bottomBarActivityIcon= '${mainImageUrl}bottom_bar_activity_icon.png';
+  static const String bottomBarSettingIcon= '${mainImageUrl}bottom_bar_setting_icon.png';
   static const String homeFilterIcon= '${mainImageUrl}home_filter_icon.png';
   static const String homeNearbyIcon= '${mainImageUrl}home_nearby_icon.png';
   static const String homeNotificationIcon= '${mainImageUrl}home_notification_icon.png';
@@ -59,7 +59,53 @@ class Assets {
   // gradient/icon if not present yet)
   static const String homeRoutePreviewImg= '${mainImageUrl}home_route_preview_img.png';
   static const String homeRouteThumbnailImg= '${mainImageUrl}home_route_thumbnail_img.png';
+  static const String pluseIcon= '${mainImageUrl}pluseIcon.png';
+  static const String communityFavIcon= '${mainImageUrl}community_fav_icon.png';
+  static const String generateOwnIcon= '${mainImageUrl}generate_own_icon.png';
 
+  // Search / routes / map style (add PNGs later — fallbacks used until then)
+  static const String searchNotFoundIllustration = '${mainImageUrl}search_not_found.png';
+  static const String generateRouteMapPreview = '${mainImageUrl}generate_route_map_preview.png';
+  static const String routeHighlightImg = '${mainImageUrl}route_highlight.png';
+  static const String mapStyleDarkBase = '${mainImageUrl}map_style_dark_base.png';
+  static const String mapStyleLight = '${mainImageUrl}map_style_light.png';
+  static const String mapStyleDark = '${mainImageUrl}map_style_dark.png';
+
+  // Settings icons (assets/icons/ — add files when ready)
+  static const String settingsEditProfileIcon = '${mainIconsUrl}settings_edit_profile.png';
+  static const String settingsSafetyIcon = '${mainIconsUrl}settings_safety.png';
+  static const String settingsEmergencyIcon = '${mainIconsUrl}settings_emergency.png';
+  static const String settingsPasswordIcon = '${mainIconsUrl}settings_password.png';
+  static const String settingsNotificationIcon = '${mainIconsUrl}settings_notification.png';
+  static const String settingsTermsIcon = '${mainIconsUrl}settings_terms.png';
+  static const String settingsPrivacyIcon = '${mainIconsUrl}settings_privacy.png';
+  static const String settingsLogoutIcon = '${mainIconsUrl}settings_logout.png';
+  static const String settingsAboutIcon = '${mainIconsUrl}settings_about.png';
+  static const String settingsCameraIcon = '${mainIconsUrl}settings_camera.png';
+
+  // live running dialog icon
+
+  static const String pauseDialogImg = '${mainImageUrl}Pause_dialog_img.png';
+  static const String emergencyDialogImg = '${mainImageUrl}emergency_dialog_img.png';
+  static const String runSummaryImg = '${mainImageUrl}run_summary_vistory_img.png';
+  static const String reviewSubmittedDialogImg = '${mainImageUrl}review_submitted_dialog_img.png';
+  static const String IIcon = '${mainImageUrl}i_icon.png';
+  static const String passwordChangeSuccessDialogImg = '${mainImageUrl}password_change_succes_dialog_img.png';
+  static const String logoutDialogImg = '${mainImageUrl}logout_dialog_img.png';
+  static const String noLocationFoundImg = '${mainImageUrl}no_location_found.png';
+
+  static const String darkMapImage = '${mainImageUrl}dark_map.png';
+  static const String lightMapImage = '${mainImageUrl}loght_map.png';
+  static const String prrakImage = '${mainImageUrl}prak_map.png';
+  static const String closeIcon = '${mainImageUrl}closedIcon.png';
+  static const String seftiIcon = '${mainImageUrl}seftiIcon.png';
+  static const String saftyinfoIcon = '${mainImageUrl}saftyinfo.png';
+  static const String user = '${mainImageUrl}user.png';
+  static const String route = '${mainImageUrl}route.png';
+  static const String time = '${mainImageUrl}time.png';
+  static const String verifaction = '${mainImageUrl}verifaction.png';
+  static const String locations = '${mainImageUrl}locations.png';
+  static const String aboutlogo = '${mainImageUrl}aboutlogo.png';
 
 
   static const String saefraRun = '.env';

@@ -1,4 +1,3 @@
-/// Shared parsing for Saefra Run API responses and Laravel-style errors.
 class ApiResponseParser {
   ApiResponseParser._();
 
@@ -6,24 +5,68 @@ class ApiResponseParser {
     if (statusCode == null || statusCode < 200 || statusCode >= 300) {
       return false;
     }
-    if (data is Map<String, dynamic> && data.containsKey('success')) {
-      return data['success'] == true;
+    if (data is! Map) return true;
+
+    final map = asMap(data);
+
+    if (map.containsKey('success')) {
+      final success = map['success'];
+      if (success is bool) return success;
+      if (success is num) return success != 0;
+      if (success is String) {
+        final normalized = success.toLowerCase();
+        return normalized == 'true' || normalized == '1';
+      }
+      return false;
     }
+
+    if (map.containsKey('status')) {
+      final status = map['status']?.toString().toLowerCase();
+      if (status == 'fail' || status == 'failed' || status == 'error') {
+        return false;
+      }
+      if (status == 'success' || status == 'ok') {
+        return true;
+      }
+    }
+
     return true;
+  }
+
+  static Map<String, dynamic> payload(dynamic data) {
+    final map = asMap(data);
+    final inner = map['data'];
+    if (inner is Map) {
+      return asMap(inner);
+    }
+    return map;
   }
 
   static String parseErrorMessage(
     dynamic data, {
     String fallback = 'Something went wrong.',
   }) {
-    if (data is! Map<String, dynamic>) return fallback;
+    if (data is! Map) return fallback;
 
-    final message = data['message'];
+    final map = asMap(data);
+
+    final message = map['message'];
     if (message is String && message.trim().isNotEmpty) {
       return message.trim();
     }
 
-    final errors = data['errors'];
+    final errors = map['errors'];
+    if (errors is List && errors.isNotEmpty) {
+      final first = errors.first;
+      if (first is Map) {
+        final nested = first['message'] ?? first['errors'];
+        if (nested is String && nested.trim().isNotEmpty) {
+          return nested.trim();
+        }
+      } else if (first is String && first.trim().isNotEmpty) {
+        return first.trim();
+      }
+    }
     if (errors is Map) {
       final parts = <String>[];
       for (final entry in errors.entries) {
@@ -43,6 +86,19 @@ class ApiResponseParser {
   static Map<String, dynamic> asMap(dynamic data) {
     if (data is Map<String, dynamic>) return data;
     if (data is Map) return Map<String, dynamic>.from(data);
+    return {};
+  }
+
+  /// Profile/auth responses may nest the user under `user` or return fields directly.
+  static Map<String, dynamic> userFromPayload(Map<String, dynamic> payload) {
+    final nested = payload['user'];
+    if (nested is Map) return asMap(nested);
+    if (payload.containsKey('id') ||
+        payload.containsKey('email') ||
+        payload.containsKey('first_name') ||
+        payload.containsKey('name')) {
+      return payload;
+    }
     return {};
   }
 }

@@ -1,3 +1,5 @@
+import 'package:saefra_run/core/utils/api_field_mapper.dart';
+
 class OnboardingModel {
   final String? gender;
   final String? activityLevel;
@@ -9,6 +11,8 @@ class OnboardingModel {
 
   final DateTime? dateOfBirth;
   final int? age;
+  final String? firstName;
+  final String? lastName;
   final bool locationEnabled;
   final bool pushNotificationsEnabled;
   final bool emailNotificationsEnabled;
@@ -20,6 +24,8 @@ class OnboardingModel {
     this.goalTrainingTarget,
     this.dateOfBirth,
     this.age,
+    this.firstName,
+    this.lastName,
     this.locationEnabled = false,
     this.pushNotificationsEnabled = false,
     this.emailNotificationsEnabled = false,
@@ -35,6 +41,8 @@ class OnboardingModel {
     String? goalTrainingTarget,
     DateTime? dateOfBirth,
     int? age,
+    String? firstName,
+    String? lastName,
     bool? locationEnabled,
     bool? pushNotificationsEnabled,
     bool? emailNotificationsEnabled,
@@ -49,11 +57,63 @@ class OnboardingModel {
           : (goalTrainingTarget ?? this.goalTrainingTarget),
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       age: age ?? this.age,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       locationEnabled: locationEnabled ?? this.locationEnabled,
       pushNotificationsEnabled:
           pushNotificationsEnabled ?? this.pushNotificationsEnabled,
       emailNotificationsEnabled:
           emailNotificationsEnabled ?? this.emailNotificationsEnabled,
+    );
+  }
+
+  factory OnboardingModel.fromServerJson(Map<String, dynamic> json) {
+    final birthRaw = json['birthdate'] ?? json['birth_date'];
+    final dateOfBirth = birthRaw is String
+        ? ApiFieldMapper.parseBirthdate(birthRaw)
+        : null;
+
+    final goal = ApiFieldMapper.visitReasonFromApi(
+      json['visit_reason']?.toString(),
+    );
+    final trainingGoal = ApiFieldMapper.trainingGoalFromApi(
+      json['training_goal']?.toString(),
+    );
+
+    return OnboardingModel(
+      gender: ApiFieldMapper.genderFromApi(json['gender']?.toString()),
+      activityLevel: ApiFieldMapper.runPreferenceFromApi(
+        json['run_preference']?.toString(),
+      ),
+      goal: goal,
+      goalTrainingTarget: trainingGoal,
+      dateOfBirth: dateOfBirth,
+      firstName: json['first_name']?.toString(),
+      lastName: json['last_name']?.toString(),
+    );
+  }
+
+  factory OnboardingModel.fromJson(Map<String, dynamic> json) {
+    DateTime? dateOfBirth;
+    final dobRaw = json['date_of_birth'] as String?;
+    if (dobRaw != null && dobRaw.isNotEmpty) {
+      dateOfBirth = DateTime.tryParse(dobRaw);
+    }
+
+    return OnboardingModel(
+      gender: json['gender'] as String?,
+      activityLevel: json['activity_level'] as String?,
+      goal: json['goal'] as String?,
+      goalTrainingTarget: json['goal_training_target'] as String?,
+      dateOfBirth: dateOfBirth,
+      age: json['age'] as int?,
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name'] as String?,
+      locationEnabled: json['location_enabled'] as bool? ?? false,
+      pushNotificationsEnabled:
+          json['push_notifications_enabled'] as bool? ?? false,
+      emailNotificationsEnabled:
+          json['email_notifications_enabled'] as bool? ?? false,
     );
   }
 
@@ -66,6 +126,8 @@ class OnboardingModel {
         if (dateOfBirth != null)
           'date_of_birth': dateOfBirth!.toIso8601String(),
         if (age != null) 'age': age,
+        if (firstName != null) 'first_name': firstName,
+        if (lastName != null) 'last_name': lastName,
         'location_enabled': locationEnabled,
         'push_notifications_enabled': pushNotificationsEnabled,
         'email_notifications_enabled': emailNotificationsEnabled,
