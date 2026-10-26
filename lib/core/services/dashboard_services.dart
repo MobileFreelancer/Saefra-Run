@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'package:saefra_run/core/config/api_config.dart';
+import 'package:saefra_run/core/models/place_prediction_model.dart';
 import 'package:saefra_run/core/models/route_model.dart';
+import 'package:saefra_run/core/services/places_search_service.dart';
 import 'package:saefra_run/core/services/api_service.dart';
 import 'package:saefra_run/core/utils/api_response_parser.dart';
 import 'package:saefra_run/core/utils/map_style_service.dart';
@@ -46,7 +45,7 @@ class DashboardServices extends ChangeNotifier {
   // State variables for Location Autocomplete Search
   List<dynamic> _placePredictions = [];
   bool _isSearching = false;
-  final String _googleApiKey = ApiConfig.googlePlacesApiKey;
+  final PlacesSearchService _placesSearch = PlacesSearchService();
 
   // Dynamic Route Integration State
   Map<String, dynamic>? _recommendedRoute;
@@ -163,27 +162,22 @@ class DashboardServices extends ChangeNotifier {
     _isSearching = true;
     notifyListeners();
 
-    if (_googleApiKey.isEmpty) {
-      _placePredictions = [];
-      _isSearching = false;
-      notifyListeners();
-      return;
-    }
-
-    final String url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(query)}&key=$_googleApiKey";
     try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['status'] == 'OK') {
-          _placePredictions = data['predictions'];
-        } else {
-          _placePredictions = [];
-        }
-      } else {
-        _placePredictions = [];
-      }
+      final predictions = await _placesSearch.search(
+        query,
+        latitude: _latitude,
+        longitude: _longitude,
+      );
+      _placePredictions = predictions
+          .map(
+            (place) => {
+              'description': place.description,
+              'place_id': place.placeId,
+            },
+          )
+          .toList();
     } catch (e) {
+      debugPrint(e.toString());
       _placePredictions = [];
     }
     _isSearching = false;
@@ -193,27 +187,12 @@ class DashboardServices extends ChangeNotifier {
   Future<void> selectPrediction(String placeId) async {
     _placePredictions = [];
     notifyListeners();
-    double? lat;
-    double? lng;
 
-    final String url =
-        "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=geometry&key=$_googleApiKey";
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['status'] == 'OK') {
-          final location = data['result']['geometry']['location'];
-          lat = location['lat'];
-          lng = location['lng'];
-        }
-      }
-    } catch (e) {
-      debugPrint(e.toString());
-    }
-
-    if (lat != null && lng != null) {
-      await focusOnLocation(lat, lng);
+    final latLng = await _placesSearch.resolvePlace(
+      PlacePrediction(description: '', placeId: placeId),
+    );
+    if (latLng != null) {
+      await focusOnLocation(latLng.latitude, latLng.longitude);
     }
   }
 

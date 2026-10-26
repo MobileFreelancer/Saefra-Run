@@ -34,35 +34,35 @@ class ApiConfig {
   static bool get isDevelopment => currentEnvironment == Environment.development;
   static bool get isProduction => currentEnvironment == Environment.production;
 
-  /// Search place key — Places API + Places API (New).
+  /// Search place key — Places API (New).
   static String get googlePlacesApiKey => _envKey(
         'GOOGLE_PLACES_API_KEY',
-        fallback: 'AIzaSyAwoHdma8dZmKOK3kr3EoaEo3DQE1Mob7g',
+        fallback: 'AIzaSyB-fBCkeBi5ydRGaBFbfk1yVJ8f0y2teHw',
       );
 
   /// Routes API key — route generation (computeRoutes).
   static String get googleRoutesApiKey => _envKey(
         'GOOGLE_ROUTES_API_KEY',
-        fallback: 'AIzaSyCRXmM_Ug8WIFuDCFXDAYelmdTGtlgX_8k',
+        fallback: 'AIzaSyCFgFs0MnJiOwHH30fwolYKxr64QMHqDaw',
       );
 
   /// Directions API key — polylines / turn-by-turn paths.
   static String get googleDirectionsApiKey => _envKey(
         'GOOGLE_DIRECTIONS_API_KEY',
-        fallback: 'AIzaSyAgFJHr846mDvzFhjro6u1_Nx_lU5DvPdg',
+        fallback: 'AIzaSyCCXvHr8n7vr76nDUiiavqN46IhVIqei8Y',
       );
 
   /// Android key (Firebase) — Maps SDK on Android.
   static String get googleMapsAndroidApiKey => _envKey(
         'GOOGLE_MAPS_ANDROID_API_KEY',
-        fallback: 'AIzaSyDeFsri4CcOWEozdu9HcPhebQuVqjHDSSQ',
+        fallback: 'AIzaSyDCeFCXrcID6-SEIVmdloN3rOfRINqGXbE',
 
       );
 
   /// iOS key (Firebase) — Maps SDK on iOS.
   static String get googleMapsIosApiKey => _envKey(
         'GOOGLE_MAPS_IOS_API_KEY',
-        fallback: 'AIzaSyB9RL4Fqf5X6eE6mjGfznc8xcNXKjTdA4M',
+        fallback: 'AIzaSyAGn_QWJqJB6imawsTUNMWYx_DCb76SGlQ',
       );
 
   /// Generic maps key fallback (Dart-side map helpers).

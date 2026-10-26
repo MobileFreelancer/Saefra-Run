@@ -20,6 +20,6 @@ import UserNotifications
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    GMSServices.provideAPIKey("AIzaSyB9RL4Fqf5X6eE6mjGfznc8xcNXKjTdA4M")
+    GMSServices.provideAPIKey("AIzaSyAGn_QWJqJB6imawsTUNMWYx_DCb76SGlQ")
   }
 }

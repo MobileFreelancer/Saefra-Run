@@ -11,10 +11,14 @@ class PlacePrediction {
   final double? lat;
   final double? lng;
 
-  factory PlacePrediction.fromGoogleJson(Map<String, dynamic> json) {
+  factory PlacePrediction.fromPlacesApi(Map<String, dynamic> json) {
+    final text = json['text'];
+    final description = text is Map ? text['text'] as String? : null;
     return PlacePrediction(
-      description: json['description'] as String? ?? 'Unknown location',
-      placeId: json['place_id'] as String? ?? '',
+      description: (description != null && description.isNotEmpty)
+          ? description
+          : 'Unknown location',
+      placeId: json['placeId'] as String? ?? '',
     );
   }
 }
