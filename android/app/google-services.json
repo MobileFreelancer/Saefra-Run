@@ -1,45 +1,45 @@
 {
   "project_info": {
-    "project_number": "692466050229",
-    "project_id": "saefra-run",
-    "storage_bucket": "saefra-run.firebasestorage.app"
+    "project_number": "124996307973",
+    "project_id": "saefra-run-e446a",
+    "storage_bucket": "saefra-run-e446a.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:692466050229:android:d62010e2e7b1798b970afc",
+        "mobilesdk_app_id": "1:124996307973:android:e9c511a7fe28ace3c2a06c",
         "android_client_info": {
           "package_name": "com.saefra.run.saefra_run"
         }
       },
       "oauth_client": [
         {
-          "client_id": "692466050229-tj3s06n1q2ugqdso2n0svip8ilthiqjf.apps.googleusercontent.com",
+          "client_id": "124996307973-l131u75j3jdkgpcvvh72iqfem39bujnv.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.saefra.run.saefra_run",
-            "certificate_hash": "fa26cc053320a8796070f5f0a7408d9d5433e694"
+            "certificate_hash": "84f7a8136646ad6fc916b3b7c207ee9dbe4fcd7b"
           }
         },
         {
-          "client_id": "692466050229-0r09padqe3s5lta5vl8avns4urbp2iil.apps.googleusercontent.com",
+          "client_id": "124996307973-6hpstraudkf46um0nqge5sp85l7dboer.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCOdeF2vgHQKTS7IKDD3056q-lUC91BoGQ"
+          "current_key": "AIzaSyAlQj0ze883UfRL_nTcZuCSqPAzdIfh2bo"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "692466050229-0r09padqe3s5lta5vl8avns4urbp2iil.apps.googleusercontent.com",
+              "client_id": "124996307973-6hpstraudkf46um0nqge5sp85l7dboer.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "692466050229-brvd1bp0432af6m7houoli1e2erh28op.apps.googleusercontent.com",
+              "client_id": "124996307973-somk0jsj0m8bj8iar27gu0u9n3a5le1f.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
                 "bundle_id": "com.saefra.run.saefraRun"

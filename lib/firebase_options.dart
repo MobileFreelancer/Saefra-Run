@@ -50,19 +50,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCOdeF2vgHQKTS7IKDD3056q-lUC91BoGQ',
-    appId: '1:692466050229:android:d62010e2e7b1798b970afc',
-    messagingSenderId: '692466050229',
-    projectId: 'saefra-run',
-    storageBucket: 'saefra-run.firebasestorage.app',
+    apiKey: 'AIzaSyAlQj0ze883UfRL_nTcZuCSqPAzdIfh2bo',
+    appId: '1:124996307973:android:e9c511a7fe28ace3c2a06c',
+    messagingSenderId: '124996307973',
+    projectId: 'saefra-run-e446a',
+    storageBucket: 'saefra-run-e446a.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD1YxnMp4EZggUkhb_pRbT2NV946lOmhZU',
-    appId: '1:692466050229:ios:00db0ae144163b51970afc',
-    messagingSenderId: '692466050229',
-    projectId: 'saefra-run',
-    storageBucket: 'saefra-run.firebasestorage.app',
+    apiKey: 'AIzaSyA6HtAIQXA7mRP0rkb0UxNjpC14ZCtsXbM',
+    appId: '1:124996307973:ios:3d9de3ff0a9e6f43c2a06c',
+    messagingSenderId: '124996307973',
+    projectId: 'saefra-run-e446a',
+    storageBucket: 'saefra-run-e446a.firebasestorage.app',
+    androidClientId: '124996307973-l131u75j3jdkgpcvvh72iqfem39bujnv.apps.googleusercontent.com',
+    iosClientId: '124996307973-somk0jsj0m8bj8iar27gu0u9n3a5le1f.apps.googleusercontent.com',
     iosBundleId: 'com.saefra.run.saefraRun',
   );
 }

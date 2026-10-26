@@ -3,23 +3,23 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>692466050229-brvd1bp0432af6m7houoli1e2erh28op.apps.googleusercontent.com</string>
+	<string>124996307973-somk0jsj0m8bj8iar27gu0u9n3a5le1f.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.692466050229-brvd1bp0432af6m7houoli1e2erh28op</string>
+	<string>com.googleusercontent.apps.124996307973-somk0jsj0m8bj8iar27gu0u9n3a5le1f</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>692466050229-tj3s06n1q2ugqdso2n0svip8ilthiqjf.apps.googleusercontent.com</string>
+	<string>124996307973-l131u75j3jdkgpcvvh72iqfem39bujnv.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyD1YxnMp4EZggUkhb_pRbT2NV946lOmhZU</string>
+	<string>AIzaSyA6HtAIQXA7mRP0rkb0UxNjpC14ZCtsXbM</string>
 	<key>GCM_SENDER_ID</key>
-	<string>692466050229</string>
+	<string>124996307973</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.saefra.run.saefraRun</string>
 	<key>PROJECT_ID</key>
-	<string>saefra-run</string>
+	<string>saefra-run-e446a</string>
 	<key>STORAGE_BUCKET</key>
-	<string>saefra-run.firebasestorage.app</string>
+	<string>saefra-run-e446a.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:692466050229:ios:00db0ae144163b51970afc</string>
+	<string>1:124996307973:ios:3d9de3ff0a9e6f43c2a06c</string>
 </dict>
 </plist>
